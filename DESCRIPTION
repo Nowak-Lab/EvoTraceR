@@ -1,0 +1,40 @@
+Package: EvoBC
+Version: 0.99.0
+Date: 2021-07-28
+Title: EvoBC
+Authors@R: c(person("Lucrezia","Patruno",role=c"("cre","aut"),email="l.patruno@campus.unimib.it"),
+            person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666"))
+            person("Dawid","Nowak",role=c("aut")))
+Depends:
+    R (>= 4.0.0)
+Imports:
+    dada2,
+    ggplot2,
+    dplyr,
+    cli,
+    BioStrings,
+    benthos,
+    lemon,
+    scales,
+    muscle,
+    ggmsa
+Suggests:
+    BiocGenerics,
+    BiocStyle,
+    testthat,
+    knitr
+Name:
+    EvoBC
+Description:
+    EvoBC
+Encoding: UTF-8
+LazyData: TRUE
+License: file LICENSE
+URL: https://github.com/Nowak-Lab/EvoBC
+BugReports: https://github.com/Nowak-Lab/EvoBC
+biocViews: 
+	BiomedicalInformatics,
+	SingleCell,
+	SomaticMutation
+RoxygenNote: 7.1.1
+VignetteBuilder: knitr
