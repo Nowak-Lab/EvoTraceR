@@ -7,7 +7,6 @@
 # dayOrgan. List of the column names containing the organs/days.
 # colony_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
-
 asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_dir) {
   seqtab_df_clean_asv = EvoBC_object$clean_asv_dataframe
   output_dir = EvoBC_object$output_directory
@@ -208,8 +207,3 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
   
   return(EvoBC_object)
 }
-
-
-
-
-

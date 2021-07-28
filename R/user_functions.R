@@ -343,9 +343,6 @@ asv_analysis = function(EvoBC_object,
   
 }
 
-
-
-
 #' This function performs multi-sequence alignment and outputs statistics about mutations. 
 #' Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
 #' 
@@ -424,21 +421,3 @@ perform_msa = function(EvoBC_object, seed = NULL, ...) {
   return(EvoBC_object)
   
 }
-
-#
-# arguments_chack = list()
-# arguments_chack$filttrim = formalArgs(dada2::filterAndTrim)
-# arguments_chack$errors = formalArgs(dada2::learnErrors)
-# arguments_chack$derep = formalArgs(dada2::derepFastq)
-# arguments_chack$dada = formalArgs(dada2::dada)
-# arguments_chack$merge = formalArgs(dada2::mergePairs)
-# arguments_chack$seqtable = formalArgs(dada2::makeSequenceTable)
-# arguments_chack$bimeras = formalArgs(dada2::removeBimeraDenovo)
-# intersect(arguments_chack)
-# 
-# for (i in seq(2, length(arguments_chack))) {
-#   print(names(arguments_chack)[c(i-1, i)])
-#   print(intersect(arguments_chack[[i-1]], arguments_chack[[i]]))
-# }
-
-

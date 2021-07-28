@@ -1,4 +1,4 @@
-#  This function actually performs all dada2 steps.
+# This function actually performs all dada2 steps.
 dada2_alignment = function(fnFs,
                            fnRs,
                            output_dir,
@@ -240,4 +240,3 @@ adjust_seqtab = function(seqtab.nochim, map_sample_organ) {
             row.names = F)
   return(seqtab_df)
 }
-

@@ -1,7 +1,6 @@
 # Input: "dnastringset_msa.fasta" -> "alignment_tidy_ref_alt_final.csv"   ------------------------------------------------------
 # Output 1: "alignment_tidy_ref_alt_final.csv" -> "del_sub_ins_df.csv" ------------------------------------------------------
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
-
 count_alterations <- function(EvoBC_object, alignment_tidy) {
   
   # Create tidy alignment df where, for each position and each ASV you store the 
@@ -163,4 +162,3 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
   return(dplyr::select(del_sub_ins_df, -c('position')))
   
 }
-

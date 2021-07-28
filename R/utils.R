@@ -5,7 +5,6 @@ get_args_from_dots = function(dots, fn){
   return(dots[mask])
 }
 
-
 ### Own Functions To Download  ------------------------------------------------------ 
 
 ### Identify Mutations ------------------------------------------------------ 
@@ -50,10 +49,8 @@ identifyMutations <- function(seq, ref) {
     arle.inf.df <- subset(arle.inf.df, type=="ins")
     arle.inf.df$start.barcode <- barcodpToBarcode[arle.inf.df$start.barcodep]
     arle.inf.df$end.barcode <- arle.inf.df$start.barcode + 1
-    # from the barcodep scale, only select insertions
-    
-  }    
-  
+    # from the barcodep scale, only select insertions    
+  }
   
   ### barcode scale with a scale ------------------------------------------------------ 
   arle.df <- data.frame(unclass(rle(as.numeric(as.vector(seqSubset) == as.vector(refSubset)))))      
@@ -108,6 +105,7 @@ get_lower_tri <- function(cormat, show.diag = FALSE) {
   }
   return(cormat)
 }
+
 # Get upper triangle of the correlation matrix
 get_upper_tri <- function(cormat, show.diag = FALSE) {
   if (is.null(cormat)) {
@@ -127,9 +125,7 @@ hc_cormat_order <- function(cormat, hc.method = "complete") {
   cormat <- cormat[hc$order, hc$order]
 }
 
-
 # Phylogenetic functions ------------------------------------------------------ 
-#as.multiPhylo.phylo    
 as.multiPhylo.phylo<-function(x,...){
   obj<-list(x)
   class(obj)<-"multiPhylo"
@@ -140,7 +136,6 @@ as.multiPhylo<-function(x,...){
   if (identical(class(x),"multiPhylo")) return(x)
   UseMethod("as.multiPhylo")
 }
-
 
 # 1k axis formatting   ------------------------------------------------------ 
 ks <- function (x) { number_format(accuracy = 1,
@@ -158,12 +153,9 @@ rbind.all.columns <- function(x, y) {
   return(rbind(x, y))
 }
 
-
 ### Graphic: ggplot2 Theme Setting ------------------------------------------------------
 # nowaklab theme for ggplot2
-#source('D:/googleDrive/dottorato/dawid/Analysis/source/barplot_nowaklab_theme.R', chdir = F)
 
-# Dare la possibilità di dare un mapping come questo oppure di farlo random
 ### Graphic: Color Choices ------------------------------------------------------
 # Colors: set final colors for organs
 day_organ_col <- c("PRL" = "#65A7F3", "PRR" = "#65A7F3", # Prostate Left, Prostate Right
@@ -184,7 +176,6 @@ day_organ_col <- c("PRL" = "#65A7F3", "PRR" = "#65A7F3", # Prostate Left, Prosta
                    "TBL" = "#6A4925", "TBR" = "#6A4925", # Tibia Left, Tibia, Right
                    "PVL" = "#E8B985" ,  "PVR" =  "#E8B985", # Pelvis Left/Pelvis Right,
                    "RBL" = "#E7B985", "RBR" = "#E7B985") # Rib Left, Rib Right
-
 
 # Color Option 1 
 # create multiple colors
@@ -243,8 +234,7 @@ barplot_nowaklab_theme <- function(axis.title.font = "Helvetica", axis.title.col
     #legend.box.margin = margin(0.1, 0.1, 0.1, 0.1, "cm"),
     
     # Guides
-    
-    
+
     # Plot Margins  
     plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "cm"),
     
@@ -277,8 +267,3 @@ barplot_nowaklab_theme <- function(axis.title.font = "Helvetica", axis.title.col
   )
   
 }
-
-
-
-
-
