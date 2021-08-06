@@ -1,7 +1,7 @@
 # Input: "dnastringset_msa.fasta" -> "alignment_tidy_ref_alt_final.csv"   ------------------------------------------------------
 # Output 1: "alignment_tidy_ref_alt_final.csv" -> "del_sub_ins_df.csv" ------------------------------------------------------
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
-count_alterations <- function(EvoBC_object, alignment_tidy) {
+count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   
   # Create tidy alignment df where, for each position and each ASV you store the 
   # reference and the observed nucleotide
@@ -12,9 +12,9 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
   # Adjust Column Names
   colnames(alignment_tidy_ref_alt) <- c("position", "asv_names", "ref_asv", "read_asv")
   
-  percentages = EvoBC_object$statistics$asv_df_percentages %>%
+  percentages = REvoBC_object$statistics$asv_df_percentages %>%
     ungroup() %>%
-    add_row(dplyr::select(EvoBC_object$barcode, !c("seq_start", "seq_end", "seq"))) %>%
+    add_row(dplyr::select(REvoBC_object$barcode, !c("seq_start", "seq_end", "seq"))) %>%
     filter(!str_detect(asv_names, c("NMBC")))
   
   # Join with the sequences df to have the frequency of each ASV in each sample
@@ -60,6 +60,12 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
     pivot_wider(names_from = alt, values_from = width, values_fill = 0) %>%
     rename_at(vars(!matches("asv_names")), ~ paste0("width_total_", .))
   
+  write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
+            file.path(output_dir, "ASV_alterationType_frequency.csv"), 
+            row.names = FALSE)
+  
+  REvoBC_object$alignment$asv_alterationType_frequency = alignment_tidy_ref_alt_mrg_final_width_summ
+  
   # Select only deletions and substitutions
   del_sub_df <- 
     alignment_tidy_ref_alt_mrg_final %>%
@@ -82,12 +88,12 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
     rbind(del_sub_df, ins_df) %>%
     dplyr::select("asv_names", "day_organ", "position", "position_bc260", "alt", "perc_in_sample")
   
-  dayOrgan = setdiff(colnames(EvoBC_object$sequences_dataframe), c("seq_names", "seq"))
+  sample = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
   # prepare levels and orders
   del_sub_ins_df <- 
     del_sub_ins_df %>%
-    dplyr::mutate(day_organ = fct_relevel(day_organ, dayOrgan)) %>%
-    arrange(match(day_organ, dayOrgan))
+    dplyr::mutate(day_organ = fct_relevel(day_organ, sample)) %>%
+    arrange(match(day_organ, sample))
   
   # Save File
   write.csv(del_sub_ins_df, 
@@ -103,7 +109,7 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
     dplyr::filter(!alt == "wt") # don't plot wt 
   # Save File
   write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
-            file.path(output_dir, "del_sub_ins_df_data_to_plot_sum_perc.csv"), 
+            file.path(output_dir, "mutations_frequency.csv"), 
             row.names = FALSE)
   
   
@@ -139,10 +145,10 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
           axis.line.x = element_line(colour="black", size=0.3), # axis x line only
           axis.title = element_blank(), # disable panel border,
           panel.border = element_blank(), # disable panel border
-          panel.grid.major.y = element_blank(), # y grid line 
-          panel.grid.major.x = element_blank(), # disable lines in grid on X-axis
-          panel.grid.minor.x = element_blank(), # disable lines in grid on X-axis
-          panel.grid.minor.y = element_blank(), # disable lines in grid on X-axis
+          #panel.grid.major.y = element_blank(), # y grid line 
+          panel.grid.major = element_blank(), # disable lines in grid on X-axis
+          #panel.grid.minor.x = element_blank(), # disable lines in grid on X-axis
+          panel.grid.minor = element_blank(), # disable lines in grid on X-axis
           axis.text.y = element_text(size=6, angle=0, hjust=1, vjust=0.5),
           axis.text.x = element_text(size=6, angle=0, hjust=0.5, vjust=0.5),
           axis.ticks.x = element_line(colour="black", size=0.3),
@@ -156,9 +162,10 @@ count_alterations <- function(EvoBC_object, alignment_tidy) {
          plot=alt_count_bc, 
          device=cairo_pdf, 
          width=25, 
-         height=5*length(dayOrgan), 
+         height=5*length(sample), 
          units = "cm") #17.5 for 4x
   
-  return(dplyr::select(del_sub_ins_df, -c('position')))
+  REvoBC_object$alignment$mutations_df = dplyr::select(del_sub_ins_df, -c('position'))
+  return(REvoBC_object)
   
 }

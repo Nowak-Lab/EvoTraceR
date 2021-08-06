@@ -5,37 +5,34 @@
 \title{ASV_analysis}
 \usage{
 asv_analysis(
-  EvoBC_object,
+  REvoBC_object,
   barcode = "BC10v0.ORG",
   output_figures = TRUE,
-  pid_cutoff_upper = 98,
-  pid_cutoff_lower = 5,
-  ASV_Richness_cutoff = 2,
-  colony_count_cutoff = 2,
-  colony_perc_cutoff = 1,
+  pid_cutoff_nmbc = 98,
+  asv_count_cutoff = 2,
   ...
 )
 }
 \arguments{
-\item{EvoBC_object}{(Required). Object of class EvoBC, result of the function \code{initialize_EvoBC}}
+\item{REvoBC_object}{(Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}}
 
 \item{barcode}{(Required). String indicating the barcode used in the experiment.}
 
 \item{output_figures}{(Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
-\item{pid_cutoff_upper}{(Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.}
+\item{pid_cutoff_nmbc}{(Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.}
 
-\item{colony_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
+\item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
 
 \item{...}{Any additional parameters passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
 
 \item{export_statistics}{(Optional). Default = TRUE. Boolean indicating whether the user wishes to compute, for each ASV and each day/organ the frequency of counts.}
 }
 \value{
-The EvoBC object passed as a parameter with the following new fields:
+The REvoBC object passed as a parameter with the following new fields:
 \itemize{
 \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
-sequences with a similarity higher than \code{pid_cutoff_upper} to the original barcode
+sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
 aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
 to their total counts. 
 \item \code{barcode}: Info about the barcode selected for the current analysis.
@@ -52,21 +49,22 @@ to their total counts.
 
 \item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
 \item \code{sample_totalCounts}: for each sample, total counts and number of distinct ASVs detected.
-\item \code{ASV_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
-\item \code{ASV_persample_frequency}: counts for each ASV in each sample.
-\item \code{ASV_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
-\item \cpde{ASV_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+\item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
+\item \code{asv_persample_frequency}: counts for each ASV in each sample.
+\item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
+\item \cpde{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+
 }
 }  
 
-It saves the following \code{.csv} files:
+It saves the following \code{.csv} files in a sub-folder \code{asv_analysis} of the main output folder:
 \itemize{
 \item \code{sequences_barcode_mapping.csv}: dataframe that stores, for each sequence,
 its counts in all samples. It also overwrites the sequence name (column seq_names) 
 of those that exactly match any of the possible barcodes, using the barcode identifier. The sequences
 that don't match the barcode in the current analysis may be due to contamination. 
-\item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts}, \code{sample_totalCounts}, \code{asv_df_percentages.csv}, \code{ASV_diversity_perSample.csv}  
-\code{ASV_persample_frequency.csv}, \item \code{ASV_persample_detection.csv} and \code{ASV_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
+\item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalCounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_perSample.csv}  
+\code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_perSample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
 
 }
 }
@@ -76,10 +74,15 @@ First, it removes possible contamination sequences (ASVs resulting from other ba
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
 in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
 (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_upper} with the original barcode as Non-Marking Guide Controls.
+Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_nmbc} with the original barcode as Non-Marking Guide Controls.
 Finally, it computes different statistics for the ASVS, storing:
  the relative frequency of all ASVs in each sample. 
  the relative frequency of each ASV in the samples.
  the counts for each ASV normalized to the counts of the sample with maximum frequency
  the frequency of the different ASVs in each sample.
+}
+\examples{
+data(revo_initialized)
+revo_analyzed = asv_analysis(REvoBC_object = evo_obj, barcode = 'BC10v0.ORG')
+
 }

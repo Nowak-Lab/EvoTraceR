@@ -1,4 +1,4 @@
-#' This function initializes the EvoBC object, by computing the set of Amplicon Sequence Variants.
+#' This function initializes the REvoBC object, by computing the set of Amplicon Sequence Variants.
 #' It wraps all the steps performed by dada2, that are the following:
 #' (1) Filter and trimming reads.
 #' (2) Learning the error rates.
@@ -13,12 +13,18 @@
 #' If users wish to manually run each step of dada2 computation they should execute all steps reported
 #' in the vignette, up to the Removal of chimeras and save the output of \code{removeBimeraDenovo} in a csv file and provide the path to that file as parameter \code{dada2_output_sequences}.
 #' 
-#' @title initialize_EvoBC
+#' @title initialize_REvoBC
 #' 
-#' @param input_dir (Required). Path to the directory containing \code{.fastq} files for forward and reverse reads.
+#' @examples
+#' input_dir = system.file("exampleData", "input", package = "REvoBC")
+#' output_dir = system.file("exampleData", "output", package = "REvoBC")
+#' initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+#' 
+#' @param input_dir. Path to the directory containing \code{.fastq} files for forward and reverse reads.
 #' This folder should contain the fastq files (2 for each sample) with the following name pattern:
-#' FILENAME_SAMPLE_BARCODEVERSION_R1.fastq FILENAME_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
-#' or timepoint (if longitudinal data are provided). Note that EvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+#' FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
+#' or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+#' Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
 #' \item \code{quality_track_reads.csv}: track of the number of sequences during the 
@@ -40,50 +46,63 @@
 #' }
 #' @param multithread (Optional) default \code{TRUE}. Whether to enable multithreading. If TRUE the number of threads is determined automatically (dada2 functionality).
 #' If an integer is given, the number of threads is determined by its value.
-#' @param map_sample_organ (Optional). In case fastq files names are not in the format FILENAME_SAMPLE_BARCODEVERSION_RX.fastq),
-#' then users should provide a list that associates each sample to the corresponding organ/day.
-#' (e.g., if we have FILENAME=file1 that corresponds to organ PRL (code for Prostate Left), than the parameter should be set as: \code{map_sample_organ = c("sample1" = "PRL')}).
+#' @param map_file_sample (Optional). In case fastq files names are not in the format FILEPREFIX_SAMPLE_BARCODEVERSION_RX.fastq),
+#' then users should provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding organ/day.
+#' (e.g., if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: \code{map_file_sample = c("file1" = "PRL")}).
 #' @param dada2_pooled_analysis (Optional). Deafault = FALSE. Boolean that is passed to dada2 function \code{dada}, which performs sample inference.
 #' It can be set to TRUE in case of multiple samples coming from the same mouse (e.g. different organs or multiple time points) (See \href{https://benjjneb.github.io/dada2/pool.html}{here} for more information).
 #' @param dada2_chimeras_minFoldParentOverAbundance (Optional). Deafult = 8. parameter passed to the \code{dada2} function \code{isBimeraDenovo} during the call to \code{dada2 removeBimeraDenovo}. 
 #' @param verbose (Optional). Default TRUE. Boolean indicating whether or not to print the text output of dada2 functions.
 #' 
-#' @return An object of type EvoBC, which is a list that will contain the following fields: 
+#' @return An object of type REvoBC, which is a list that will contain the following fields: 
 #' \itemize{
 #' \item \code{fastq_directory}: directory where the input fastq files are located.
 #' \item \code{output_directory}: directory where all the output files are being stored.
-#' \item \code{map_sample_organ}: dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
+#' \item \code{map_file_sample}: dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
 #' to which it is associated.
-#' \item \code{sequences_dataframe}: dataframe that stores all sequences detected by \code{dada2}. Note that
+#' \item \code{dada2_asv_prefilter}: dataframe that stores all sequences detected by \code{dada2}. Note that
 #' these sequences still need to be filtered (@seealso \code{\link{asv_analysis}}).
 #' \item \code{dada2}: list which contains the percentage of chimeras found by \code{dada2} and a dataframe
 #' that tracks the number of sequences during all \code{dada2} steps.
-#' }. 
+#' }. This function also saves the following \code{.csv files} in the subfolder \code{dada2_files} created in the output dirctory provided by the user:
+#' \itemize{
+#' \item dada2_asv_prefilter.csv
+#' \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
+#' }
 #' 
 #' 
-#' @export initialize_EvoBC
+#' @export initialize_REvoBC
 #' 
 #' @import dada2
 #' @import ggplot2
 #' @import dplyr
 #' @importFrom cli cli_alert_info
 #' 
-initialize_EvoBC = function(input_dir,
+initialize_REvoBC = function(input_dir = NULL,
                               output_dir,
                               dada2_output_sequences = NULL,
                               output_dir_dada2 = NULL,
                               random_seed = NULL,
                               output_figures = TRUE,
                               multithread = TRUE,
-                              map_sample_organ = NULL,
+                              map_file_sample = NULL,
                               dada2_pooled_analysis = FALSE,
                               dada2_chimeras_minFoldParentOverAbundance = 8,
                               verbose = TRUE,
                               ...) {
-  set.seed(seed)
-  EvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
-  class(EvoBC_object) = 'EvoBC'
-  EvoBC_object$dada2 = list()
+  # Check that the user inserted the correct parameters
+  if (is.null(input_dir) & is.null(dada2_output_sequences)) {
+    stop('Please provide either a directory containing fastqs for dada2 or the path to dada2 output')
+  }
+  if (is.null(output_dir)) {
+    stop('Please provide a path where output files will be stored.')
+  }
+
+  set.seed(random_seed)
+  REvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
+  
+  class(REvoBC_object) = 'REvoBC'
+  REvoBC_object$dada2 = list()
   if (is.null(dada2_output_sequences)) {
     # Fastq were provided as input -> perform alignment with dada2
     fastqs = list.files(input_dir, pattern = '.fastq$')
@@ -93,16 +112,21 @@ initialize_EvoBC = function(input_dir,
     fnRs = fastqs[grepl("_R2", fastqs)] 
     # Get sample names, assuming files named as so: SAMPLENAME_XXX.fastq
     sample.names = str_remove_all(fnFs, "_R1.fastq")
-    map_sample_organ = check_input(sample.names = sample.names, 
-                                   map_sample_organ = map_sample_organ)
+    map_file_sample = check_input(sample.names = sample.names, 
+                                   map_file_sample = map_file_sample)
     # Specify the full path to the fnFs and fnRs
     fnFs = file.path(input_dir, fnFs)
     fnRs = file.path(input_dir, fnRs)
     
+    output_dir_files = file.path(output_dir, "dada2_files")
+    if (!dir.exists(output_dir_files)) dir.create(output_dir_files)
+    
     align_output = dada2_alignment(fnFs = fnFs,
                                    fnRs = fnRs,
-                                   map_sample_organ = map_sample_organ,
+                                   map_file_sample = map_file_sample,
+                                   sample.names = sample.names,
                                    output_dir = output_dir,
+                                   output_dir_files = output_dir_files,
                                    output_dir_dada2 = output_dir_dada2,
                                    output_figures = output_figures,
                                    multithread = multithread,
@@ -112,19 +136,22 @@ initialize_EvoBC = function(input_dir,
                                    ...)
     
     seqtab.nochim = align_output$seqtab.nochim
-    EvoBC_object$dada2$track = align_output$track
-    EvoBC_object$dada2$bimera_percentage = align_output$bimera_perc
-    EvoBC_object$dada2$original_sequences = align_output$nSequences_with_chimeras
+    REvoBC_object$dada2$track = align_output$track
+    REvoBC_object$dada2$bimera_percentage = align_output$bimera_perc
+    REvoBC_object$dada2$original_sequences = align_output$nSequences_with_chimeras
     
   } else {
-    seqtab.nochim = read.csv(dada2_output_sequences, stringsAsFactors = F)
-    map_sample_organ = check_input(sample.names = rownames(seqtab.nochim), 
-                                   map_sample_organ = map_sample_organ)
+    seqtab.nochim = read.csv(dada2_output_sequences, 
+                             stringsAsFactors = FALSE,
+                             row.names = 1)
+    map_file_sample = check_input(sample.names = rownames(seqtab.nochim), 
+                                   map_file_sample = map_file_sample)
   }
-  EvoBC_object$map_sample_organ = map_sample_organ
-  EvoBC_object$sequences_dataframe = adjust_seqtab(seqtab.nochim = seqtab.nochim,
-                                                    map_sample_organ = map_sample_organ)
-  return(EvoBC_object)
+  REvoBC_object$map_file_sample = map_file_sample
+  REvoBC_object$dada2_asv_prefilter = adjust_seqtab(seqtab.nochim = seqtab.nochim,
+                                                    map_file_sample = map_file_sample,
+                                                    output_dir_files = output_dir_files)
+  return(REvoBC_object)
   
 }
 
@@ -133,7 +160,7 @@ initialize_EvoBC = function(input_dir,
 #' Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
 #' in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
 #' (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-#' Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_upper} with the original barcode as Non-Marking Guide Controls.
+#' Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_nmbc} with the original barcode as Non-Marking Guide Controls.
 #' Finally, it computes different statistics for the ASVS, storing:
 #'  the relative frequency of all ASVs in each sample. 
 #'  the relative frequency of each ASV in the samples.
@@ -142,18 +169,22 @@ initialize_EvoBC = function(input_dir,
 #'  
 #' @title ASV_analysis
 #' 
-#' @param EvoBC_object (Required). Object of class EvoBC, result of the function \code{initialize_EvoBC}
+#' @examples
+#' data(revo_initialized)
+#' revo_analyzed = asv_analysis(REvoBC_object = evo_obj, barcode = 'BC10v0.ORG')
+#' 
+#' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
 #' @param output_figures (Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
-#' @param pid_cutoff_upper (Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
+#' @param pid_cutoff_nmbc (Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
 #' @param export_statistics (Optional). Default = TRUE. Boolean indicating whether the user wishes to compute, for each ASV and each day/organ the frequency of counts.
-#' @param colony_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
+#' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
 #' @param ... Any additional parameters passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
 #'
-#' @return  The EvoBC object passed as a parameter with the following new fields:
+#' @return  The REvoBC object passed as a parameter with the following new fields:
 #' \itemize{
 #' \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
-#' sequences with a similarity higher than \code{pid_cutoff_upper} to the original barcode
+#' sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
 #' aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
 #' to their total counts. 
 #' \item \code{barcode}: Info about the barcode selected for the current analysis.
@@ -170,21 +201,22 @@ initialize_EvoBC = function(input_dir,
 #' 
 #' \item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
 #' \item \code{sample_totalCounts}: for each sample, total counts and number of distinct ASVs detected.
-#' \item \code{ASV_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
-#' \item \code{ASV_persample_frequency}: counts for each ASV in each sample.
-#' \item \code{ASV_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
-#' \item \cpde{ASV_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+#' \item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
+#' \item \code{asv_persample_frequency}: counts for each ASV in each sample.
+#' \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
+#' \item \cpde{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+#' 
 #' }
 #' }  
 #' 
-#' It saves the following \code{.csv} files:
+#' It saves the following \code{.csv} files in a sub-folder \code{asv_analysis} of the main output folder:
 #' \itemize{
 #' \item \code{sequences_barcode_mapping.csv}: dataframe that stores, for each sequence,
 #' its counts in all samples. It also overwrites the sequence name (column seq_names) 
 #' of those that exactly match any of the possible barcodes, using the barcode identifier. The sequences
 #' that don't match the barcode in the current analysis may be due to contamination. 
-#' \item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts}, \code{sample_totalCounts}, \code{asv_df_percentages.csv}, \code{ASV_diversity_perSample.csv}  
-#' \code{ASV_persample_frequency.csv}, \item \code{ASV_persample_detection.csv} and \code{ASV_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
+#' \item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalCounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_perSample.csv}  
+#' \code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_perSample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
 #' 
 #' }
 #'  
@@ -197,22 +229,21 @@ initialize_EvoBC = function(input_dir,
 #' @import dplyr
 #' @import ggplot2
 #' 
-asv_analysis = function(EvoBC_object,
+asv_analysis = function(REvoBC_object,
                         barcode = 'BC10v0.ORG',
                         output_figures = TRUE,
-                        pid_cutoff_upper = 98,
-                        pid_cutoff_lower = 5, # not used
-                        ASV_Richness_cutoff = 2, # not used
-                        colony_count_cutoff = 2,
-                        colony_perc_cutoff = 1, # not used,
+                        pid_cutoff_nmbc = 98,
+                        asv_count_cutoff = 2,
                         ...) {
   dots = list(...)
   if (output_figures) {
-    figure_dir = file.path(output_dir, "analysis_figures")
+    figure_dir = file.path(output_dir, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
   } else {
     figure_dir = NULL
   }
+  output_dir = file.path(REvoBC_object$output_directory, "asv_analysis")
+  if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = data.frame(
     asv_names = c("BC10v0.ORG", "BC10v1.ORG", "BC10v2.ORG", "BC10v3.ORG", "BC10v4.ORG", "g.70.Rb1.ORG", "g.1348.Rb1.ORG"),
@@ -227,14 +258,14 @@ asv_analysis = function(EvoBC_object,
             "CTAGAAGGAGCAGAATGTGTTTCAATAAAAGACTTTAACAAAATTCAATTAACTTTTTGACTTTCTGAAACAGTAAAAGCTTATTATTTTTCCTTTTGTTTGTAGCGATATAAACTTGGAGTCCGATTGTATTACCGTGTGATGGAATCCATGCTTAAATCAGTAAGTTAAAGGAAACAAAATAGCAAAAAAATTTAATGCTGACACAAAGAAAGTTTCAATTAAAAGTTTTTTTTTCAATTATCTGTTTTAGGAAGAAGAACGTTTGTCCAT"),
     stringsAsFactors = FALSE)
   
-  seqtab_df = EvoBC_object$sequences_dataframe
+  seqtab_df = REvoBC_object$dada2_asv_prefilter
   
-  EvoBC_object$barcode = barcodes_info[barcodes_info$asv_names == barcode,]
+  REvoBC_object$barcode = barcodes_info[barcodes_info$asv_names == barcode,]
   
   # Store the original numner of sequences and that after chimeras removal
-  orgseq <- EvoBC_object$dada2$original_sequences
+  orgseq <- REvoBC_object$dada2$original_sequences
   chimseq_filter <- nrow(seqtab_df)
-  dayOrgan = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
+  sample = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   match_seq = match(seqtab_df$seq, barcodes_info$seq)
@@ -243,7 +274,7 @@ asv_analysis = function(EvoBC_object,
                                                 x = barcodes_info$asv_names[barcodes_idx])
   seqtab_df_original = seqtab_df
   write.csv(seqtab_df, 
-            file.path(EvoBC_object$output_directory,
+            file.path(output_dir,
                       "sequences_barcode_mapping.csv"),
             row.names = FALSE)
   
@@ -258,7 +289,7 @@ asv_analysis = function(EvoBC_object,
   
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
-  seqtab_df_original$total_counts = rowSums(seqtab_df_original[,dayOrgan])
+  seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample])
   
   seqtab_df_original$condition = as.factor(seqtab_df_original$condition)
   
@@ -280,10 +311,10 @@ asv_analysis = function(EvoBC_object,
   # Assign to each ASV with pid >= cutoff the original barcode and then pool the sequences
   # (the counts of each ASV with pid >= cutoff will be summed to the ones of the NMBC)
   pidseq_filter = seqtab_df %>% 
-    mutate(seq_names = ifelse(pid >= pid_cutoff_upper, nmbc, seq_names)) %>%
-    dplyr::select(seq_names, all_of(dayOrgan), pid) %>%
+    mutate(seq_names = ifelse(pid >= pid_cutoff_nmbc, nmbc, seq_names)) %>%
+    dplyr::select(seq_names, all_of(sample), pid) %>%
     group_by(seq_names) %>%
-    dplyr::summarise_at(dayOrgan, sum) %>%
+    dplyr::summarise_at(sample, sum) %>%
     merge(dplyr:: select(seqtab_df, seq_names, seq), by = "seq_names")
   pidseq_filter_dim = nrow(pidseq_filter)
   
@@ -317,15 +348,16 @@ asv_analysis = function(EvoBC_object,
   clean_asv <- nrow(seqtab_df_clean_asv)
   
   write.csv(seqtab_df_clean_asv, 
-            paste0(output_dir, "/clean_asv_dataframe.csv"),
+            file.path(output_dir, "/clean_asv_dataframe.csv"),
             row.names = F)
   
-  EvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
-  EvoBC_object = asv_statistics(EvoBC_object, 
-                                 dayOrgan, 
-                                 colony_count_cutoff,
-                                 figure_dir)
-  orgseq=0
+  REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
+  REvoBC_object = asv_statistics(REvoBC_object, 
+                                 sample, 
+                                 asv_count_cutoff,
+                                 figure_dir,
+                                output_dir = output_dir)
+
   if (output_figures) {
     seqtab_df_clean_track <-
       ggplot(data=data.frame(name=c("01_orgseq", "02_chimseq_filter", "03_endseq_filter", "04_pidseq_filter", "05_clean_asv"),
@@ -335,11 +367,11 @@ asv_analysis = function(EvoBC_object,
       barplot_nowaklab_theme() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
     # save pdf
-    ggsave(filename=file.path(figure_dir, "04_seqtab_df_clean_track.pdf"), 
+    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), 
            plot=seqtab_df_clean_track, device=cairo_pdf, width=10, height=10, units = "cm")
   }
   
-  return(EvoBC_object)
+  return(REvoBC_object)
   
 }
 
@@ -348,10 +380,14 @@ asv_analysis = function(EvoBC_object,
 #' 
 #' @title perform_msa
 #' 
-#' @param EvoBC_object EvoBC object on which we want to perform msa.
+#' @examples 
+#' data(revo_analysed)
+#' revo_msa = perform_msa(revo_analyzed)
+#' 
+#' @param REvoBC_object REvoBC object on which we want to perform msa.
 #' @param ... Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.
 #' 
-#' @return EvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
+#' @return REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 #' \itemize{
 #' \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
 #' \item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
@@ -364,11 +400,14 @@ asv_analysis = function(EvoBC_object,
 #' \item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
 #' }
 #' }. 
-#' In addition, the following files are saved in the output directory chosen by the user:
+#' In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 #' \itemize{
 #' \item dnastringset.fa: fasta file where the sequences are stored.
 #' \item dnastringset.fa: same as fasta, but in csv format.
 #' \item dnastringset_muscle-muscle_msa.fasta: fasta with the stringset resulted from MUSCLE.
+#' \item ASV_alterationType_frequency.csv: number of alterations for each type in each ASV
+#' \item mutations_frequency.csv: per sample normalized frequency of each alteration type, computed for each position of the barcode in each sample.
+#' \item mutations_df.csv: content of mutations_df variable explained above.
 #' }
 #' 
 #' 
@@ -379,11 +418,12 @@ asv_analysis = function(EvoBC_object,
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
 #' @importFrom  ggmsa tidy_msa 
 #' @importFrom lemon coord_capped_cart facet_rep_grid
-perform_msa = function(EvoBC_object, seed = NULL, ...) {
+perform_msa = function(REvoBC_object, seed = NULL, ...) {
   dots = list(...)
-  output_dir = EvoBC_object$output_directory
+  output_dir = file.path(REvoBC_object$output_directory, "msa")
+  if(!dir.exists(output_dir)) dir.create(output_dir)
   df_to_plot_org_tree <- 
-    dplyr::select(EvoBC_object$clean_asv_dataframe, asv_names, seq) %>%
+    dplyr::select(REvoBC_object$clean_asv_dataframe, asv_names, seq) %>%
     mutate_at("asv_names", str_replace, ".NMBC", ".ORG") %>%
     arrange(asv_names)
   
@@ -408,16 +448,15 @@ perform_msa = function(EvoBC_object, seed = NULL, ...) {
   
   # Store MSA result
   msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
+  REvoBC_object$alignment$msa_stringset = msa
   
   # Transform Alignment to "Tidy Data"
   alignment_tidy <- ggmsa::tidy_msa(msa=msa, 
                              start = 1, 
                              end = ncol(msa))
   
-  EvoBC_object$alignment$mutations_df = count_alterations(EvoBC_object, 
-                                                       alignment_tidy)
-  EvoBC_object$alignment$msa_stringset = msa
+  REvoBC_object = count_alterations(REvoBC_object, alignment_tidy, output_dir)
   
-  return(EvoBC_object)
+  return(REvoBC_object)
   
 }

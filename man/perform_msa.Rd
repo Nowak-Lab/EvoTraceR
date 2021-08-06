@@ -4,15 +4,15 @@
 \alias{perform_msa}
 \title{perform_msa}
 \usage{
-perform_msa(EvoBC_object, seed = NULL, ...)
+perform_msa(REvoBC_object, seed = NULL, ...)
 }
 \arguments{
-\item{EvoBC_object}{EvoBC object on which we want to perform msa.}
+\item{REvoBC_object}{REvoBC object on which we want to perform msa.}
 
 \item{...}{Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.}
 }
 \value{
-EvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
+REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 \itemize{
 \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
 \item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
@@ -25,14 +25,22 @@ are assigned to the position that coincides with their beginning.
 \item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
 }
 }. 
-In addition, the following files are saved in the output directory chosen by the user:
+In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 \itemize{
 \item dnastringset.fa: fasta file where the sequences are stored.
 \item dnastringset.fa: same as fasta, but in csv format.
 \item dnastringset_muscle-muscle_msa.fasta: fasta with the stringset resulted from MUSCLE.
+\item ASV_alterationType_frequency.csv: number of alterations for each type in each ASV
+\item mutations_frequency.csv: per sample normalized frequency of each alteration type, computed for each position of the barcode in each sample.
+\item mutations_df.csv: content of mutations_df variable explained above.
 }
 }
 \description{
 This function performs multi-sequence alignment and outputs statistics about mutations. 
 Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
+}
+\examples{
+data(revo_analysed)
+revo_msa = perform_msa(revo_analyzed)
+
 }
