@@ -76,6 +76,3 @@ revo_msa = perform_msa(revo_analyzed)
 
 This last step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
 After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
-
-
-
