@@ -6,7 +6,7 @@
 BiocStyle::latex()
 @
 
-%\VignetteIndexEntry{LACE}
+%\VignetteIndexEntry{REvoBC}
 
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
@@ -17,7 +17,7 @@ BiocStyle::latex()
 
 \begin{document}
 
-\title{Longitudinal Analysis of Cancer Evolution with LACE}
+\title{REvoBC: Analysis of Amplicon Sequence Variants after performing an experiment through the EVoBC kit}
 
 \author[1]{Lucrezia Patruno}
 \author[2]{Daniele Ramazzottii}
@@ -56,7 +56,7 @@ background = "#f3f3ff"
 
 \tableofcontents
 
-\section{Using the LACE R package}
+\section{Using the REvoBC R package}
 
 In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. 
 The first step initializes the REvoBC object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis.

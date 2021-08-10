@@ -17,7 +17,6 @@
 #' An object of class RevoBC
 NULL
 
-
 #' @name revo_analyzed
 #' @title example data obtained from running function \code{asv_analys}, where the original barcode is identified and all remaining ASVs are aligned to it. 
 #' @description example data obtained from running function \code{asv_analys}, where the original barcode is identified and all remaining ASVs are aligned to it. 
@@ -65,4 +64,3 @@ NULL
 #' }
 #' } 
 NULL
-
