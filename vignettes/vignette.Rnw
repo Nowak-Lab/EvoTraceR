@@ -48,7 +48,8 @@ It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence a
 library(knitr)
 opts_chunk$set(
 concordance = TRUE,
-background = "#f3f3ff"
+background = "#f3f3ff",
+dev = "cairo_pdf"
 )
 @
 

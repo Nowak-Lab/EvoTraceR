@@ -15,11 +15,11 @@
 #' 
 #' @title initialize_REvoBC
 #' 
-#' @examples
-#' input_dir = system.file("extdata", "input", package = "REvoBC")
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
-#' 
-#' initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+# @examples
+# input_dir = system.file("extdata", "input", package = "REvoBC")
+# output_dir = system.file("extdata", "output", package = "REvoBC")
+# 
+# initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
 #' 
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
@@ -48,7 +48,7 @@
 #' }
 #' @param multithread (Optional) default \code{TRUE}. Whether to enable multithreading. If TRUE the number of threads is determined automatically (dada2 functionality).
 #' If an integer is given, the number of threads is determined by its value.
-#' @param map_file_sample (Optional). In case fastq files names are not in the format FILEPREFIX_SAMPLE_BARCODEVERSION_RX.fastq),
+#' @param map_file_sample (Optional). In case fastq files names are not in the format \cr FILEPREFIX_SAMPLE_BARCODEVERSION_RX.fastq),
 #' then users should provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding organ/day.
 #' (e.g., if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: \code{map_file_sample = c("file1" = "PRL")}).
 #' @param dada2_pooled_analysis (Optional). Deafault = FALSE. Boolean that is passed to dada2 function \code{dada}, which performs sample inference.
@@ -64,7 +64,7 @@
 #' \item \code{map_file_sample}: dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
 #' to which it is associated.
 #' \item \code{dada2_asv_prefilter}: dataframe that stores all sequences detected by \code{dada2}. Note that
-#' these sequences still need to be filtered (@seealso \code{\link{asv_analysis}}).
+#' these sequences still need to be filtered (see also \code{\link{asv_analysis}}).
 #' \item \code{dada2}: list which contains the percentage of chimeras found by \code{dada2} and a dataframe
 #' that tracks the number of sequences during all \code{dada2} steps.
 #' }. This function also saves the following \code{.csv files} in the subfolder \code{dada2_files} created in the output dirctory provided by the user:
@@ -72,7 +72,6 @@
 #' \item dada2_asv_prefilter.csv: sequences detected by dada2, with the counts detected in each sample.
 #' \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
 #' }
-#' 
 #' 
 #' @export initialize_REvoBC
 #' 
@@ -195,9 +194,11 @@ initialize_REvoBC = function( output_dir,
 #'  
 #' @title ASV_analysis
 #' 
-#' @examples
-#' data(revo_initialized)
-#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+# @examples
+# data(revo_initialized)
+# output_dir = system.file("extdata", "output", package = "REvoBC")
+# revo_initialized$output_directory = output_dir
+# revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
@@ -398,7 +399,7 @@ asv_analysis = function(REvoBC_object,
       theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
     # save pdf
     ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), 
-           plot=seqtab_df_clean_track, device=cairo_pdf, width=10, height=10, units = "cm")
+           plot=seqtab_df_clean_track, device=grDevices::cairo_pdf, width=10, height=10, units = "cm")
   }
   
   return(REvoBC_object)
@@ -410,9 +411,11 @@ asv_analysis = function(REvoBC_object,
 #' 
 #' @title perform_msa
 #' 
-#' @examples 
-#' data(revo_analysed)
-#' revo_msa = perform_msa(revo_analyzed)
+# @examples 
+# data(revo_analysed)
+# output_dir = system.file("extdata", "output", package = "REvoBC")
+# revo_analysed$output_directory = output_dir
+# revo_msa = perform_msa(revo_analyzed)
 #' 
 #' @param REvoBC_object REvoBC object on which we want to perform msa.
 #' @param ... Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.

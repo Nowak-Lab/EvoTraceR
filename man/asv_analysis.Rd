@@ -79,8 +79,3 @@ Finally, it computes different statistics for the ASVS, storing:
  the counts for each ASV normalized to the counts of the sample with maximum frequency
  the frequency of the different ASVs in each sample.
 }
-\examples{
-data(revo_initialized)
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
-
-}

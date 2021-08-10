@@ -1,0 +1,38 @@
+---
+title: Introduction
+output: html_document
+---
+
+## Overview
+
+*REvoBC* is an R package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EVoBC kit. 
+
+```{r include=FALSE}
+library(knitr)
+opts_chunk$set(
+concordance = TRUE,
+background = "#f3f3ff"
+)
+```
+
+## Installing REvoBC
+
+The R version of *REvoBC* can be installed from Github. To do so, we need to install the R packages *REvoBC* depends on and the devtools package. 
+
+
+```{r eval=FALSE}
+# install REvoBC libraries
+#### TODO
+
+# install devtools library and REvoBC
+if (!require("devtools")) install.packages("devtools")
+library("devtools")
+install_github("Nowak-Lab/REvoBC", ref = "master")
+
+# load REvoBC library
+library("REvoBC")
+```
+
+## Debug
+
+Please feel free to contact us if you have problems running our tool at l.patruno@campus.unimib.it. 
