@@ -20,13 +20,11 @@ asv_analysis(
 
 \item{output_figures}{(Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
-\item{pid_cutoff_nmbc}{(Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.}
+\item{pid_cutoff_nmbc}{(Optional). Default to 98\%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.}
 
 \item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
 
 \item{...}{Any additional parameters passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
-
-\item{export_statistics}{(Optional). Default = TRUE. Boolean indicating whether the user wishes to compute, for each ASV and each day/organ the frequency of counts.}
 }
 \value{
 The REvoBC object passed as a parameter with the following new fields:
@@ -52,7 +50,7 @@ to their total counts.
 \item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
 \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
-\item \cpde{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+\item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
 
 }
 }  
@@ -83,6 +81,6 @@ Finally, it computes different statistics for the ASVS, storing:
 }
 \examples{
 data(revo_initialized)
-revo_analyzed = asv_analysis(REvoBC_object = evo_obj, barcode = 'BC10v0.ORG')
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
 
 }

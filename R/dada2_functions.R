@@ -34,23 +34,25 @@ dada2_alignment = function(fnFs,
   filtRs = file.path(filt_input_dir, paste0(sample.names, "_R_filt.fastq.gz"))
   
   if (output_figures) {
+    cat('Working directory: ', getwd())
+    cat('Path: ', system.file("extdata", "input", package = "REvoBC"))
     cli::cli_alert_info('Creating quality profiles figures')
     # Inspect Read Quality Profiles
     # Visualize the quality profile of the forward reads:
     ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_forwardReads.pdf"), 
                     plot = dada2::plotQualityProfile(fnFs[1:length(fnFs)]), 
-                    device = cairo_pdf, 
+                    device = grDevices::cairo_pdf, 
                     width = 10*length(fnFs), 
                     height = 10,#length(fnFs)+2, 
                     units = "cm")
     
     # Visualize the quality profile of the reverse reads:
-    ggsave(filename = file.path(figure_dir, "quality_profile_reverseReads.pdf"), 
-           plot = dada2::plotQualityProfile(fnRs[1:length(fnFs)]), 
-           device = cairo_pdf, 
-           width = 10*length(fnFs), 
-           height = 10,#length(fnFs)+2, 
-           units = "cm")
+    ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_reverseReads.pdf"), 
+                    plot = dada2::plotQualityProfile(fnRs[1:length(fnFs)]), 
+                    device = grDevices::cairo_pdf, 
+                    width = 10*length(fnFs), 
+                    height = 10,#length(fnFs)+2, 
+                    units = "cm")
   }
   
   # dada2 filter and trim
@@ -71,14 +73,14 @@ dada2_alignment = function(fnFs,
     # Visualize the estimated error rates of the forward reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errF.pdf"), 
            plot = dada2::plotErrors(errF, nominalQ=TRUE), 
-           device = cairo_pdf, 
+           device = grDevices::cairo_pdf, 
            width = 15,#5+5*length(sample.names), 
            height = 15,#5+5*length(sample.names), 
            units = "cm")
     # Visualize the estimated error rates of the reverse reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errR.pdf"), 
            plot = plotErrors(errR, nominalQ=TRUE), 
-           device = cairo_pdf, 
+           device = grDevices::cairo_pdf, 
            width=15,#5+5*length(sample.names), 
            height=15,#5+5*length(sample.names), 
            units = "cm")
@@ -149,7 +151,7 @@ dada2_alignment = function(fnFs,
       barplot_nowaklab_theme() 
     
     ggsave(filename=file.path(figure_dir, 'sequence_length.pdf'), 
-           plot=hist_seq_count, device=cairo_pdf, width=25, height=5, units = "cm") #17.5 for 4x
+           plot=hist_seq_count, device=grDevices::cairo_pdf, width=25, height=5, units = "cm") #17.5 for 4x
   }
   
   # dada2 Remove Chimeric Sequences 
@@ -183,7 +185,7 @@ dada2_alignment = function(fnFs,
   rownames(track) = map_file_sample[rownames(track),,drop=F]$sample
 
   # Save as Data csv
-  write.csv(track, file.path(output_dir_files, "quality_track_reads.csv"))
+  utils::write.csv(track, file.path(output_dir_files, "quality_track_reads.csv"))
   
   return(list(seqtab.nochim=seqtab.nochim, track=track, bimera_perc = bimera_perc, 
               nSequences_with_chimeras = dim(seqtab)[2]))
@@ -243,7 +245,7 @@ adjust_seqtab = function(seqtab.nochim, map_file_sample, output_dir_files) {
   rownames(seqtab_df) = seqtab_df$seq
   
   # save as data csv
-  write.csv(seqtab_df, file.path(output_dir_files, "dada2_asv_prefilter.csv"),
+  utils::write.csv(seqtab_df, file.path(output_dir_files, "dada2_asv_prefilter.csv"),
             row.names = FALSE)
   return(tibble::tibble(seqtab_df))
 }

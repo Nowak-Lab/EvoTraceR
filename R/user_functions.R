@@ -16,21 +16,23 @@
 #' @title initialize_REvoBC
 #' 
 #' @examples
-#' input_dir = system.file("exampleData", "input", package = "REvoBC")
-#' output_dir = system.file("exampleData", "output", package = "REvoBC")
+#' input_dir = system.file("extdata", "input", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' 
 #' initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
 #' 
-#' @param input_dir. Path to the directory containing \code{.fastq} files for forward and reverse reads.
-#' This folder should contain the fastq files (2 for each sample) with the following name pattern:
-#' FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
-#' or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
-#' Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
 #' \item \code{quality_track_reads.csv}: track of the number of sequences during the 
 #' different stepsof \code{dada2} analysis.
-#' \item \code{01_seqtab_df.csv}: sequences detected by dada2, with the counts detected in each sample.
+#' \item \code{ dada2_asv_prefilter.csv}: sequences detected by dada2, with the counts detected in each sample.
 #' }
+#' @param input_dir Path to the directory containing \code{.fastq} files for forward and reverse reads.
+#' This folder should contain the fastq files (2 for each sample) with the following name pattern:
+#' FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
+#' or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+#' Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).
+
 #' @param dada2_output_sequences (Optional). In case users have already run dada2 up to the removal of bimeras, they should provide the path to the csv file containing the output (See description).
 #' The output should contain samples on rows and sequences on columns.
 #' @param output_dir_dada2 (Optional). Output folder for dada2 filtered fastqs. If it doesn't exist it is created. Default is NULL and results in creating a 
@@ -53,6 +55,7 @@
 #' It can be set to TRUE in case of multiple samples coming from the same mouse (e.g. different organs or multiple time points) (See \href{https://benjjneb.github.io/dada2/pool.html}{here} for more information).
 #' @param dada2_chimeras_minFoldParentOverAbundance (Optional). Deafult = 8. parameter passed to the \code{dada2} function \code{isBimeraDenovo} during the call to \code{dada2 removeBimeraDenovo}. 
 #' @param verbose (Optional). Default TRUE. Boolean indicating whether or not to print the text output of dada2 functions.
+#' @param ... (Optional) Any additional parameters passed to \code{dada2} functions.
 #' 
 #' @return An object of type REvoBC, which is a list that will contain the following fields: 
 #' \itemize{
@@ -66,7 +69,7 @@
 #' that tracks the number of sequences during all \code{dada2} steps.
 #' }. This function also saves the following \code{.csv files} in the subfolder \code{dada2_files} created in the output dirctory provided by the user:
 #' \itemize{
-#' \item dada2_asv_prefilter.csv
+#' \item dada2_asv_prefilter.csv: sequences detected by dada2, with the counts detected in each sample.
 #' \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
 #' }
 #' 
@@ -77,9 +80,11 @@
 #' @import ggplot2
 #' @import dplyr
 #' @importFrom cli cli_alert_info
-#' 
-initialize_REvoBC = function(input_dir = NULL,
-                              output_dir,
+#' @importFrom utils write.csv read.csv unzip untar
+#' @importFrom grDevices cairo_pdf
+#' @importFrom stringr str_remove_all str_replace
+initialize_REvoBC = function( output_dir,
+                              input_dir = NULL,
                               dada2_output_sequences = NULL,
                               output_dir_dada2 = NULL,
                               random_seed = NULL,
@@ -105,13 +110,34 @@ initialize_REvoBC = function(input_dir = NULL,
   REvoBC_object$dada2 = list()
   if (is.null(dada2_output_sequences)) {
     # Fastq were provided as input -> perform alignment with dada2
+    # Check if input files are compressed
+    zip_files = list.files(input_dir, pattern = '.zip$', full.names = T)
+    tar_files = list.files(input_dir, pattern = '.tar$', full.names = T)
+    
+    if (length(zip_files) > 0) {
+      cli::cli_alert_info("Found zipped fastq files, extracting")
+      for (zf in zip_files) {
+        utils::unzip(zf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
+      }
+      cli::cli_alert_info("Done extracting")
+    } else if (length(tar_files) > 0) {
+      cli::cli_alert_info("Found tar fastq files, extracting")
+      for (tf in tar_files) {
+        utils::untar(tf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
+      }
+      cli::cli_alert_info("Done extracting")
+    }
     fastqs = list.files(input_dir, pattern = '.fastq$')
-
+    if (length(fastqs) == 0) {
+      stop('No fastq files found in the input directory provided, stopping.')
+    } else {
+      cat("Found", length(fastqs), "fastq files")
+    }
     fastqs = sort(fastqs) 
     fnFs = fastqs[grepl("_R1", fastqs)] 
     fnRs = fastqs[grepl("_R2", fastqs)] 
     # Get sample names, assuming files named as so: SAMPLENAME_XXX.fastq
-    sample.names = str_remove_all(fnFs, "_R1.fastq")
+    sample.names = stringr::str_remove_all(fnFs, "_R1.fastq")
     map_file_sample = check_input(sample.names = sample.names, 
                                    map_file_sample = map_file_sample)
     # Specify the full path to the fnFs and fnRs
@@ -141,7 +167,7 @@ initialize_REvoBC = function(input_dir = NULL,
     REvoBC_object$dada2$original_sequences = align_output$nSequences_with_chimeras
     
   } else {
-    seqtab.nochim = read.csv(dada2_output_sequences, 
+    seqtab.nochim = utils::read.csv(dada2_output_sequences, 
                              stringsAsFactors = FALSE,
                              row.names = 1)
     map_file_sample = check_input(sample.names = rownames(seqtab.nochim), 
@@ -171,13 +197,12 @@ initialize_REvoBC = function(input_dir = NULL,
 #' 
 #' @examples
 #' data(revo_initialized)
-#' revo_analyzed = asv_analysis(REvoBC_object = evo_obj, barcode = 'BC10v0.ORG')
+#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
 #' @param output_figures (Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
-#' @param pid_cutoff_nmbc (Optional). Default to 98%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
-#' @param export_statistics (Optional). Default = TRUE. Boolean indicating whether the user wishes to compute, for each ASV and each day/organ the frequency of counts.
+#' @param pid_cutoff_nmbc (Optional). Default to 98\%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
 #' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
 #' @param ... Any additional parameters passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
 #'
@@ -204,7 +229,7 @@ initialize_REvoBC = function(input_dir = NULL,
 #' \item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
 #' \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 #' \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
-#' \item \cpde{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
+#' \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
 #' 
 #' }
 #' }  
@@ -226,9 +251,14 @@ initialize_REvoBC = function(input_dir = NULL,
 #' @importFrom benthos total_abundance species_richness margalef rygg simpson hpie hill1 hill2 shannon
 #' @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom scales comma
+#' @importFrom utils write.csv
+#' @importFrom stringr str_detect
+#' @importFrom tidyr gather pivot_wider
+#' @importFrom forcats fct_relevel
+#' @importFrom grDevices cairo_pdf
 #' @import dplyr
 #' @import ggplot2
-#' 
+#' @import tibble
 asv_analysis = function(REvoBC_object,
                         barcode = 'BC10v0.ORG',
                         output_figures = TRUE,
@@ -237,7 +267,7 @@ asv_analysis = function(REvoBC_object,
                         ...) {
   dots = list(...)
   if (output_figures) {
-    figure_dir = file.path(output_dir, "asv_analysis_figures")
+    figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
   } else {
     figure_dir = NULL
@@ -273,7 +303,7 @@ asv_analysis = function(REvoBC_object,
   seqtab_df$seq_names[!is.na(match_seq)] = gsub(pattern = '.ORG',replacement = '.NMBC', 
                                                 x = barcodes_info$asv_names[barcodes_idx])
   seqtab_df_original = seqtab_df
-  write.csv(seqtab_df, 
+  utils::write.csv(seqtab_df, 
             file.path(output_dir,
                       "sequences_barcode_mapping.csv"),
             row.names = FALSE)
@@ -285,7 +315,7 @@ asv_analysis = function(REvoBC_object,
   nmbc <- gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
   # filter based on 5' and 3' 10x nts of 
   seqtab_df <- dplyr::filter(seqtab_df, 
-                             str_detect(string = seq, pattern = RD1_10) & str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
+                             stringr::str_detect(string = seq, pattern = RD1_10) & stringr::str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
   
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
@@ -325,13 +355,13 @@ asv_analysis = function(REvoBC_object,
     arrange(-asv_total_freq)  %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
-  seqtab_df_clean_nmbc <- seqtab_df_clean_asv[str_detect(string = seqtab_df_clean_asv$seq_names, 
+  seqtab_df_clean_nmbc <- seqtab_df_clean_asv[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, 
                                                          pattern = "NMBC"),]
   
   # skip NMBC
   seqtab_df_clean_asv <-
     seqtab_df_clean_asv %>%
-    filter(!str_detect(string = seq_names, pattern = "NMBC")) 
+    filter(!stringr::str_detect(string = seq_names, pattern = "NMBC")) 
   # create ASV count
   seqtab_df_clean_asv$asv_names <- paste0("ASV", 
                                           formatC(c(1:nrow(seqtab_df_clean_asv)), 
@@ -342,12 +372,12 @@ asv_analysis = function(REvoBC_object,
     seqtab_df_clean_asv %>%
     add_row(seqtab_df_clean_nmbc) %>%
     arrange(-asv_total_freq) %>%
-    dplyr::select(-c(seq_names, asv_total_freq)) %>%
+    dplyr::select(-c("seq_names", "asv_total_freq")) %>%
     relocate(asv_names)
   
   clean_asv <- nrow(seqtab_df_clean_asv)
   
-  write.csv(seqtab_df_clean_asv, 
+  utils::write.csv(seqtab_df_clean_asv, 
             file.path(output_dir, "/clean_asv_dataframe.csv"),
             row.names = F)
   
@@ -418,13 +448,19 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
 #' @importFrom  ggmsa tidy_msa 
 #' @importFrom lemon coord_capped_cart facet_rep_grid
-perform_msa = function(REvoBC_object, seed = NULL, ...) {
+#' @importFrom utils write.csv
+#' @importFrom forcats fct_relevel
+#' @importFrom grDevices cairo_pdf
+#' @importFrom stringr str_replace str_detect
+#' @importFrom methods as
+#' @importFrom tidyr pivot_wider
+perform_msa = function(REvoBC_object, ...) {
   dots = list(...)
   output_dir = file.path(REvoBC_object$output_directory, "msa")
   if(!dir.exists(output_dir)) dir.create(output_dir)
   df_to_plot_org_tree <- 
     dplyr::select(REvoBC_object$clean_asv_dataframe, asv_names, seq) %>%
-    mutate_at("asv_names", str_replace, ".NMBC", ".ORG") %>%
+    mutate_at("asv_names", stringr::str_replace, ".NMBC", ".ORG") %>%
     arrange(asv_names)
   
   
@@ -437,13 +473,12 @@ perform_msa = function(REvoBC_object, seed = NULL, ...) {
   outputFileFASTA <- file.path(output_dir, "dnastringset.fa")
   Biostrings::writeXStringSet(dnastringset, outputFileFASTA)
   
-  write.csv(dnastringset, file.path(output_dir, "dnastringset.csv"), col.names = FALSE, quote=FALSE)
+  utils::write.csv(dnastringset, file.path(output_dir, "dnastringset.csv"), col.names = FALSE, quote=FALSE)
   
   # Perform Multiple Sequence Alignment with muscle
-  set.seed(seed)
   dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),
                                                    get_args_from_dots(dots, muscle::muscle))) # suggestion: gapopen = -400
-  Biostrings::writeXStringSet(as(dnastringset_msa, "DNAStringSet"), 
+  Biostrings::writeXStringSet(methods::as(dnastringset_msa, "DNAStringSet"), 
                   file.path(output_dir, "dnastringset_muscle-muscle_msa.fasta"))
   
   # Store MSA result

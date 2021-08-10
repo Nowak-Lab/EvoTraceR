@@ -13,7 +13,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
     dplyr::select(-seq) %>% # remove sequence => not useful for census analysis
-    gather(day_organ, count, sample, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
+    tidyr::gather(day_organ, count, sample, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
     filter(count > asv_count_cutoff) %>% # remove data that percentage less than i.e. 0.5% -> visualization
     group_by(day_organ) %>%
     dplyr::mutate(count = as.numeric(count)) %>%
@@ -42,13 +42,13 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
   # prepare levels and orders for days or organs
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::mutate(day_organ = fct_relevel(day_organ, sample)) %>%
+    dplyr::mutate(day_organ = forcats::fct_relevel(day_organ, sample)) %>%
     arrange(match(day_organ, sample))
   
   # prepare levels and orders of asv_names (ASVs)
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::mutate(asv_names = fct_relevel(asv_names, seq_names_ord)) %>%
+    dplyr::mutate(asv_names = forcats::fct_relevel(asv_names, seq_names_ord)) %>%
     arrange(match(asv_names, seq_names_ord))
   
   # Normalization of Counts in ASVs (%) 
@@ -132,8 +132,8 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
     seqtab_df_clean_asv_long %>%
     dplyr::select(day_organ, asv_names, count) %>%
     distinct() %>%
-    pivot_wider(names_from = asv_names, values_from = count, values_fill = 0) %>%
-    column_to_rownames(var="day_organ") %>% 
+    tidyr::pivot_wider(names_from = asv_names, values_from = count, values_fill = 0) %>%
+    tibble::column_to_rownames(var="day_organ") %>% 
     as.matrix()
   # Save as Data csv
   write.csv(mx_freq, file.path(output_dir, "asv_persample_frequency.csv"))
@@ -153,7 +153,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- Biostrings::pairwiseAlignment(subject = toString(df_to_plot_perf_match[str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
+  pwa <- Biostrings::pairwiseAlignment(subject = toString(df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
                                        pattern = df_to_plot_perf_match$seq, 
                                        type="global")
   
@@ -173,7 +173,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
   
   # Histogram of Length    
   # skip nmbc
-  data_for_hist = df_to_plot_perf_match %>% filter(!str_detect(asv_names, "NMBC|ORG"))
+  data_for_hist = df_to_plot_perf_match %>% filter(!stringr::str_detect(asv_names, "NMBC|ORG"))
   if (!is.null(figure_dir)) {
     hist_seq_count <- 
       ggplot(data=data_for_hist, 

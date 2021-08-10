@@ -4,7 +4,7 @@
 \alias{perform_msa}
 \title{perform_msa}
 \usage{
-perform_msa(REvoBC_object, seed = NULL, ...)
+perform_msa(REvoBC_object, ...)
 }
 \arguments{
 \item{REvoBC_object}{REvoBC object on which we want to perform msa.}

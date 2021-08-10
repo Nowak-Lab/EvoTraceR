@@ -5,8 +5,8 @@
 \title{initialize_REvoBC}
 \usage{
 initialize_REvoBC(
-  input_dir = NULL,
   output_dir,
+  input_dir = NULL,
   dada2_output_sequences = NULL,
   output_dir_dada2 = NULL,
   random_seed = NULL,
@@ -24,8 +24,14 @@ initialize_REvoBC(
 \itemize{
 \item \code{quality_track_reads.csv}: track of the number of sequences during the 
 different stepsof \code{dada2} analysis.
-\item \code{01_seqtab_df.csv}: sequences detected by dada2, with the counts detected in each sample.
+\item \code{ dada2_asv_prefilter.csv}: sequences detected by dada2, with the counts detected in each sample.
 }}
+
+\item{input_dir}{Path to the directory containing \code{.fastq} files for forward and reverse reads.
+This folder should contain the fastq files (2 for each sample) with the following name pattern:
+FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
+or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).}
 
 \item{dada2_output_sequences}{(Optional). In case users have already run dada2 up to the removal of bimeras, they should provide the path to the csv file containing the output (See description).
 The output should contain samples on rows and sequences on columns.}
@@ -58,11 +64,7 @@ It can be set to TRUE in case of multiple samples coming from the same mouse (e.
 
 \item{verbose}{(Optional). Default TRUE. Boolean indicating whether or not to print the text output of dada2 functions.}
 
-\item{input_dir.}{Path to the directory containing \code{.fastq} files for forward and reverse reads.
-This folder should contain the fastq files (2 for each sample) with the following name pattern:
-FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
-or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
-Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).}
+\item{...}{(Optional) Any additional parameters passed to \code{dada2} functions.}
 }
 \value{
 An object of type REvoBC, which is a list that will contain the following fields: 
@@ -77,7 +79,7 @@ these sequences still need to be filtered (@seealso \code{\link{asv_analysis}}).
 that tracks the number of sequences during all \code{dada2} steps.
 }. This function also saves the following \code{.csv files} in the subfolder \code{dada2_files} created in the output dirctory provided by the user:
 \itemize{
-\item dada2_asv_prefilter.csv
+\item dada2_asv_prefilter.csv: sequences detected by dada2, with the counts detected in each sample.
 \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
 }
 }
@@ -99,8 +101,9 @@ If users wish to manually run each step of dada2 computation they should execute
 in the vignette, up to the Removal of chimeras and save the output of \code{removeBimeraDenovo} in a csv file and provide the path to that file as parameter \code{dada2_output_sequences}.
 }
 \examples{
-input_dir = system.file("exampleData", "input", package = "REvoBC")
-output_dir = system.file("exampleData", "output", package = "REvoBC")
+input_dir = system.file("extdata", "input", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "REvoBC")
+
 initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
 
 }

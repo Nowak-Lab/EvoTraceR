@@ -1,6 +1,6 @@
 Package: REvoBC
-Version: 0.99.2
-Date: 2021-08-06
+Version: 0.99.3
+Date: 2021-08-10
 Title: REvoBC
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
@@ -17,7 +17,15 @@ Imports:
     lemon,
     scales,
     muscle,
-    ggmsa
+    ggmsa,
+    utils,
+    grDevices,
+    tidyr,
+    tibble,
+    methods,
+    stringr,
+    forcats,
+    data.table
 Suggests:
     BiocGenerics,
     BiocStyle,
@@ -26,7 +34,7 @@ Suggests:
 Name:
     REvoBC
 Description:
-    Package REvoBC
+    Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EVoBC kit.
 Encoding: UTF-8
 LazyData: TRUE
 License: file LICENSE

@@ -6,7 +6,7 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   # Create tidy alignment df where, for each position and each ASV you store the 
   # reference and the observed nucleotide
   alignment_tidy_ref_alt <- 
-    merge(alignment_tidy, filter(alignment_tidy, str_detect(name, ".ORG")), by="position") %>%
+    merge(alignment_tidy, filter(alignment_tidy, stringr::str_detect(name, ".ORG")), by="position") %>%
     dplyr::select(1, 2, 5, 3)
   
   # Adjust Column Names
@@ -14,14 +14,14 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   
   percentages = REvoBC_object$statistics$asv_df_percentages %>%
     ungroup() %>%
-    add_row(dplyr::select(REvoBC_object$barcode, !c("seq_start", "seq_end", "seq"))) %>%
-    filter(!str_detect(asv_names, c("NMBC")))
+    add_row(dplyr::select(REvoBC_object$barcode, !c(seq_start, seq_end, seq))) %>%
+    filter(!stringr::str_detect(asv_names, c("NMBC")))
   
   # Join with the sequences df to have the frequency of each ASV in each sample
   alignment_tidy_ref_alt <- inner_join(alignment_tidy_ref_alt, 
                                        percentages, 
                                        by="asv_names") %>%
-    dplyr::select(c("asv_names", "day_organ", "perc_in_sample", "position", "ref_asv", "read_asv"))
+    dplyr::select(c(asv_names, day_organ, perc_in_sample, position, ref_asv, read_asv))
   
   
   # Assign Alterations types; wt - wild type, del - deletions, ins - insertion, sub - substitution
@@ -43,7 +43,7 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
     mutate(position_bc260 = ifelse(ref_asv == "-", NA, position)) %>% # add "bc260" scale
     group_by(asv_names, day_organ) %>%
     mutate(position_bc260 = data.table::nafill(position_bc260, "locf")) %>% # fill NA with consecutive numbers
-    dplyr::select("asv_names", "day_organ", "position", "position_bc260", "ref_asv", "read_asv", "alt", "perc_in_sample", "alt_bin")  
+    dplyr::select(asv_names, day_organ, position, position_bc260, ref_asv, read_asv, alt, perc_in_sample, alt_bin)  
   
   # recount for consecutive
   alignment_tidy_ref_alt_mrg_final$position_bc260 <- as.numeric(as.character(factor(alignment_tidy_ref_alt_mrg_final$position_bc260, 
@@ -57,10 +57,10 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
     distinct(asv_names, position, .keep_all = TRUE) %>%
     group_by(asv_names, alt) %>%
     tally(name="width") %>%
-    pivot_wider(names_from = alt, values_from = width, values_fill = 0) %>%
+    tidyr::pivot_wider(names_from = alt, values_from = width, values_fill = 0) %>%
     rename_at(vars(!matches("asv_names")), ~ paste0("width_total_", .))
   
-  write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
+  utils::write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
             file.path(output_dir, "ASV_alterationType_frequency.csv"), 
             row.names = FALSE)
   
@@ -86,17 +86,17 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   # Plotting All Alterations with Insertions as one coordinate (i.e. 17 means insertion is here but no length info)
   del_sub_ins_df <- 
     rbind(del_sub_df, ins_df) %>%
-    dplyr::select("asv_names", "day_organ", "position", "position_bc260", "alt", "perc_in_sample")
+    dplyr::select(asv_names, day_organ, position, position_bc260, alt, perc_in_sample)
   
   sample = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
   # prepare levels and orders
   del_sub_ins_df <- 
     del_sub_ins_df %>%
-    dplyr::mutate(day_organ = fct_relevel(day_organ, sample)) %>%
+    dplyr::mutate(day_organ = forcats::fct_relevel(day_organ, sample)) %>%
     arrange(match(day_organ, sample))
   
   # Save File
-  write.csv(del_sub_ins_df, 
+  utils::write.csv(del_sub_ins_df, 
             file.path(output_dir, "mutations_df.csv"), 
             row.names = FALSE)
   
@@ -108,7 +108,7 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
     dplyr::summarise(sum_perc = sum(perc_in_sample)) %>% # all deletions that happened in the barcode
     dplyr::filter(!alt == "wt") # don't plot wt 
   # Save File
-  write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
+  utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
             file.path(output_dir, "mutations_frequency.csv"), 
             row.names = FALSE)
   
@@ -160,7 +160,7 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   # Save PDF
   ggsave(filename=file.path(output_dir, "gghist_del_sub_ins_perc.pdf"), 
          plot=alt_count_bc, 
-         device=cairo_pdf, 
+         device=grDevices::cairo_pdf, 
          width=25, 
          height=5*length(sample), 
          units = "cm") #17.5 for 4x
