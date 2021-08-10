@@ -1,5 +1,5 @@
 \name{NEWS}
-\title{News for package \pkg{EvoBC}}
+\title{News for package \pkg{REvoBC}}
 \encoding{UTF-8}
 
 \section{Changes in Version 0.99.0}{

@@ -2,7 +2,9 @@
 dada2_alignment = function(fnFs,
                            fnRs,
                            output_dir,
-                           map_sample_organ,
+                           map_file_sample,
+                           sample.names,
+                           output_dir_files,
                            output_dir_dada2 = NULL, 
                            output_figures = TRUE,
                            multithread = TRUE,
@@ -11,7 +13,6 @@ dada2_alignment = function(fnFs,
                            verbose = TRUE,
                            ...) {
   dots = list(...)
-  print(dots)
   # Make directories for the filtered fastqs and (optionally) for figures
   if (is.null(output_dir_dada2)) {
     filt_input_dir = file.path(output_dir, "filtered_fastq")
@@ -33,23 +34,25 @@ dada2_alignment = function(fnFs,
   filtRs = file.path(filt_input_dir, paste0(sample.names, "_R_filt.fastq.gz"))
   
   if (output_figures) {
+    cat('Working directory: ', getwd())
+    cat('Path: ', system.file("extdata", "input", package = "REvoBC"))
     cli::cli_alert_info('Creating quality profiles figures')
     # Inspect Read Quality Profiles
     # Visualize the quality profile of the forward reads:
     ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_forwardReads.pdf"), 
-                    plot = dada2::plotQualityProfile(fnFs[1:2*length(fnFs)]), 
-                    device = cairo_pdf, 
-                    width = 4*length(fnFs), 
-                    height = length(fnFs)+2, 
+                    plot = dada2::plotQualityProfile(fnFs[1:length(fnFs)]), 
+                    #device = grDevices::cairo_pdf, 
+                    width = 10*length(fnFs), 
+                    height = 10,#length(fnFs)+2, 
                     units = "cm")
     
     # Visualize the quality profile of the reverse reads:
-    ggsave(filename = file.path(figure_dir, "quality_profile_reverseReads.pdf"), 
-           plot = dada2::plotQualityProfile(fnRs[1:length(fnFs)]), 
-           device = cairo_pdf, 
-           width = 4*length(fnFs), 
-           height = length(fnFs)+2, 
-           units = "cm")
+    ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_reverseReads.pdf"), 
+                    plot = dada2::plotQualityProfile(fnRs[1:length(fnFs)]), 
+                    #device = grDevices::cairo_pdf, 
+                    width = 10*length(fnFs), 
+                    height = 10,#length(fnFs)+2, 
+                    units = "cm")
   }
   
   # dada2 filter and trim
@@ -70,16 +73,16 @@ dada2_alignment = function(fnFs,
     # Visualize the estimated error rates of the forward reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errF.pdf"), 
            plot = dada2::plotErrors(errF, nominalQ=TRUE), 
-           device = cairo_pdf, 
-           width = 15, 
-           height = 15, 
+           #device = grDevices::cairo_pdf, 
+           width = 15,#5+5*length(sample.names), 
+           height = 15,#5+5*length(sample.names), 
            units = "cm")
     # Visualize the estimated error rates of the reverse reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errR.pdf"), 
            plot = plotErrors(errR, nominalQ=TRUE), 
-           device = cairo_pdf, 
-           width=15, 
-           height=15, 
+           #device = grDevices::cairo_pdf, 
+           width=15,#5+5*length(sample.names), 
+           height=15,#5+5*length(sample.names), 
            units = "cm")
   }
   
@@ -91,8 +94,10 @@ dada2_alignment = function(fnFs,
                                                        get_args_from_dots(dots, dada2::derepFastq)))
   
   # Name the derep-class objects by the sample names
-  names(derepFs) = sample.names
-  names(derepRs) = sample.names
+  if (length(sample.names) > 1) {
+    names(derepFs) = sample.names
+    names(derepRs) = sample.names 
+  }
   
   # dada2 Sample Inference
   cli::cli_alert_info('Inferring samples')
@@ -111,7 +116,12 @@ dada2_alignment = function(fnFs,
                                          verbose=verbose),
                                     get_args_from_dots(dots, dada2::mergePairs)))
   
+
   # dada2 Construct sequence table for Forward and Revers Reads
+  if (length(sample.names) == 1) {
+    mergers = list(mergers)
+    names(mergers) = sample.names
+  }
   seqtab = do.call(dada2::makeSequenceTable, 
                                  c(list(samples = mergers), 
                                    get_args_from_dots(dots, dada2::makeSequenceTable)))
@@ -141,16 +151,18 @@ dada2_alignment = function(fnFs,
       barplot_nowaklab_theme() 
     
     ggsave(filename=file.path(figure_dir, 'sequence_length.pdf'), 
-           plot=hist_seq_count, device=cairo_pdf, width=25, height=5, units = "cm") #17.5 for 4x
+           plot=hist_seq_count, 
+           #device=grDevices::cairo_pdf, 
+           width=25, height=5, units = "cm") #17.5 for 4x
   }
   
   # dada2 Remove Chimeric Sequences 
   cli::cli_alert_info('Removing bimeras')
   seqtab.nochim = do.call(dada2::removeBimeraDenovo, c(list(unqs = seqtab, 
-                                                                          minFoldParentOverAbundance = dada2_chimeras_minFoldParentOverAbundance, #changed wrt default 2
-                                                                          multithread = multithread, 
-                                                                          verbose=verbose),
-                                                                     get_args_from_dots(dots, dada2::removeBimeraDenovo)
+                                                            minFoldParentOverAbundance = dada2_chimeras_minFoldParentOverAbundance, #changed wrt default 2
+                                                            multithread = multithread, 
+                                                            verbose=verbose),
+                                                       get_args_from_dots(dots, dada2::removeBimeraDenovo)
   ))
   
   # seqtab vs 
@@ -159,7 +171,7 @@ dada2_alignment = function(fnFs,
   getN = function(x) sum(getUniques(x))
   if (class(dadaFs) != 'list') {
     # Only one sample 
-    track = cbind(out, getN(dadaFs), getN(dadaRs), getN(mergers), rowSums(seqtab.nochim))
+    track = cbind(out, getN(dadaFs), getN(dadaRs), getN(mergers[[1]]), rowSums(seqtab.nochim))
   } else {
     track = cbind(out,
                   sapply(dadaFs, getN),
@@ -172,11 +184,10 @@ dada2_alignment = function(fnFs,
   rownames(track) = sample.names
   
   # change rows names: Names of interest between 1st "_" and 2nd "_" == {1} "\\1"
-  rownames(track) = map_sample_organ[rownames(track),,drop=F]$dayOrgan
-  head(track)
-  
+  rownames(track) = map_file_sample[rownames(track),,drop=F]$sample
+
   # Save as Data csv
-  write.csv(track, file.path(output_dir, "quality_track_reads.csv"))
+  utils::write.csv(track, file.path(output_dir_files, "quality_track_reads.csv"))
   
   return(list(seqtab.nochim=seqtab.nochim, track=track, bimera_perc = bimera_perc, 
               nSequences_with_chimeras = dim(seqtab)[2]))
@@ -194,41 +205,41 @@ dada2_alignment = function(fnFs,
 # provided in the list correspond to either the rownames of dada2 output (when this is passed directly by the user) or
 # to the filenames of fastqs.
 check_input = function(sample.names = NULL,
-                       map_sample_organ = NULL){
-  if (! is.null(map_sample_organ) & class(map_sample_organ) == 'list'){
+                       map_file_sample = NULL){
+  if (! is.null(map_file_sample) & class(map_file_sample) == 'list'){
     # make sure mapping object is in the correct format
-    map_sample_organ = as.data.frame(t(as.data.frame(map_sample_organ)))
-    colnames(map_sample_organ) = 'dayOrgan'
+    map_file_sample = as.data.frame(t(as.data.frame(map_file_sample)))
+    colnames(map_file_sample) = 'sample'
   } 
-  if (!is.null(map_sample_organ)) {
+  if (!is.null(map_file_sample)) {
     # Alignment needs to be performed or it was already provided and a mapping between samples and organ/day is given
     # Thus, need to check whether the samples given match the ones found in the mapping
-    if (!sum(rownames(map_sample_organ) %in% sample.names) != length(sample.names)) {
+    if (!sum(rownames(map_file_sample) %in% sample.names) != length(sample.names)) {
       cli::format_error("File names from the data do not match the ones found in mapping\n")
       cat(" The following file names are found: ", sample.names, "\n")
-      cat("While mapping information is given for the following files: ", rownames(map_sample_organ), "\n")
+      cat("While mapping information is given for the following files: ", rownames(map_file_sample), "\n")
       stop("Mapping error")
     } 
   } else {
     # No mapping information was provided -> need to create the mapping
-    dayOrgan_code = gsub("^(?:[^_]+_){1}([^_]+).*", "\\1", sample.names)
-    map_sample_organ = data.frame(dayOrgan = dayOrgan_code, 
+    sample_code = gsub("^(?:[^_]+_){1}([^_]+).*", "\\1", sample.names)
+    map_file_sample = data.frame(sample = sample_code, 
                                   row.names = sample.names, stringsAsFactors = FALSE)
   }
   
   
-  # At this point in the code, map_sample_organ exists either because it was provided
+  # At this point in the code, map_file_sample exists either because it was provided
   # as a parameter, or because it was not provided and created from sample names.
   cli::cli_alert_info('The folliwng files, mapped to the corresponding sample, were found: ')
-  lapply(rownames(map_sample_organ),  function(x) {cat(x, " : ", map_sample_organ[x, 'dayOrgan'], "\n")})
-  return(map_sample_organ)
+  lapply(rownames(map_file_sample),  function(x) {cat(x, " : ", map_file_sample[x, 'sample'], "\n")})
+  return(map_file_sample)
 }
 
 # Adjust Data Frame
-adjust_seqtab = function(seqtab.nochim, map_sample_organ) {
+adjust_seqtab = function(seqtab.nochim, map_file_sample, output_dir_files) {
   # Transpose to Get Sequences that Are Now Rows with removed chimeras
   seqtab_df = data.frame(t(seqtab.nochim))
-  colnames(seqtab_df) = map_sample_organ[colnames(seqtab_df),'dayOrgan']
+  colnames(seqtab_df) = map_file_sample[colnames(seqtab_df),'sample']
   # create a column with seq from renames
   seqtab_df$seq = rownames(seqtab_df)
   # create rownames,  sequence variant: SEQ###
@@ -236,7 +247,7 @@ adjust_seqtab = function(seqtab.nochim, map_sample_organ) {
   rownames(seqtab_df) = seqtab_df$seq
   
   # save as data csv
-  write.csv(seqtab_df, file.path(output_dir, "01_seqtab_df.csv"),
-            row.names = F)
-  return(seqtab_df)
+  utils::write.csv(seqtab_df, file.path(output_dir_files, "dada2_asv_prefilter.csv"),
+            row.names = FALSE)
+  return(tibble::tibble(seqtab_df))
 }

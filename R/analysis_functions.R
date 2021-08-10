@@ -1,20 +1,20 @@
 # Compute the frequency of the different ASV in each organ/day and the frequency of counts in each organ for every ASV.
-# Compute also, for each ASV the sample in which the frequency is maximum (store this information in a column \code{perc_fold_to_max} of tibble seqtab_df_clean_asv_long in the EvoBC object)
+# Compute also, for each ASV the sample in which the frequency is maximum (store this information in a column \code{perc_fold_to_max} of tibble seqtab_df_clean_asv_long in the REvoBC object)
 # Then, compute for each sample, indices of diversity of ASVs in each samples (Shannon Entropy, Simpson Index).
-# It stores all results in the field \code{statistics} of the EvoBC object.
+# It stores all results in the field \code{statistics} of the REvoBC object.
 # 
-# EvoBC_object where the statistics on ASV will be computed. 
-# dayOrgan. List of the column names containing the organs/days.
-# colony_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
+# REvoBC_object where the statistics on ASV will be computed. 
+# sample. List of the column names containing the organs/days.
+# asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
-asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_dir) {
-  seqtab_df_clean_asv = EvoBC_object$clean_asv_dataframe
-  output_dir = EvoBC_object$output_directory
+asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, output_dir) {
+  seqtab_df_clean_asv = REvoBC_object$clean_asv_dataframe
+  
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
     dplyr::select(-seq) %>% # remove sequence => not useful for census analysis
-    gather(day_organ, count, dayOrgan, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
-    filter(count > colony_count_cutoff) %>% # remove data that percentage less than i.e. 0.5% -> visualization
+    tidyr::gather(day_organ, count, sample, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
+    filter(count > asv_count_cutoff) %>% # remove data that percentage less than i.e. 0.5% -> visualization
     group_by(day_organ) %>%
     dplyr::mutate(count = as.numeric(count)) %>%
     dplyr::mutate(perc_in_sample = prop.table(count)*100) %>% # calculate percentage during i.e. Day or Organ
@@ -42,13 +42,13 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
   # prepare levels and orders for days or organs
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::mutate(day_organ = fct_relevel(day_organ, dayOrgan)) %>%
-    arrange(match(day_organ, dayOrgan))
+    dplyr::mutate(day_organ = forcats::fct_relevel(day_organ, sample)) %>%
+    arrange(match(day_organ, sample))
   
   # prepare levels and orders of asv_names (ASVs)
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::mutate(asv_names = fct_relevel(asv_names, seq_names_ord)) %>%
+    dplyr::mutate(asv_names = forcats::fct_relevel(asv_names, seq_names_ord)) %>%
     arrange(match(asv_names, seq_names_ord))
   
   # Normalization of Counts in ASVs (%) 
@@ -61,7 +61,7 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
     group_by(asv_names) %>%
     mutate(perc_fold_to_max = 100 * (count/max(count))) %>%
     arrange(-count)
-  EvoBC_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
+  REvoBC_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
   
   # save as Data csv
   write.csv(seqtab_df_clean_asv_long, 
@@ -84,8 +84,8 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
       ASV_Abundance_day_organ = sum(count), 
       ASV_Richness_day_organ = sum(count > 0, na.rm = TRUE))
   # Store in object and in csv file
-  EvoBC_object$statistics$asv_totalCounts = asv_names_stat
-  EvoBC_object$statistics$sample_totalCounts = day_organ_stat
+  REvoBC_object$statistics$asv_totalCounts = asv_names_stat
+  REvoBC_object$statistics$sample_totalCounts = day_organ_stat
   
   write.csv(asv_names_stat, 
             file.path(output_dir, "asv_totalCounts.csv"),
@@ -123,37 +123,37 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
     ) %>%
     mutate(J_PielousEvenness = H_ShannonsIndex / log(ASV_Richness_sample) )
   
-  EvoBC_object$statistics$ASV_diversity_perSample = diversity
+  REvoBC_object$statistics$ASV_diversity_perSample = diversity
   write.csv(diversity, 
-            file.path(output_dir, "ASV_diversity_perSample.csv"))
+            file.path(output_dir, "asv_diversity_perSample.csv"))
   
   # matrix rows: organ_day and coumns ASV names
   mx_freq <- 
     seqtab_df_clean_asv_long %>%
     dplyr::select(day_organ, asv_names, count) %>%
     distinct() %>%
-    pivot_wider(names_from = asv_names, values_from = count, values_fill = 0) %>%
-    column_to_rownames(var="day_organ") %>% 
+    tidyr::pivot_wider(names_from = asv_names, values_from = count, values_fill = 0) %>%
+    tibble::column_to_rownames(var="day_organ") %>% 
     as.matrix()
   # Save as Data csv
-  write.csv(mx_freq, file.path(output_dir, "ASV_persample_frequency.csv"))
+  write.csv(mx_freq, file.path(output_dir, "asv_persample_frequency.csv"))
   
   mx_freq_bin <- as.matrix(ifelse(mx_freq == 0, 0, 1))
   # Save as Data csv
-  write.csv(mx_freq_bin, file.path(output_dir, "ASV_persample_detection.csv"))
+  write.csv(mx_freq_bin, file.path(output_dir, "asv_persample_detection.csv"))
   
-  EvoBC_object$statistics$ASV_persample_frequency = mx_freq
-  EvoBC_object$statistics$ASV_persample_detection = mx_freq_bin
+  REvoBC_object$statistics$asv_persample_frequency = mx_freq
+  REvoBC_object$statistics$asv_persample_detection = mx_freq_bin
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
-                                             y=dplyr::select(EvoBC_object$clean_asv_dataframe, seq, asv_names), 
+                                             y=dplyr::select(REvoBC_object$clean_asv_dataframe, seq, asv_names), 
                                              by="asv_names")
   
 
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- Biostrings::pairwiseAlignment(subject = toString(df_to_plot_perf_match[str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
+  pwa <- Biostrings::pairwiseAlignment(subject = toString(df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
                                        pattern = df_to_plot_perf_match$seq, 
                                        type="global")
   
@@ -167,28 +167,28 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
   
   # Save as Data csv
   write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')], 
-            file.path(output_dir, "ASV_toBarcode_similarity.csv"))
+            file.path(output_dir, "asv_toBarcode_similarity.csv"))
   
-  EvoBC_object$statistics$ASV_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
+  REvoBC_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
   # Histogram of Length    
   # skip nmbc
+  data_for_hist = df_to_plot_perf_match %>% filter(!stringr::str_detect(asv_names, "NMBC|ORG"))
   if (!is.null(figure_dir)) {
     hist_seq_count <- 
-      ggplot(data=df_to_plot_perf_match %>% filter(!str_detect(asv_names, paste0(c("NMBC", "ORG"), 
-                                                                                 collapse = "|"))), 
+      ggplot(data=data_for_hist, 
              aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
       geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(52, 520, 52)), limits=c(0, 520), expand = c(0.01, 0.01)) +
+      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(52, max(data_for_hist$seq_n)+1, 52)), 
+                         limits=c(0, max(data_for_hist$seq_n) + 1), 
+                         expand = c(0.01, 0.01)) +
       scale_y_continuous(labels=function(x) paste0(x, "%"),
-                         limits=c(0, 1.25* max(df_to_plot_perf_match %>% 
-                                                 filter(!str_detect(asv_names, paste0(c("NMBC", "ORG"), collapse = "|"))) %>% 
-                                                 dplyr::select(perc_in_sample))),  
+                         limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
                          expand = c(0.01, 0.01)) +
       xlab("ASV Length") +
       ylab("ASV Frequency") +
       geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") + # expected size
-      lemon::coord_capped_cart(left="both", bottom="both") + # axis with lemon
+      lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
       lemon::facet_rep_grid(rows = vars(day_organ), repeat.tick.labels = TRUE) + 
       # add theme
       barplot_nowaklab_theme() +
@@ -199,11 +199,11 @@ asv_statistics <- function(EvoBC_object, dayOrgan, colony_count_cutoff, figure_d
     # Save PDF
     ggsave(filename=file.path(figure_dir, "histogram_sequenceLength.pdf"), 
            plot=hist_seq_count, 
-           device=cairo_pdf, 
+           #device=cairo_pdf, 
            width=25, 
-           height=5*length(dayOrgan), 
+           height=5*length(sample), 
            units = "cm") #17.5 for 4x
   }
   
-  return(EvoBC_object)
+  return(REvoBC_object)
 }

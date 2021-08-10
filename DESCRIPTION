@@ -1,12 +1,12 @@
-Package: EvoBC
-Version: 0.99.1
-Date: 2021-07-28
-Title: EvoBC
-Authors@R: c(person("Lucrezia","Patruno",role=c"("cre","aut"),email="l.patruno@campus.unimib.it"),
-            person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666"))
+Package: REvoBC
+Version: 0.99.3
+Date: 2021-08-10
+Title: REvoBC
+Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
+            person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
             person("Dawid","Nowak",role=c("aut")))
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports:
     dada2,
     ggplot2,
@@ -17,21 +17,28 @@ Imports:
     lemon,
     scales,
     muscle,
-    ggmsa
+    ggmsa,
+    utils,
+    tidyr,
+    tibble,
+    methods,
+    stringr,
+    forcats,
+    data.table
 Suggests:
     BiocGenerics,
     BiocStyle,
     testthat,
     knitr
 Name:
-    EvoBC
+    REvoBC
 Description:
-    EvoBC
+    Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EVoBC kit.
 Encoding: UTF-8
 LazyData: TRUE
 License: file LICENSE
-URL: https://github.com/Nowak-Lab/EvoBC
-BugReports: https://github.com/Nowak-Lab/EvoBC
+URL: https://github.com/Nowak-Lab/REvoBC
+BugReports: https://github.com/Nowak-Lab/REvoBC
 biocViews: 
     BiomedicalInformatics,
     SingleCell,

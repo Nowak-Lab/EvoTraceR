@@ -1,0 +1,75 @@
+---
+title: Running REvoBC
+output: html_document
+---
+
+## Setup the environement
+
+*REvoBC* is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants. 
+It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence alignment to identify mutations and finally performs the phylogeny reconstruction.
+In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. 
+The first step initializes the REvoBC object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis. 
+
+
+```{r}
+library("REvoBC")
+```
+
+The initialization function computes the set of Amplicon Sequence Variants, by wrapping all the steps performed by dada2, that are the following: 
+(1) Filter and trimming reads. 
+(2) Learning the error rates. 
+(3) Dereplication. 
+(4) Sample Inference. 
+(5) Merging forward and reverse reads. 
+(6) Construction of the Amplicon Sequence Variant table (ASV). 
+(7) Removal of chimeras. 
+(8) Production of a summary which tracks changes in the number of reads at every step of the pipeline. 
+
+The main parameters for the initialization are the directory where the output will be stored and one of the following: 
+input directory: in this case users have the fastq files and want to perform the whole analysis using REvoBC. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. 
+dada2_output_sequences: in case users wish to manually run dada2 steps up to the removal of bimeras, they should provide the path to the csv file containing the output. The output should contain samples on rows and sequences on columns. 
+
+Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided. 
+In order for REvoBC to associate each fastq pair to its sample users have two options: 
+one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case REvoBC will consider as sample ID the second field separated by the underscore. 
+The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")). 
+
+```{r}
+input_dir = system.file("extdata", "input", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "REvoBC")
+```
+
+We can now perform the initialization. 
+
+```{r}
+revo_initialized = initialize_REvoBC(input_dir = input_dir, 
+                                     output_dir = output_dir)
+names(revo_initialized)
+```
+
+During the above computation, dada2 was run and all ASVs are detected. The result is an object of class REvoBC, which is populated by 5 fields: dada2 is a list which contains the percentage of chimeras found by dada2 and a dataframe that tracks the number of sequences during all dada2 steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated. 
+dada2_asv_prefilter: dataframe that stores all sequences detected by dada2. 
+
+## Analysis and pairwise alignment of ASVs
+
+Next, we can perform the analysis of the ASV sequences identified by dada2. 
+The next function finds those that map to the original barcodes and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98\% (parameter pid_cutoff_nmbc) with the original barcode as NMBC. 
+It also removes possible contamination artifacts (ASV that map to other barcodes used in earlier experiments). 
+Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV. 
+It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
+
+```{r}
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+names(revo_analyzed)
+```
+
+There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC). 
+barcode is the barcode considered for the analysis. 
+statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity. 
+
+```{r}
+revo_msa = perform_msa(revo_analyzed)
+```
+
+This last step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function. 
+After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample. 
