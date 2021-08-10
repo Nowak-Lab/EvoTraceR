@@ -199,7 +199,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
     # Save PDF
     ggsave(filename=file.path(figure_dir, "histogram_sequenceLength.pdf"), 
            plot=hist_seq_count, 
-           device=cairo_pdf, 
+           #device=cairo_pdf, 
            width=25, 
            height=5*length(sample), 
            units = "cm") #17.5 for 4x

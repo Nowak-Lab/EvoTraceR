@@ -53,7 +53,7 @@ This folder will contain the following plots:
 \item{multithread}{(Optional) default \code{TRUE}. Whether to enable multithreading. If TRUE the number of threads is determined automatically (dada2 functionality).
 If an integer is given, the number of threads is determined by its value.}
 
-\item{map_file_sample}{(Optional). In case fastq files names are not in the format \cr FILEPREFIX_SAMPLE_BARCODEVERSION_RX.fastq),
+\item{map_file_sample}{(Optional). In case fastq files names are not in the format \cr FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq),
 then users should provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding organ/day.
 (e.g., if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: \code{map_file_sample = c("file1" = "PRL")}).}
 
@@ -99,4 +99,10 @@ It wraps all the steps performed by dada2, that are the following:
 For further information please refer to \href{https://benjjneb.github.io/dada2/tutorial_1_8.html}{the original vignette}.
 If users wish to manually run each step of dada2 computation they should execute all steps reported
 in the vignette, up to the Removal of chimeras and save the output of \code{removeBimeraDenovo} in a csv file and provide the path to that file as parameter \code{dada2_output_sequences}.
+}
+\examples{
+input_dir = system.file("extdata", "input", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "REvoBC")
+initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+
 }

@@ -160,7 +160,7 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   # Save PDF
   ggsave(filename=file.path(output_dir, "gghist_del_sub_ins_perc.pdf"), 
          plot=alt_count_bc, 
-         device=grDevices::cairo_pdf, 
+         #device=grDevices::cairo_pdf, 
          width=25, 
          height=5*length(sample), 
          units = "cm") #17.5 for 4x

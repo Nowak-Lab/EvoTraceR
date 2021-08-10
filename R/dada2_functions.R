@@ -41,7 +41,7 @@ dada2_alignment = function(fnFs,
     # Visualize the quality profile of the forward reads:
     ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_forwardReads.pdf"), 
                     plot = dada2::plotQualityProfile(fnFs[1:length(fnFs)]), 
-                    device = grDevices::cairo_pdf, 
+                    #device = grDevices::cairo_pdf, 
                     width = 10*length(fnFs), 
                     height = 10,#length(fnFs)+2, 
                     units = "cm")
@@ -49,7 +49,7 @@ dada2_alignment = function(fnFs,
     # Visualize the quality profile of the reverse reads:
     ggplot2::ggsave(filename = file.path(figure_dir, "quality_profile_reverseReads.pdf"), 
                     plot = dada2::plotQualityProfile(fnRs[1:length(fnFs)]), 
-                    device = grDevices::cairo_pdf, 
+                    #device = grDevices::cairo_pdf, 
                     width = 10*length(fnFs), 
                     height = 10,#length(fnFs)+2, 
                     units = "cm")
@@ -73,14 +73,14 @@ dada2_alignment = function(fnFs,
     # Visualize the estimated error rates of the forward reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errF.pdf"), 
            plot = dada2::plotErrors(errF, nominalQ=TRUE), 
-           device = grDevices::cairo_pdf, 
+           #device = grDevices::cairo_pdf, 
            width = 15,#5+5*length(sample.names), 
            height = 15,#5+5*length(sample.names), 
            units = "cm")
     # Visualize the estimated error rates of the reverse reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errR.pdf"), 
            plot = plotErrors(errR, nominalQ=TRUE), 
-           device = grDevices::cairo_pdf, 
+           #device = grDevices::cairo_pdf, 
            width=15,#5+5*length(sample.names), 
            height=15,#5+5*length(sample.names), 
            units = "cm")
@@ -151,7 +151,9 @@ dada2_alignment = function(fnFs,
       barplot_nowaklab_theme() 
     
     ggsave(filename=file.path(figure_dir, 'sequence_length.pdf'), 
-           plot=hist_seq_count, device=grDevices::cairo_pdf, width=25, height=5, units = "cm") #17.5 for 4x
+           plot=hist_seq_count, 
+           #device=grDevices::cairo_pdf, 
+           width=25, height=5, units = "cm") #17.5 for 4x
   }
   
   # dada2 Remove Chimeric Sequences 

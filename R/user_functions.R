@@ -15,11 +15,10 @@
 #' 
 #' @title initialize_REvoBC
 #' 
-# @examples
-# input_dir = system.file("extdata", "input", package = "REvoBC")
-# output_dir = system.file("extdata", "output", package = "REvoBC")
-# 
-# initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+#' @examples
+#' input_dir = system.file("extdata", "input", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
 #' 
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
@@ -48,7 +47,7 @@
 #' }
 #' @param multithread (Optional) default \code{TRUE}. Whether to enable multithreading. If TRUE the number of threads is determined automatically (dada2 functionality).
 #' If an integer is given, the number of threads is determined by its value.
-#' @param map_file_sample (Optional). In case fastq files names are not in the format \cr FILEPREFIX_SAMPLE_BARCODEVERSION_RX.fastq),
+#' @param map_file_sample (Optional). In case fastq files names are not in the format \cr FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq),
 #' then users should provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding organ/day.
 #' (e.g., if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: \code{map_file_sample = c("file1" = "PRL")}).
 #' @param dada2_pooled_analysis (Optional). Deafault = FALSE. Boolean that is passed to dada2 function \code{dada}, which performs sample inference.
@@ -80,7 +79,7 @@
 #' @import dplyr
 #' @importFrom cli cli_alert_info
 #' @importFrom utils write.csv read.csv unzip untar
-#' @importFrom grDevices cairo_pdf
+# @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
 initialize_REvoBC = function( output_dir,
                               input_dir = NULL,
@@ -194,11 +193,11 @@ initialize_REvoBC = function( output_dir,
 #'  
 #' @title ASV_analysis
 #' 
-# @examples
-# data(revo_initialized)
-# output_dir = system.file("extdata", "output", package = "REvoBC")
-# revo_initialized$output_directory = output_dir
-# revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+#' @examples
+#' data(revo_initialized)
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' revo_initialized$output_directory = output_dir
+#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
@@ -256,7 +255,7 @@ initialize_REvoBC = function( output_dir,
 #' @importFrom stringr str_detect
 #' @importFrom tidyr gather pivot_wider
 #' @importFrom forcats fct_relevel
-#' @importFrom grDevices cairo_pdf
+# @importFrom grDevices cairo_pdf
 #' @import dplyr
 #' @import ggplot2
 #' @import tibble
@@ -399,7 +398,9 @@ asv_analysis = function(REvoBC_object,
       theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
     # save pdf
     ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), 
-           plot=seqtab_df_clean_track, device=grDevices::cairo_pdf, width=10, height=10, units = "cm")
+           plot=seqtab_df_clean_track, 
+           #device=grDevices::cairo_pdf, 
+           width=10, height=10, units = "cm")
   }
   
   return(REvoBC_object)
@@ -411,11 +412,11 @@ asv_analysis = function(REvoBC_object,
 #' 
 #' @title perform_msa
 #' 
-# @examples 
-# data(revo_analysed)
-# output_dir = system.file("extdata", "output", package = "REvoBC")
-# revo_analysed$output_directory = output_dir
-# revo_msa = perform_msa(revo_analyzed)
+#' @examples 
+#' data(revo_analyzed)
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' revo_analyzed$output_directory = output_dir
+#' revo_msa = perform_msa(revo_analyzed)
 #' 
 #' @param REvoBC_object REvoBC object on which we want to perform msa.
 #' @param ... Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.
@@ -453,7 +454,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom utils write.csv
 #' @importFrom forcats fct_relevel
-#' @importFrom grDevices cairo_pdf
+# @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_replace str_detect
 #' @importFrom methods as
 #' @importFrom tidyr pivot_wider

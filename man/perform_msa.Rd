@@ -39,3 +39,10 @@ In addition, the following files are saved in the sub-folder "msa" created inthe
 This function performs multi-sequence alignment and outputs statistics about mutations. 
 Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
 }
+\examples{
+data(revo_analyzed)
+output_dir = system.file("extdata", "output", package = "REvoBC")
+revo_analyzed$output_directory = output_dir
+revo_msa = perform_msa(revo_analyzed)
+
+}

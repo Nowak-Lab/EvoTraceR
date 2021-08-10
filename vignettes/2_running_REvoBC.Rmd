@@ -5,77 +5,77 @@ output: html_document
 
 ## Setup the environement
 
-We now present an example of longitudinal analysis of cancer evolution with *LACE* using single-cell data obtained from Rambow, Florian, et al. "Toward minimal residual disease-directed therapy in melanoma." Cell 174.4 (2018): 843-855. 
+REvoBC is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants.
+It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence alignment to identify mutations and finally performs the phylogeny reconstruction.
+In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. 
+The first step initializes the REvoBC object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis.
 
-As a first step, we load single-cell data for a skin melanoma. The data comprises point mutations for four 
-time points: (1) before treatment, (2) 4 days treatment, (3) 28 days treatment and finally (4) 57 days treatment. 
 
 ```{r}
-library("LACE")
-data(longitudinal_sc_variants)
-names(longitudinal_sc_variants)
+library("REvoBC")
 ```
 
-We setup the main parameter in oder to perform the inference. First of all, as the four data points may potentially provide sequencing for an unbalanced 
-number of cells, we weight each time point proportionally to the sample sizes as follow. We refer to the paper for details. 
+The initialization function computes the set of Amplicon Sequence Variants, by wrapping all the steps performed by dada2, that are the following:
+(1) Filter and trimming reads.
+(2) Learning the error rates.
+(3) Dereplication.
+(4) Sample Inference.
+(5) Merging forward and reverse reads.
+(6) Construction of the Amplicon Sequence Variant table (ASV). 
+(7) Removal of chimeras.
+(8) Production of a summary which tracks changes in the number of reads at every step of the pipeline.
+
+
+The main parameters for the initialization are the directory where the output will be stored and one of the following:
+input directory: in this case users have the fastq files and want to perform the whole analysis using REvoBC. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions.
+dada2_output_sequences: in case users wish to manually run dada2 steps up to the removal of bimeras, they should provide the path to the csv file containing the output. The output should contain samples on rows and sequences on columns.
+
+Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided.
+In order for REvoBC to associate each fastq pair to its sample users have two options:
+one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case REvoBC will consider as sample ID the second field separated by the underscore.
+The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")).
 
 ```{r}
-lik_weights = c(0.2308772,0.2554386,0.2701754,0.2435088)
+input_dir = system.file("extdata", "input", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "REvoBC")
 ```
 
-The second main parameter to be defined as input is represented by the false positive and false negative error rates, i.e., alpha and beta. We can specify a 
-different rate per time point as a list of rates. When multiple set of rates are provided, *LACE* performs a grid search in order to estimate the best set of error rates. 
+We can now perform the initialization. 
 
 ```{r}
-alpha = list()
-alpha[[1]] = c(0.02,0.01,0.01,0.01)
-alpha[[2]] = c(0.10,0.05,0.05,0.05)
-beta = list()
-beta[[1]] = c(0.10,0.05,0.05,0.05)
-beta[[2]] = c(0.10,0.05,0.05,0.05)
-head(alpha)
-head(beta)
+revo_initialized = initialize_REvoBC(input_dir = input_dir, 
+                                     output_dir = output_dir)
+names(revo_initialized)
 ```
 
-## Inference
+During the above computation, dada2 was run and all ASVs are detected. The result is an object of class REvoBC, which is populated by 5 fields: dada2 is a list which contains the percentage of chimeras found by dada2 and a dataframe
+that tracks the number of sequences during all dada2 steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated.
+dada2_asv_prefilter: dataframe that stores all sequences detected by dada2.
 
-We can now perform the inference as follow. 
+
+## Analysis and pairwise alignment of ASVs
+Next, we can perform the analysis of the ASV sequences identified by dada2. 
+The next function finds those that map to the original barcodes and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98\% (parameter pid_cutoff_nmbc) with the original barcode as NMBC.
+It also removes possible contamination artifacts (ASV that map to other barcodes used in earlier experiments).
+Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV.
+It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
 
 ```{r}
-inference = LACE(D = longitudinal_sc_variants, 
-    lik_w = lik_weights, 
-    alpha = alpha, 
-    beta = beta, 
-    keep_equivalent = TRUE, 
-    num_rs = 5, 
-    num_iter = 10, 
-    n_try_bs = 5, 
-    num_processes = NA, 
-    seed = 12345, 
-    verbose = FALSE)
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+names(revo_analyzed)
 ```
 
-We notice that the inference resulting on the command above should be considered only as an example; the parameters num_rs, num_iter and n_try_bs representing the number of 
-steps perfomed during the inference are downscaled to reduce execution time. We refer to the Manual for discussion on default values. We provide within the package results 
-of inferences performed with correct parameters as RData. 
+There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC).
+barcode is the barcode considered for the analysis.
+statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity.
+
 
 ```{r}
-data(inference)
-print(names(inference))
+revo_msa = perform_msa(revo_analyzed)
 ```
 
-*LACE* returns a list of nine elements as results. Namely, B and C provide respectively the maximum likelihood longitudinal tree and cells attachments; corrected_genotypes the corrected genotypes, clones_prevalence, the estimated prevalence of any observed clone; relative_likelihoods and joint_likelihood the estimated likelihoods for each time point and the weighted likelihood; clones_summary provide a summary of association of mutations to clones. In equivalent_solutions, solutions (B and C) with likelihood equivalent to the best solution are returned; notice that in the example we disabled this feature by 
-setting equivalent_solutions parameter to FALSE. Finally, error rates provide the best error rates (alpha and beta) as estimated by the grid search. 
+This last step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
+After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
 
 
-## Plot
 
-We can plot the inferred model using the function longitudinal.tree.plot. 
-
-```{r fig.width=12, fig.height=8, warning=FALSE, fig.cap="Inferred model"}
-clone_labels = c("ARPC2","PRAME","HNRNPC","COL1A2","RPL5","CCT8")
-longitudinal.tree = longitudinal.tree.plot(inference = inference, 
-                                           labels_show = "clones", 
-                                           clone_labels = clone_labels, 
-                                           legend_position = "topright")
-```

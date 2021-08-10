@@ -22,7 +22,22 @@ The R version of *REvoBC* can be installed from Github. To do so, we need to ins
 
 ```{r eval=FALSE}
 # install REvoBC libraries
-#### TODO
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+if (!require("dada2")) BiocManager::install("dada2")  
+ 
+if (!require("tidyverse")) install.packages("tidyverse")    
+if (!require("cli")) install.packages("cli")
+if (!require("Biostrings")) BiocManager::install("Biostrings")
+if (!require("benthos")) install.packages("benthos")
+if (!require("lemon")) install.packages("lemon")
+if (!require("scales")) install.packages("scales")
+if (!require("muscle")) BiocManager::install("muscle")
+if (!require("ggmsa")) install.packages("ggmsa")
+if (!require("utils")) install.packages("utils")
+if (!require("methods")) install.packages("methods")
+if (!require("data.table")) install.packages("data.table")
 
 # install devtools library and REvoBC
 if (!require("devtools")) install.packages("devtools")
