@@ -6,7 +6,7 @@ Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@ca
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
             person("Dawid","Nowak",role=c("aut")))
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports:
     dada2,
     ggplot2,

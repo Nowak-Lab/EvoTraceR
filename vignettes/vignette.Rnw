@@ -14,6 +14,7 @@ BiocStyle::latex()
 \usepackage{url}
 \usepackage{tcolorbox}
 \usepackage{authblk}
+\usepackage{underscore}
 
 \begin{document}
 
