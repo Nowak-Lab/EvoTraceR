@@ -166,6 +166,8 @@ jobs:
           install.packages("scales")
           BiocManager::install("muscle")
           BiocManager::install("R4RNA")
+          install.packages("proj4")
+          install.packages("ggalt")
           install.packages("ggmsa")
           install.packages("utils")
           install.packages("methods")
