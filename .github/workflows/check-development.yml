@@ -64,7 +64,7 @@ jobs:
           ##if echo "$GITHUB_REF" | grep -q "RELEASE_"; then
           ##    biocversion="$(basename -- $GITHUB_REF | tr '[:upper:]' '[:lower:]')"
           ##else
-          biocversion="devel" # biocversion="release"
+          biocversion="release" # biocversion="devel"
           ##fi
           ## Define the image name and print the information
           imagename="bioconductor/bioconductor_docker:${biocversion}"
@@ -156,11 +156,19 @@ jobs:
 
       - name: Install R packages
         run: |
+          install.packages("BiocManager")
+          BiocManager::install("dada2")
           install.packages("tidyverse")
           install.packages("cli")
+          BiocManager::install("Biostrings")
           install.packages("benthos")
           install.packages("lemon")
           install.packages("scales")
+          BiocManager::install("muscle")
+          BiocManager::install("R4RNA")
+          install.packages("proj4")
+          install.packages("ggalt")
+          install.packages("ggmsa")
           install.packages("utils")
           install.packages("methods")
           install.packages("data.table")
@@ -181,7 +189,7 @@ jobs:
         run: |
           ### Find what branch we are working on
           #if echo "$GITHUB_REF" | grep -q "master"; then
-          biocversion="devel" # biocversion="release"
+          biocversion="release" # biocversion="devel"
           #elif echo "$GITHUB_REF" | grep -q "RELEASE_"; then
           #    biocversion="release"
           #fi
