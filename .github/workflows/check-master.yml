@@ -161,6 +161,7 @@ jobs:
         run: |
           install.packages("tidyverse")
           install.packages("cli")
+          install.packages("ggmsa")
           install.packages("benthos")
           install.packages("lemon")
           install.packages("scales")
