@@ -7,15 +7,15 @@
 # sample. List of the column names containing the organs/days.
 # asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
-asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, output_dir) {
+asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figure_dir, nmbc, output_dir) {
   seqtab_df_clean_asv = REvoBC_object$clean_asv_dataframe
   
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
     dplyr::select(-seq) %>% # remove sequence => not useful for census analysis
-    tidyr::gather(day_organ, count, sample, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
+    tidyr::gather(sample, count, sample_columns, factor_key=TRUE) %>% # from wide to long -> - 1 for seq
     filter(count > asv_count_cutoff) %>% # remove data that percentage less than i.e. 0.5% -> visualization
-    group_by(day_organ) %>%
+    group_by(sample) %>%
     dplyr::mutate(count = as.numeric(count)) %>%
     dplyr::mutate(perc_in_sample = prop.table(count)*100) %>% # calculate percentage during i.e. Day or Organ
     dplyr::ungroup() %>% dplyr::mutate_if(is.numeric, round, digits=2) # round percent to two digits
@@ -42,8 +42,8 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
   # prepare levels and orders for days or organs
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::mutate(day_organ = forcats::fct_relevel(day_organ, sample)) %>%
-    arrange(match(day_organ, sample))
+    dplyr::mutate(sample = forcats::fct_relevel(sample, sample_columns)) %>%
+    arrange(match(sample, sample_columns))
   
   # prepare levels and orders of asv_names (ASVs)
   seqtab_df_clean_asv_long <- 
@@ -74,68 +74,69 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
     seqtab_df_clean_asv_long %>%
     group_by(asv_names) %>%
     dplyr::summarize(
-      ASV_Abundance = sum(count), 
-      ASV_Richness = sum(count > 0, na.rm = TRUE)) 
+      abundance_asv_total = sum(count), 
+      richness_asv_total = sum(count > 0, na.rm = TRUE)) 
   # day or organ summary
-  day_organ_stat <-
+  sample_stat <-
     seqtab_df_clean_asv_long %>%  
-    group_by(day_organ) %>%
+    group_by(sample) %>%
     dplyr::summarize(
-      ASV_Abundance_day_organ = sum(count), 
-      ASV_Richness_day_organ = sum(count > 0, na.rm = TRUE))
+      abundance_asv_persample = sum(count), 
+      richness_asv_persample = sum(count > 0, na.rm = TRUE))
   # Store in object and in csv file
   REvoBC_object$statistics$asv_totalCounts = asv_names_stat
-  REvoBC_object$statistics$sample_totalCounts = day_organ_stat
+  REvoBC_object$statistics$sample_totalcounts = sample_stat
   
   write.csv(asv_names_stat, 
             file.path(output_dir, "asv_totalCounts.csv"),
             row.names = F)
   
-  write.csv(day_organ_stat, 
-            file.path(output_dir, "sample_totalCounts.csv"),
+  write.csv(sample_stat, 
+            file.path(output_dir, "sample_totalcounts.csv"),
             row.names = F)
   
   # merge data
   seqtab_df_clean_asv_long <- tibble(merge(seqtab_df_clean_asv_long, asv_names_stat, "asv_names")) 
-  seqtab_df_clean_asv_long <- tibble(merge(seqtab_df_clean_asv_long, day_organ_stat, "day_organ")) 
+  seqtab_df_clean_asv_long <- tibble(merge(seqtab_df_clean_asv_long, sample_stat, "sample")) 
   
   ### Diversity Calculations (Package "benthos") 
   # index calcuations
   diversity <-
     seqtab_df_clean_asv_long %>%
     mutate(asv_names = as.character(asv_names)) %>%
-    dplyr::group_by(day_organ, .drop=FALSE) %>%  
+    dplyr::group_by(sample, .drop=FALSE) %>%  
     dplyr::summarise(
       # Measures of clonal richness
-      ASV_Abundance_1 = benthos::total_abundance(count = count), 
-      ASV_Richness_1 = benthos::species_richness(taxon = asv_names, count = count), 
-      D_Margalef = benthos::margalef(taxon = asv_names, count = count), 
-      Ryggs = benthos::rygg(taxon = asv_names, count = count), 
-      Ryggs_adjusted = benthos::rygg(taxon = asv_names, count = count, adjusted = TRUE), 
-      # Measures of heterogeneity/evenness
-      Simpsons_Index_D = benthos::simpson(taxon = asv_names, count = count), 
-      HurlbertsProbability_PIE = benthos::hpie(taxon = asv_names, count = count), 
-      Hills_Diversity_Num1 = benthos::hill1(taxon = asv_names, count = count), 
-      Hills_Diversity_Num2 = benthos::hill2(taxon = asv_names, count = count), 
-      H_ShannonsIndex = benthos::shannon(taxon = asv_names, count = count, base=exp(1)), 
-      Simpsons_Reciprocal_Index = 1/benthos::simpson(taxon = asv_names, count = count), 
-      ASV_Richness_sample = unique(ASV_Richness_day_organ)
+      abundance_asv_persample = benthos::total_abundance(count = count), 
+      richness_asv_persample = benthos::species_richness(taxon = asv_names, count = count), 
+      # D_Margalef = benthos::margalef(taxon = asv_names, count = count), 
+      # Ryggs = benthos::rygg(taxon = asv_names, count = count), 
+      # Ryggs_adjusted = benthos::rygg(taxon = asv_names, count = count, adjusted = TRUE), 
+      # # Measures of heterogeneity/evenness
+      # Simpsons_Index_D = benthos::simpson(taxon = asv_names, count = count), 
+      # HurlbertsProbability_PIE = benthos::hpie(taxon = asv_names, count = count), 
+      # Hills_Diversity_Num1 = benthos::hill1(taxon = asv_names, count = count), 
+      # Hills_Diversity_Num2 = benthos::hill2(taxon = asv_names, count = count), 
+      shannons_index_persample = benthos::shannon(taxon = asv_names, count = count, base=exp(1)), 
+      # Simpsons_Reciprocal_Index = 1/benthos::simpson(taxon = asv_names, count = count), 
+      richness_asv_persample = unique(richness_asv_persample)
     ) %>%
-    mutate(J_PielousEvenness = H_ShannonsIndex / log(ASV_Richness_sample) )
+    mutate(pielous_evenness_persample = shannons_index_persample / log(richness_asv_persample) )
   
-  REvoBC_object$statistics$ASV_diversity_perSample = diversity
+  REvoBC_object$statistics$asv_diversity_persample = diversity
   write.csv(diversity, 
-            file.path(output_dir, "asv_diversity_perSample.csv"))
+            file.path(output_dir, "asv_diversity_persample.csv"))
   
   # matrix rows: organ_day and coumns ASV names
   mx_freq <- 
     seqtab_df_clean_asv_long %>%
-    dplyr::select(day_organ, asv_names, count) %>%
+    dplyr::select(sample, asv_names, count) %>%
     distinct() %>%
     tidyr::pivot_wider(names_from = asv_names, values_from = count, values_fill = 0) %>%
-    tibble::column_to_rownames(var="day_organ") %>% 
+    tibble::column_to_rownames(var="sample") %>% 
     as.matrix()
   # Save as Data csv
+  mx_freq= mx_freq[,c(nmbc, sort(colnames(mx_freq)[colnames(mx_freq)!=nmbc]))]
   write.csv(mx_freq, file.path(output_dir, "asv_persample_frequency.csv"))
   
   mx_freq_bin <- as.matrix(ifelse(mx_freq == 0, 0, 1))
@@ -179,8 +180,8 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
       ggplot(data=data_for_hist, 
              aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
       geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(52, max(data_for_hist$seq_n)+1, 52)), 
-                         limits=c(0, max(data_for_hist$seq_n) + 1), 
+      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(52, 520, 52)), 
+                         limits=c(0, 520), 
                          expand = c(0.01, 0.01)) +
       scale_y_continuous(labels=function(x) paste0(x, "%"),
                          limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
@@ -189,7 +190,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
       ylab("ASV Frequency") +
       geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") + # expected size
       lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
-      lemon::facet_rep_grid(rows = vars(day_organ), repeat.tick.labels = TRUE) + 
+      lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
       # add theme
       barplot_nowaklab_theme() +
       theme(aspect.ratio = 1/4,
@@ -201,7 +202,7 @@ asv_statistics <- function(REvoBC_object, sample, asv_count_cutoff, figure_dir, 
            plot=hist_seq_count, 
            #device=cairo_pdf, 
            width=25, 
-           height=5*length(sample), 
+           height=5*length(sample_columns), 
            units = "cm") #17.5 for 4x
   }
   

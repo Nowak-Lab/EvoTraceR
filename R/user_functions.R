@@ -197,7 +197,7 @@ initialize_REvoBC = function( output_dir,
 #' data(revo_initialized)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_initialized$output_directory = output_dir
-#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0')
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
@@ -218,15 +218,15 @@ initialize_REvoBC = function( output_dir,
 #' \itemize{
 #' 
 #' \item \code{asv_df_percentages}: dataframe with six columns. \code{asv_names} is the name of the ASV.
-#' \code{day_organ} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
+#' \code{sample} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
 #' \code{count}: total counts for a specific ASV in a specific sample;
 #' \code{perc_in_sample}: counts normalized to the total counts in the corresponding sample;
-#' \code{perc_asv}: conuts normalized to the total counts for the corresponding ASV;
+#' \code{perc_asv}: counts normalized to the total counts for the corresponding ASV;
 #' \code{perc_fold_to_max}: counts normalized to the maximum counts observed for the corresponding ASV in a sample.
 #' 
 #' \item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
-#' \item \code{sample_totalCounts}: for each sample, total counts and number of distinct ASVs detected.
-#' \item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
+#' \item \code{sample_totalcounts}: for each sample, total counts and number of distinct ASVs detected.
+#' \item \code{asv_diversity_persample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
 #' \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 #' \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
 #' \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
@@ -240,8 +240,8 @@ initialize_REvoBC = function( output_dir,
 #' its counts in all samples. It also overwrites the sequence name (column seq_names) 
 #' of those that exactly match any of the possible barcodes, using the barcode identifier. The sequences
 #' that don't match the barcode in the current analysis may be due to contamination. 
-#' \item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalCounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_perSample.csv}  
-#' \code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_perSample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
+#' \item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalcounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_persample.csv}  
+#' \code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_persample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
 #' 
 #' }
 #'  
@@ -260,7 +260,7 @@ initialize_REvoBC = function( output_dir,
 #' @import ggplot2
 #' @import tibble
 asv_analysis = function(REvoBC_object,
-                        barcode = 'BC10v0.ORG',
+                        barcode = 'BC10v0',
                         output_figures = TRUE,
                         pid_cutoff_nmbc = 98,
                         asv_count_cutoff = 2,
@@ -276,7 +276,7 @@ asv_analysis = function(REvoBC_object,
   if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = data.frame(
-    asv_names = c("BC10v0.ORG", "BC10v1.ORG", "BC10v2.ORG", "BC10v3.ORG", "BC10v4.ORG", "g.70.Rb1.ORG", "g.1348.Rb1.ORG"),
+    asv_names = c("BC10v0", "BC10v1", "BC10v2", "BC10v3", "BC10v4", "g.70.Rb1", "g.1348.Rb1"),
     seq_start = c("^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC"), # 5x nts
     seq_end = c("CCCGTGGATC$", "GCCGGGGATC$", "ACCGGGGATC$", "ACCCTGGATC$", "GCCGCGGATC$", "GCATGACGCG$", "GTTTGTCCAT$"),
     seq = c("TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
@@ -288,22 +288,26 @@ asv_analysis = function(REvoBC_object,
             "CTAGAAGGAGCAGAATGTGTTTCAATAAAAGACTTTAACAAAATTCAATTAACTTTTTGACTTTCTGAAACAGTAAAAGCTTATTATTTTTCCTTTTGTTTGTAGCGATATAAACTTGGAGTCCGATTGTATTACCGTGTGATGGAATCCATGCTTAAATCAGTAAGTTAAAGGAAACAAAATAGCAAAAAAATTTAATGCTGACACAAAGAAAGTTTCAATTAAAAGTTTTTTTTTCAATTATCTGTTTTAGGAAGAAGAACGTTTGTCCAT"),
     stringsAsFactors = FALSE)
   
+  if(!barcode %in% barcodes_info$asv_names) {
+    stop("The barcode provided doesn't match any of the possible ones, exiting")
+  }
+  
   seqtab_df = REvoBC_object$dada2_asv_prefilter
   
   REvoBC_object$barcode = barcodes_info[barcodes_info$asv_names == barcode,]
   
-  # Store the original numner of sequences and that after chimeras removal
+  # Store the original number of sequences and that after chimeras removal
   orgseq <- REvoBC_object$dada2$original_sequences
   chimseq_filter <- nrow(seqtab_df)
-  sample = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
+  sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   match_seq = match(seqtab_df$seq, barcodes_info$seq)
   barcodes_idx = match_seq[!is.na(match_seq)]
-  seqtab_df$seq_names[!is.na(match_seq)] = gsub(pattern = '.ORG',replacement = '.NMBC', 
-                                                x = barcodes_info$asv_names[barcodes_idx])
+  seqtab_df$seq_names[!is.na(match_seq)] = paste0(barcodes_info$asv_names[barcodes_idx], ".NMBC")
+  #gsub(pattern = '.ORG',replacement = '.NMBC', x = barcodes_info$asv_names[barcodes_idx])
   seqtab_df_original = seqtab_df
-  utils::write.csv(seqtab_df, 
+  utils::write.csv(seqtab_df,
             file.path(output_dir,
                       "sequences_barcode_mapping.csv"),
             row.names = FALSE)
@@ -312,20 +316,20 @@ asv_analysis = function(REvoBC_object,
   # The first 5 nts are the same for all barcodes, while the end is barcode-specific
   RD1_10 <- barcodes_info[barcodes_info$asv_names == barcode, 'seq_start']# as.character(dplyr::select(filter(bc_ver, asv_names == bc10_org), seq_start))
   RD2_10 <- barcodes_info[barcodes_info$asv_names == barcode, 'seq_end']
-  nmbc <- gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
+  nmbc <- paste0(barcode, ".NMBC")#gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
   # filter based on 5' and 3' 10x nts of 
   seqtab_df <- dplyr::filter(seqtab_df, 
                              stringr::str_detect(string = seq, pattern = RD1_10) & stringr::str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
   
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
-  seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample])
+  seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample_columns])
   
   seqtab_df_original$condition = as.factor(seqtab_df_original$condition)
   
-  ggplot(seqtab_df_original[seqtab_df_original$seq_names != "BC10v0.NMBC",], 
-         aes(x = total_counts, fill = condition)) +                       # Draw overlaying histogram
-    geom_histogram(position = "identity", bins = 20, alpha=0.5) + scale_x_log10()
+  # ggplot(seqtab_df_original[seqtab_df_original$seq_names != "BC10v0.NMBC",], 
+  #        aes(x = total_counts, fill = condition)) +                       # Draw overlaying histogram
+  #   geom_histogram(position = "identity", bins = 20, alpha=0.5) + scale_x_log10()
   
   
   endseq_filter <- nrow(seqtab_df)
@@ -342,9 +346,9 @@ asv_analysis = function(REvoBC_object,
   # (the counts of each ASV with pid >= cutoff will be summed to the ones of the NMBC)
   pidseq_filter = seqtab_df %>% 
     mutate(seq_names = ifelse(pid >= pid_cutoff_nmbc, nmbc, seq_names)) %>%
-    dplyr::select(seq_names, all_of(sample), pid) %>%
+    dplyr::select(seq_names, all_of(sample_columns), pid) %>%
     group_by(seq_names) %>%
-    dplyr::summarise_at(sample, sum) %>%
+    dplyr::summarise_at(sample_columns, sum) %>%
     merge(dplyr:: select(seqtab_df, seq_names, seq), by = "seq_names")
   pidseq_filter_dim = nrow(pidseq_filter)
   
@@ -383,17 +387,19 @@ asv_analysis = function(REvoBC_object,
   
   REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
   REvoBC_object = asv_statistics(REvoBC_object, 
-                                 sample, 
+                                 sample_columns, 
                                  asv_count_cutoff,
                                  figure_dir,
+                                 nmbc,
                                 output_dir = output_dir)
 
   if (output_figures) {
     seqtab_df_clean_track <-
-      ggplot(data=data.frame(name=c("01_orgseq", "02_chimseq_filter", "03_endseq_filter", "04_pidseq_filter", "05_clean_asv"),
+      ggplot(data=data.frame(name=c("Starting Seq", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASV"),
                              num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))) +
       geom_bar(aes(x=name, y=num), position = "dodge", stat = "identity", width=0.8, size=0.2) +
       geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
+      labs(x = "Number of ASVs", y = "") 
       barplot_nowaklab_theme() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
     # save pdf
@@ -427,7 +433,7 @@ asv_analysis = function(REvoBC_object,
 #' \item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
 #' \itemize{
 #' \item asv_names: name of the ASV
-#' \item day_organ: sample
+#' \item sample: sample identifier
 #' \item position_bc260: position of the alteration in the original barcode. Note that insertions
 #' are assigned to the position that coincides with their beginning.
 #' \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
@@ -464,7 +470,7 @@ perform_msa = function(REvoBC_object, ...) {
   if(!dir.exists(output_dir)) dir.create(output_dir)
   df_to_plot_org_tree <- 
     dplyr::select(REvoBC_object$clean_asv_dataframe, asv_names, seq) %>%
-    mutate_at("asv_names", stringr::str_replace, ".NMBC", ".ORG") %>%
+    #mutate_at("asv_names", stringr::str_replace, ".NMBC", ".ORG") %>%
     arrange(asv_names)
   
   
@@ -477,7 +483,7 @@ perform_msa = function(REvoBC_object, ...) {
   outputFileFASTA <- file.path(output_dir, "dnastringset.fa")
   Biostrings::writeXStringSet(dnastringset, outputFileFASTA)
   
-  utils::write.csv(dnastringset, file.path(output_dir, "dnastringset.csv"), col.names = FALSE, quote=FALSE)
+  utils::write.csv(dnastringset, file.path(output_dir, "dnastringset.csv"), quote=FALSE)
   
   # Perform Multiple Sequence Alignment with muscle
   dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),

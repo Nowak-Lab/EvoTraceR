@@ -11,7 +11,7 @@ get_args_from_dots = function(dots, fn){
 
 ### Graphic: Color Choices ------------------------------------------------------
 # Colors: set final colors for organs
-day_organ_col <- c("PRL" = "#65A7F3", "PRR" = "#65A7F3", # Prostate Left, Prostate Right
+sample_col <- c("PRL" = "#65A7F3", "PRR" = "#65A7F3", # Prostate Left, Prostate Right
                    "LVL" = "#BA361E", "LVR" = "#BA361E", "LVM" = "#BA361E",  "LVC" = "#BA361E", #  Liver Left Lobe, Liver Right Lobe, Liver Median Lobe, Liver Caudate Lobe   
                    "LGL" = "#4D0D29", "LGR" = "#4D0D29", # Lung Left, Lung Right
                    "ADL" = "#4387B7", "ADR" = "#4387B7", # Adrenal Left, Adrenal Right

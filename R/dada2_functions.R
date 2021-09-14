@@ -79,7 +79,7 @@ dada2_alignment = function(fnFs,
            units = "cm")
     # Visualize the estimated error rates of the reverse reads:
     ggsave(filename = file.path(figure_dir, "quality_errors_errR.pdf"), 
-           plot = plotErrors(errR, nominalQ=TRUE), 
+           plot = dada2::plotErrors(errR, nominalQ=TRUE), 
            #device = grDevices::cairo_pdf, 
            width=15,#5+5*length(sample.names), 
            height=15,#5+5*length(sample.names), 
@@ -144,9 +144,12 @@ dada2_alignment = function(fnFs,
     hist_seq_count = 
       ggplot(data=seq_lengths, aes(x = length)) + 
       geom_histogram(binwidth = 1, fill = '#B484A9') +
-      scale_x_continuous(breaks = c(seq(0,max(seq_lengths$length), 25)),
-                         limits=c(0, max(seq_lengths$length) + 5)) +
+      scale_x_continuous(labels=scales::comma, 
+                         breaks=c(1, seq(52, 520, 26)),
+                         limits=c(0, 520)) +
       xlab("Sequence Length") +
+      ylab("Sequence count")
+      lemon::coord_capped_cart(left="both", bottom="left")
       geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
       barplot_nowaklab_theme() 
     
