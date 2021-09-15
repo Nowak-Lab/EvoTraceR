@@ -6,7 +6,7 @@
 \usage{
 asv_analysis(
   REvoBC_object,
-  barcode = "BC10v0.ORG",
+  barcode = "BC10v0",
   output_figures = TRUE,
   pid_cutoff_nmbc = 98,
   asv_count_cutoff = 2,
@@ -39,15 +39,15 @@ to their total counts.
 \itemize{
 
 \item \code{asv_df_percentages}: dataframe with six columns. \code{asv_names} is the name of the ASV.
-\code{day_organ} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
+\code{sample} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
 \code{count}: total counts for a specific ASV in a specific sample;
 \code{perc_in_sample}: counts normalized to the total counts in the corresponding sample;
-\code{perc_asv}: conuts normalized to the total counts for the corresponding ASV;
+\code{perc_asv}: counts normalized to the total counts for the corresponding ASV;
 \code{perc_fold_to_max}: counts normalized to the maximum counts observed for the corresponding ASV in a sample.
 
 \item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
-\item \code{sample_totalCounts}: for each sample, total counts and number of distinct ASVs detected.
-\item \code{asv_diversity_perSample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
+\item \code{sample_totalcounts}: for each sample, total counts and number of distinct ASVs detected.
+\item \code{asv_diversity_persample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
 \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
 \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
@@ -61,8 +61,8 @@ It saves the following \code{.csv} files in a sub-folder \code{asv_analysis} of 
 its counts in all samples. It also overwrites the sequence name (column seq_names) 
 of those that exactly match any of the possible barcodes, using the barcode identifier. The sequences
 that don't match the barcode in the current analysis may be due to contamination. 
-\item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalCounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_perSample.csv}  
-\code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_perSample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
+\item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalcounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_persample.csv}  
+\code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_persample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
 
 }
 }
@@ -83,6 +83,6 @@ Finally, it computes different statistics for the ASVS, storing:
 data(revo_initialized)
 output_dir = system.file("extdata", "output", package = "REvoBC")
 revo_initialized$output_directory = output_dir
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0')
 
 }

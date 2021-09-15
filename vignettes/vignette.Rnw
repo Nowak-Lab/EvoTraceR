@@ -112,7 +112,7 @@ Then, it normalises the observed counts of each ASV in each sample, both by the 
 It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
 
 <<example_analysis>>=
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0.ORG')
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0')
 names(revo_analyzed)
 @
 

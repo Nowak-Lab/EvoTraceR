@@ -1,6 +1,6 @@
 Package: REvoBC
-Version: 0.99.7
-Date: 2021-08-13
+Version: 0.99.8
+Date: 2021-09-15
 Title: REvoBC
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
@@ -43,5 +43,5 @@ biocViews:
     BiomedicalInformatics,
     SingleCell,
     SomaticMutation
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr

@@ -106,6 +106,10 @@ initialize_REvoBC = function( output_dir,
   
   class(REvoBC_object) = 'REvoBC'
   REvoBC_object$dada2 = list()
+  
+  output_dir_files = file.path(output_dir, "dada2_files")
+  if (!dir.exists(output_dir_files)) dir.create(output_dir_files)
+  
   if (is.null(dada2_output_sequences)) {
     # Fastq were provided as input -> perform alignment with dada2
     # Check if input files are compressed
@@ -141,9 +145,6 @@ initialize_REvoBC = function( output_dir,
     # Specify the full path to the fnFs and fnRs
     fnFs = file.path(input_dir, fnFs)
     fnRs = file.path(input_dir, fnRs)
-    
-    output_dir_files = file.path(output_dir, "dada2_files")
-    if (!dir.exists(output_dir_files)) dir.create(output_dir_files)
     
     align_output = dada2_alignment(fnFs = fnFs,
                                    fnRs = fnRs,

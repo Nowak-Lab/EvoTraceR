@@ -34,8 +34,6 @@ dada2_alignment = function(fnFs,
   filtRs = file.path(filt_input_dir, paste0(sample.names, "_R_filt.fastq.gz"))
   
   if (output_figures) {
-    cat('Working directory: ', getwd())
-    cat('Path: ', system.file("extdata", "input", package = "REvoBC"))
     cli::cli_alert_info('Creating quality profiles figures')
     # Inspect Read Quality Profiles
     # Visualize the quality profile of the forward reads:
@@ -148,8 +146,8 @@ dada2_alignment = function(fnFs,
                          breaks=c(1, seq(52, 520, 26)),
                          limits=c(0, 520)) +
       xlab("Sequence Length") +
-      ylab("Sequence count")
-      lemon::coord_capped_cart(left="both", bottom="left")
+      ylab("Sequence count") +
+      lemon::coord_capped_cart(left="both", bottom="both") +
       geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
       barplot_nowaklab_theme() 
     

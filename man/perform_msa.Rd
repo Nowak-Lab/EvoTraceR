@@ -18,7 +18,7 @@ REvoBC object with a new field named \code{alignment}, which is a list with the 
 \item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
 \itemize{
 \item asv_names: name of the ASV
-\item day_organ: sample
+\item sample: sample identifier
 \item position_bc260: position of the alteration in the original barcode. Note that insertions
 are assigned to the position that coincides with their beginning.
 \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
