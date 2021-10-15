@@ -148,15 +148,16 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
                                              y=dplyr::select(REvoBC_object$clean_asv_dataframe, seq, asv_names), 
-                                             by="asv_names")
+                                             by="asv_names") %>%
+    add_row(dplyr::select(REvoBC_object$barcode, -c("seq_start", "seq_end")))
   
 
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- Biostrings::pairwiseAlignment(subject = toString(df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
+  pwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$barcode$seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
                                        pattern = df_to_plot_perf_match$seq, 
-                                       type="global")
+                                       type="global", gapOpening = 20, gapExtension = 1)
   
   # Perform pairwise Alignment Stat
   # pid = Computes the percent sequence identity
@@ -172,6 +173,7 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   
   REvoBC_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
+  REvoBC_object$statistics$all_asv_statistics = df_to_plot_perf_match
   # Histogram of Length    
   # skip nmbc
   data_for_hist = df_to_plot_perf_match %>% filter(!stringr::str_detect(asv_names, "NMBC|ORG"))
@@ -204,6 +206,10 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
            width=25, 
            height=5*length(sample_columns), 
            units = "cm") #17.5 for 4x
+    #pg <- ggplot_build(hist_seq_count)
+    write.csv(data_for_hist, #pg$data[[1]],  
+              file.path(figure_dir, "/histogram_sequenceLength_data.csv"),
+              row.names = FALSE, quote = FALSE)
   }
   
   return(REvoBC_object)

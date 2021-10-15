@@ -15,7 +15,7 @@ perform_msa(REvoBC_object, ...)
 REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 \itemize{
 \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
-\item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
+\item \code{mutations_df}: tibble where each line corresponds to a position in a mutation, and the columns encode the following information:
 \itemize{
 \item asv_names: name of the ASV
 \item sample: sample identifier
@@ -24,20 +24,31 @@ are assigned to the position that coincides with their beginning.
 \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
 \item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
 }
+\item \code{ASV_alterations_width}: number of alterations for each type in each ASV
+\item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
+\item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
 }. 
 In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 \itemize{
 \item dnastringset.fa: fasta file where the sequences are stored.
 \item dnastringset.fa: same as fasta, but in csv format.
 \item dnastringset_muscle-muscle_msa.fasta: fasta with the stringset resulted from MUSCLE.
-\item ASV_alterationType_frequency.csv: number of alterations for each type in each ASV
+\item ASV_alterations_width.csv: number of alterations for each type in each ASV
 \item mutations_frequency.csv: per sample normalized frequency of each alteration type, computed for each position of the barcode in each sample.
 \item mutations_df.csv: content of mutations_df variable explained above.
+\item mutations_coordinates: content of mutations_coordinates variable explained above.
+\item binary_mutation_matrix: content of binary_mutation_matrix variable explained above.
 }
+All identified mutations are displayed in a heatmap, saved inside the folder \code{msa_figures}.
+This function also produces an output figure that contain the frequency of 
+deletion, substitutions and insertions found in the different samples.
 }
 \description{
 This function performs multi-sequence alignment and outputs statistics about mutations. 
 Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
+This function also compute the binary matrix indicating the presence/absence of
+mutations in each ASV. Each mutation is characterized by a start position and an end position, it is thus identified through an ID
+which indicates the start, end and type of mutation.
 }
 \examples{
 data(revo_analyzed)

@@ -1,17 +1,17 @@
 # Input: "dnastringset_msa.fasta" -> "alignment_tidy_ref_alt_final.csv"   ------------------------------------------------------
 # Output 1: "alignment_tidy_ref_alt_final.csv" -> "del_sub_ins_df.csv" ------------------------------------------------------
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
-count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
+count_alterations <- function(REvoBC_object, alignment_tidy, output_dir_files, output_dir_figures) {
   
   # Create tidy alignment df where, for each position and each ASV you store the 
   # reference and the observed nucleotide
   alignment_tidy_ref_alt <- 
-    merge(alignment_tidy, filter(alignment_tidy, stringr::str_detect(name, "NMBC")), by="position") %>%
+    merge(alignment_tidy, filter(alignment_tidy, !stringr::str_detect(name, "ASV")), by="position") %>%
     dplyr::select(1, 2, 5, 3)
   
   # Adjust Column Names
   colnames(alignment_tidy_ref_alt) <- c("position", "asv_names", "ref_asv", "read_asv")
-  # TODO: controlalre che questa modifica sia giusta
+  
   percentages = REvoBC_object$statistics$asv_df_percentages %>%
     ungroup() %>%
     add_row(dplyr::select(REvoBC_object$barcode, !c(seq_start, seq_end, seq)))# %>%
@@ -61,10 +61,10 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
     rename_at(vars(!matches("asv_names")), ~ paste0("width_total_", .))
   
   utils::write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
-            file.path(output_dir, "ASV_alterations_width.csv"), 
+            file.path(output_dir_files, "ASV_alterations_width.csv"), 
             row.names = FALSE)
   
-  REvoBC_object$alignment$asv_alterationType_frequency = alignment_tidy_ref_alt_mrg_final_width_summ
+  REvoBC_object$alignment$ASV_alterations_width = alignment_tidy_ref_alt_mrg_final_width_summ
   
   # Select only deletions and substitutions
   del_sub_df <- 
@@ -97,19 +97,43 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
   
   # Save File
   utils::write.csv(del_sub_ins_df, 
-            file.path(output_dir, "mutations_df.csv"), 
+            file.path(output_dir_files, "mutations_df.csv"), 
             row.names = FALSE)
   
-  ### Plot mutations Frequency based on "del_sub_ins_df"
-  # sumarise stat for Del, Sub and Ins -> postion is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22% 
-  del_sub_ins_df_data_to_plot_sum_perc <-
-    del_sub_ins_df %>% 
+  
+  ################
+  ### Plot CNA Frequency based on "del_sub_ins_df" ------------------------------------------------------
+  # summarize stat for "del" and "sub" -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
+  del_sub_df_data_to_plot_sum_perc <-
+    del_sub_ins_df %>%
+    group_by(sample, alt, position_bc260) %>% #
+    dplyr::summarise(sum_perc = sum(perc_in_sample)) %>%
+    dplyr::filter(!alt == "wt") %>% # don't plot "wt"
+    dplyr::filter(!alt == "ins") # don't plot "ins"
+  # "ins" only -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
+  ins_df_data_to_plot_sum_perc <-
+    del_sub_ins_df %>%
+    dplyr::select(asv_names, sample, position_bc260, alt, perc_in_sample) %>%
+    dplyr::filter(alt == "ins") %>% # get only "ins"
+    unique() %>%
     group_by(sample, alt, position_bc260) %>%
-    dplyr::summarise(sum_perc = sum(perc_in_sample)) %>% # all deletions that happened in the barcode
-    dplyr::filter(!alt == "wt") # don't plot wt 
+    dplyr::summarise(sum_perc = sum(perc_in_sample))
+  # bind "ins" after recalculation with "del_sub"
+  del_sub_ins_df_data_to_plot_sum_perc <- rbind(del_sub_df_data_to_plot_sum_perc, ins_df_data_to_plot_sum_perc)
+
+  ### Change 10-12-21 ###
+  
+  # ### Plot mutations Frequency based on "del_sub_ins_df"
+  # # sumarise stat for Del, Sub and Ins -> postion is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22% 
+  # del_sub_ins_df_data_to_plot_sum_perc <-
+  #   del_sub_ins_df %>% 
+  #   group_by(sample, alt, position_bc260) %>%
+  #   dplyr::summarise(sum_perc = sum(perc_in_sample)) %>% # all deletions that happened in the barcode
+  #   dplyr::filter(!alt == "wt") # don't plot wt 
+  
   # Save File
   utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
-            file.path(output_dir, "mutations_frequency.csv"), 
+            file.path(output_dir_files, "mutations_frequency.csv"), 
             row.names = FALSE)
   
   
@@ -158,14 +182,96 @@ count_alterations <- function(REvoBC_object, alignment_tidy, output_dir) {
           panel.background = element_rect(fill="white"))
   
   # Save PDF
-  ggsave(filename=file.path(output_dir, "gghist_del_sub_ins_perc.pdf"), 
+  ggsave(filename=file.path(output_dir_figures, "gghist_del_sub_ins_perc.pdf"), 
          plot=alt_count_bc, 
          #device=grDevices::cairo_pdf, 
          width=25, 
          height=5*length(sample_columns), 
-         units = "cm") #17.5 for 4x
+         units = "cm") 
+  write.csv(del_sub_ins_df_data_to_plot_sum_perc,  
+            file.path(output_dir_figures, "/gghist_del_sub_ins_data.csv"),
+            row.names = FALSE, quote = FALSE)
+  
   
   REvoBC_object$alignment$mutations_df = dplyr::select(del_sub_ins_df, -c('position'))
   return(REvoBC_object)
   
 }
+
+# Create the binary mutations matrix
+binary_mutation_matrix = function(REvoBC_object, output_dir, output_dir_figures) {
+  output_dir_figures = file.path(REvoBC_object$output_directory, "msa_figures")
+  if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
+  
+  output_dir = file.path(REvoBC_object$output_directory, "msa")
+  if (!dir.exists(output_dir)) {dir.create(output_dir)}
+  
+  # Adjust Alignment
+  dnastringset_msa = REvoBC_object$alignment$msa_stringset 
+  dnastringset_msa <- Biostrings::unmasked(dnastringset_msa)
+  
+  # Set references to "perfect_match_single" 
+  ref <- dnastringset_msa[REvoBC_object$barcode$asv_names]
+  # Reference Sequence (Barcode Plus)
+  ref <- as.vector(as.matrix(ref))
+  
+  ### Convert to Binary Alignment File (for Camin-Sokal MP)
+  
+  # Call Subs, Insertions and Deletions, Based on msa
+  arle.list <- list()
+  asv_sequences = names(dnastringset_msa)
+  for(ai in 1:length(dnastringset_msa)) {
+    # another sequence
+    seq <- as.vector(as.matrix(dnastringset_msa[ai]))
+    mut.df <- identifyMutations(seq, ref)
+    if (nrow(mut.df)>0) {
+      mut.df$seq.id <- names(dnastringset_msa)[ai]
+      arle.list[[names(dnastringset_msa)[ai]]] <- mut.df 
+    }
+  }
+  
+  # bind mutations from all sequences
+  mut.df.samples <- do.call('rbind', arle.list)
+  mut.df.samples$seq.id <- factor(mut.df.samples$seq.id, levels=names(dnastringset_msa))
+  # define mutation ID
+  mut.df.samples$mut.id <- paste0(mut.df.samples$type, ".", mut.df.samples$start.barcode, "_",mut.df.samples$end.barcode)
+  
+  
+  # for data frame and remove sub in columns ---------------------------------------------------
+  # choose for data tree building: c("del", "ins", "sub", "complex") # what will be included for analysis
+  mut.df.samples <-  dplyr::filter(mut.df.samples, type %in% c("del", "ins", "sub", "complex"))
+  
+  # convert to wide format. make sure only 0 and 1 are allowed]
+  arle.all.df.wide= (table(mut.df.samples$seq.id, mut.df.samples$mut.id)>0)*1
+  arle.all.df.wide[is.na(arle.all.df.wide)] <- 0
+  
+  # binary variants 
+  asv_bin_var <- arle.all.df.wide
+  
+  # Show heatmap
+  #Heteatmap(asv_bin_var, cluster_columns = T)
+  p = pheatmap::pheatmap(asv_bin_var, color = c("#042e61", "#e29892"), fontsize = 6)
+  ggsave(filename=file.path(output_dir_figures, "mutations_heatmap.pdf"), 
+         plot=p, 
+         #device=grDevices::cairo_pdf, 
+         width=4*ncol(asv_bin_var), 
+         height=5*nrow(asv_bin_var), 
+         units = 'mm')
+  # Save csv
+  write.csv(asv_bin_var, file.path(output_dir, "/binary_mutation_matrix.csv"))
+  
+  
+  # assign and organise BC10 variant (for plotting purposes)
+  asv_var <- tibble::tibble(mut.df.samples) %>%
+    dplyr::add_row(seq.id  = REvoBC_object$barcode$asv_names, type = 'wt', lengths = 0)
+  
+  # Save csv
+  write.csv(asv_var, file.path(output_dir, "/mutations_coordinates.csv"))
+  
+  REvoBC_object$alignment$mutations_coordinates = asv_var
+  REvoBC_object$alignment$binary_mutation_matrix = asv_bin_var
+  
+  return(REvoBC_object)
+  
+}
+

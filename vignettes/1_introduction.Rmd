@@ -31,18 +31,25 @@ if (!require("Biostrings")) BiocManager::install("Biostrings")
 if (!require("benthos")) install.packages("benthos")
 if (!require("lemon")) install.packages("lemon")
 if (!require("scales")) install.packages("scales")
+if (!require("phytools")) install.packages("phytools")
 if (!require("muscle")) BiocManager::install("muscle")
 if (!require("R4RNA")) BiocManager::install("R4RNA")
 if (!require("ggmsa")) install.packages("ggmsa")
 if (!require("utils")) install.packages("utils")
 if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
+if (!require("Rphylip")) BiocManager::install("Rphylip")
 
 # install devtools library and REvoBC
 if (!require("devtools")) install.packages("devtools")
 library("devtools")
 install_github("Nowak-Lab/REvoBC", ref = "master")
+```
 
+In order to build the phylogenetic tree, REvoBC uses the camin-sokal implementation found in the package Rphylip. In order to use such package, users should also install [mix](https://evolution.genetics.washington.edu/phylip.html).
+The path to the mix binary needs to be provided to the REvoBC function that performs the phylogeny inference.
+
+```
 # load REvoBC library
 library("REvoBC")
 ```

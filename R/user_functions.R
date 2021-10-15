@@ -231,7 +231,7 @@ initialize_REvoBC = function( output_dir,
 #' \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 #' \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
 #' \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
-#' 
+#' \item \code{all_asv_statistics}: all the statistics computed on each ASV grouped toghether in the same tibble.
 #' }
 #' }  
 #' 
@@ -256,6 +256,7 @@ initialize_REvoBC = function( output_dir,
 #' @importFrom stringr str_detect
 #' @importFrom tidyr gather pivot_wider
 #' @importFrom forcats fct_relevel
+#' @importFrom data.table nafill
 # @importFrom grDevices cairo_pdf
 #' @import dplyr
 #' @import ggplot2
@@ -277,16 +278,14 @@ asv_analysis = function(REvoBC_object,
   if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = data.frame(
-    asv_names = c("BC10v0", "BC10v1", "BC10v2", "BC10v3", "BC10v4", "g.70.Rb1", "g.1348.Rb1"),
-    seq_start = c("^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC"), # 5x nts
-    seq_end = c("CCCGTGGATC$", "GCCGGGGATC$", "ACCGGGGATC$", "ACCCTGGATC$", "GCCGCGGATC$", "GCATGACGCG$", "GTTTGTCCAT$"),
+    asv_names = c("BC10v0", "BC10v1", "BC10v2", "BC10v3", "BC10v4"),
+    seq_start = c("^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC"), # 5x nts
+    seq_end = c("CCCGTGGATC$", "GCCGGGGATC$", "ACCGGGGATC$", "ACCCTGGATC$", "GCCGCGGATC$"),
     seq = c("TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
             "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTGTTACACACGCATTCAACCGCGGACTATTACACGCTCGTTCAACCAGGGATATTTACACGCAAGTTCAACCACGGATTTATACACGCGCACTCAACCAGGGTCATCTACGCAAGCGTTCAATCGAGGTACATTCCACGCGCATTCAACCGGGGCTTTTTACACCCGCGCTCAACAGGGGAACTTTACACGTGCGATCAGCCGGGGATC",
             "TCTACACGCGCGTTCAACCGAGGAAAACTACACACGCATTCAACCACGGTTTATTACACGCACATTCAACCGTGGACTGCTACACACGCGCTCAACCACGGATATTTACGCACACGTTCAACCGCGGATTGTTACACCCGCATTCAACCGAGGTCACCTACACCCGCACTCAACCGGGGTACGCGACACGTGCGATCAACCGAGGCTTACTACCCGCACGTTCAACTGGGGAACACTGCACGCGAGTTCGACCGGGGATC",
             "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACATTCAACCGTGGTTTACTACACAAGCGTTCAACCAAGGACTCCTACACATACGTTCAACCGTGGATATTTACACGTTCGTTCAACCAGGGATTTTTACAAACGAGTTCAACCGGGGTCACTTATACGCTCGTTCAACCGAGGTACTCTACACGCACCTTCAATCACGGCTTCCTACAGGAGCGTTCAAACGCGGAACTCAACGGGCGCGTTCAACCCTGGATC",
-            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACATTCAACCGTGGTTTATTACACGCACGTTCAACCAGGGACTTTTACATACGCATTCAACCGGGGATATTTACTCACACGTTCAACCGGGGATTGCTACACGAACGTTCAATCGCGGTCATCAACGTGCGCATTCAACCGTGGTACACTACGCACCCGTTCAACCGGGGCTTTGGACACGCGCATACAACCGTGGAACTCTACACAGGCATTCAGCCGCGGATC",
-            "GCTCCCTTCCCTTCCCTTCTCTCCGGCCCGCGGCGGCCGCGCTCCTCACCTGGCCAGGGGCAGCTCTTCGGGGCCGCTGTCCTGCGCGGGGTCGTCCTCCCGAGGCGGCGGCGGCGGCGGTGGCGGGGGCTCGGCGGCCGCGGCTCTGCGCGGGGCTTTGGGCGGCATGACGCG",
-            "CTAGAAGGAGCAGAATGTGTTTCAATAAAAGACTTTAACAAAATTCAATTAACTTTTTGACTTTCTGAAACAGTAAAAGCTTATTATTTTTCCTTTTGTTTGTAGCGATATAAACTTGGAGTCCGATTGTATTACCGTGTGATGGAATCCATGCTTAAATCAGTAAGTTAAAGGAAACAAAATAGCAAAAAAATTTAATGCTGACACAAAGAAAGTTTCAATTAAAAGTTTTTTTTTCAATTATCTGTTTTAGGAAGAAGAACGTTTGTCCAT"),
+            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACATTCAACCGTGGTTTATTACACGCACGTTCAACCAGGGACTTTTACATACGCATTCAACCGGGGATATTTACTCACACGTTCAACCGGGGATTGCTACACGAACGTTCAATCGCGGTCATCAACGTGCGCATTCAACCGTGGTACACTACGCACCCGTTCAACCGGGGCTTTGGACACGCGCATACAACCGTGGAACTCTACACAGGCATTCAGCCGCGGATC"),
     stringsAsFactors = FALSE)
   
   if(!barcode %in% barcodes_info$asv_names) {
@@ -395,9 +394,10 @@ asv_analysis = function(REvoBC_object,
                                 output_dir = output_dir)
 
   if (output_figures) {
+    track_data = data.frame(name=c("Starting Seq", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASV"),
+                                 num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
     seqtab_df_clean_track <-
-      ggplot(data=data.frame(name=c("Starting Seq", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASV"),
-                             num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))) +
+      ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num), position = "dodge", stat = "identity", width=0.8, size=0.2) +
       geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
       labs(x = "Number of ASVs", y = "") 
@@ -408,6 +408,10 @@ asv_analysis = function(REvoBC_object,
            plot=seqtab_df_clean_track, 
            #device=grDevices::cairo_pdf, 
            width=10, height=10, units = "cm")
+
+    write.csv(track_data,  
+              file.path(figure_dir, "/track_asv_number_data.csv"),
+              row.names = FALSE, quote = FALSE)
   }
   
   return(REvoBC_object)
@@ -416,6 +420,9 @@ asv_analysis = function(REvoBC_object,
 
 #' This function performs multi-sequence alignment and outputs statistics about mutations. 
 #' Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
+#' This function also compute the binary matrix indicating the presence/absence of
+#' mutations in each ASV. Each mutation is characterized by a start position and an end position, it is thus identified through an ID
+#' which indicates the start, end and type of mutation.
 #' 
 #' @title perform_msa
 #' 
@@ -431,7 +438,7 @@ asv_analysis = function(REvoBC_object,
 #' @return REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 #' \itemize{
 #' \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
-#' \item \code{mutations_df}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
+#' \item \code{mutations_df}: tibble where each line corresponds to a position in a mutation, and the columns encode the following information:
 #' \itemize{
 #' \item asv_names: name of the ASV
 #' \item sample: sample identifier
@@ -440,21 +447,29 @@ asv_analysis = function(REvoBC_object,
 #' \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
 #' \item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
 #' }
+#' \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
+#' \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
+#' \item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
 #' }. 
 #' In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 #' \itemize{
 #' \item dnastringset.fa: fasta file where the sequences are stored.
 #' \item dnastringset.fa: same as fasta, but in csv format.
 #' \item dnastringset_muscle-muscle_msa.fasta: fasta with the stringset resulted from MUSCLE.
-#' \item ASV_alterationType_frequency.csv: number of alterations for each type in each ASV
+#' \item ASV_alterations_width.csv: number of alterations for each type in each ASV
 #' \item mutations_frequency.csv: per sample normalized frequency of each alteration type, computed for each position of the barcode in each sample.
 #' \item mutations_df.csv: content of mutations_df variable explained above.
+#' \item mutations_coordinates: content of mutations_coordinates variable explained above.
+#' \item binary_mutation_matrix: content of binary_mutation_matrix variable explained above.
 #' }
-#' 
+#' All identified mutations are displayed in a heatmap, saved inside the folder \code{msa_figures}.
+#' This function also produces an output figure that contain the frequency of 
+#' deletion, substitutions and insertions found in the different samples.
 #' 
 #' @export perform_msa
 #' @import dplyr
 #' @import ggplot2
+#' @import tibble
 #' @importFrom muscle muscle
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
 #' @importFrom  ggmsa tidy_msa 
@@ -465,13 +480,19 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom stringr str_replace str_detect
 #' @importFrom methods as
 #' @importFrom tidyr pivot_wider
+#' @importFrom pheatmap pheatmap 
 perform_msa = function(REvoBC_object, ...) {
   dots = list(...)
-  output_dir = file.path(REvoBC_object$output_directory, "msa")
-  if(!dir.exists(output_dir)) dir.create(output_dir)
+  output_dir_files = file.path(REvoBC_object$output_directory, "msa")
+  if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
+  
+  output_dir_figures = file.path(REvoBC_object$output_directory, "msa_figures")
+  if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
+  
   df_to_plot_org_tree <- 
-    dplyr::select(REvoBC_object$clean_asv_dataframe, asv_names, seq) %>%
-    #mutate_at("asv_names", stringr::str_replace, ".NMBC", ".ORG") %>%
+    dplyr::select(REvoBC_object$statistics$asv_toBarcode_similarity, asv_names, seq) %>%
+    filter(!str_detect(asv_names, "NMBC")) %>%
+    distinct() %>%
     arrange(asv_names)
   
   
@@ -481,16 +502,16 @@ perform_msa = function(REvoBC_object, ...) {
   names(dnastringset) <- df_to_plot_org_tree$asv_names
   
   # Output as FASTA files
-  outputFileFASTA <- file.path(output_dir, "dnastringset.fa")
+  outputFileFASTA <- file.path(output_dir_files, "dnastringset.fa")
   Biostrings::writeXStringSet(dnastringset, outputFileFASTA)
   
-  utils::write.csv(dnastringset, file.path(output_dir, "dnastringset.csv"), quote=FALSE)
+  utils::write.csv(dnastringset, file.path(output_dir_files, "dnastringset.csv"), quote=FALSE)
   
   # Perform Multiple Sequence Alignment with muscle
   dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),
                                                    get_args_from_dots(dots, muscle::muscle))) # suggestion: gapopen = -400
   Biostrings::writeXStringSet(methods::as(dnastringset_msa, "DNAStringSet"), 
-                  file.path(output_dir, "dnastringset_muscle-muscle_msa.fasta"))
+                  file.path(output_dir_files, "dnastringset_muscle-muscle_msa.fasta"))
   
   # Store MSA result
   msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
@@ -501,8 +522,201 @@ perform_msa = function(REvoBC_object, ...) {
                              start = 1, 
                              end = ncol(msa))
   
-  REvoBC_object = count_alterations(REvoBC_object, alignment_tidy, output_dir)
+  REvoBC_object = count_alterations(REvoBC_object, 
+                                    alignment_tidy, 
+                                    output_dir_files,
+                                    output_dir_figures)
+  
+  REvoBC_object = binary_mutation_matrix(REvoBC_object, 
+                                         output_dir_files, 
+                                         output_dir_figures)
   
   return(REvoBC_object)
   
+}
+
+#' This function calls Rmix from package Rphylip to perform the inference of the phylogeny
+#' with Camin-Sokal.
+#' 
+#' @title infer_phylogeny
+#' 
+#' @examples 
+#' \dontrun{
+#' data(revo_msa)
+#' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program Files/rphylip/exe/')
+#' }
+#' 
+#' 
+#' @param REvoBC_object (Required)
+#' @param phylip_package_path (Required). Prior to running this function, users should install 
+#' \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
+#' For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
+#' then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.
+#' 
+#' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
+#' 
+#' @export infer_phylogeny
+#' @importFrom Rphylip Rmix
+#' @importFrom scales comma
+#' @importFrom phytools mrp.supertree
+#' @import dplyr
+#' @import ggplot2
+#' @import lemon
+infer_phylogeny = function(REvoBC_object, phylip_package_path) {
+  
+  output_dir = file.path(REvoBC_object$output_directory, "phylogeny")
+  if (!dir.exists(output_dir)) {dir.create(output_dir)}
+  
+  asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix
+  
+  # Compute phylogeny
+  ancestral <<- as.character(rep(0, dim(asv_bin_var)[2]))
+  stop('Dopo creazione di ancestral')
+  # Run phylip
+  set.seed(1980)
+
+  tree_mp_all_rmix <- Rphylip::Rmix(X=as.matrix(asv_bin_var),
+                                    method = "Camin-Sokal", 
+                                    ancestral = ancestral,
+                                    path = phylip_package_path, 
+                                    cleanup = T)
+  
+  #rm(ancestral)
+  # Rename It
+  tree_mp_all <- tree_mp_all_rmix
+  
+  
+  ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
+  set.seed(1980)
+  tree_mp <- phytools::mrp.supertree(trees=tree_mp_all, 
+                                     start="NJ", 
+                                     method = "optim.parsimony", 
+                                     root=FALSE)
+  # Option 2: Choose What Tree Number to Plot (Arbitrary Choice) -> need to argue why this one, the best score as 1?
+  #tree_mp <- tree_mp_all[100] # plot single tree -> #1 chosen arbitrarily
+  
+  
+  ### Fortify tree to data frame ------------------------------------------------------ 
+  tree_mp_df <- ggtree::fortify(tree_mp)
+  # Find node to root in the original sequence in "bc10_org"
+  tree_root_mp <-
+    tree_mp_df %>%
+    filter(label == REvoBC_object$barcode$asv_names) %>%
+    pull(node)
+  
+  
+  ### Re-root in the Original Sequence ------------------------------------------------------ 
+  tree_mp <- TreeTools::RootTree(tree_mp, tree_root_mp)
+  # Re-fortify tree to data frame
+  tree_mp_df <- ggtree::fortify(tree_mp)
+  
+  REvoBC_object$phylogeny$tree = tree_mp_df
+  
+  write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
+  
+  return(REvoBC_object)
+  
+}
+
+#' This function plots all the data that have been computed for the phylogenetic analysis.
+#' 
+#' @title plot_summary
+#' 
+#' 
+#' @examples
+#' \dontrun{
+#' data(revo_phyl)
+#' summary_plot = plot_summary(revo_pjhyl)
+#' }
+#' 
+#' @param REvoBS_object (Required).
+#' @param save_dir (Optional). Folder where the user wishes to store the plot. By default the figure is saved
+#' in the main output directory of the \code{REvoBC object} (\code{REvoBC_object$output_directory})
+#' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
+#' This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples. 
+#' 
+#' @return A summary plot is produced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
+#' representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
+#' next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
+#' where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
+#' 
+#' @export plot_summary
+#' @import ggplot2
+#' @import lemon
+#' @import tibble
+#' @importFrom scales comma
+plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
+  tree_mp_df = REvoBC_object$phylogeny$tree
+  # merge with df_to_plot_perf_match
+  df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
+  if (is.character(sample_order) & length(sample_order) == 1) {
+    
+    if (sample_order != 'alphabetical') {
+      stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
+    }
+    df_to_plot_perf_match = dplyr::arrange(df_to_plot_perf_match, sample, asv_names)
+  } else {
+    if (length(intersect(sample_order, df_to_plot_perf_match$sample)) != length(sample_order)) {
+      cli::cli_alert_danger('The samples found in variable sample_order do not match the samples contained in the dataset.')
+      cat("The following samples need to be provided: ", unique(df_to_plot_perf_match$sample))
+      stop("Exiting")
+    }
+    df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
+    #= dplyr::arrange(df_to_plot_perf_match, match(sample, sample_order), asv_names)
+  }
+    
+  df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
+                                   REvoBC_object$alignment$ASV_alterations_width, 
+                                   by.x="asv_names", by.y="asv_names"))
+  
+  ##
+  width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), width_total_del:width_total_ins)
+  final_nmbc <- filter(df_to_plot_perf_match, str_detect(asv_names, "NMBC"))
+  nmbc_mrg <- cbind(final_nmbc, width_nmbc)
+  
+  # add back NMBC
+  df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
+  df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
+  
+  ########### Inizio del codice di 07_draw
+  perc_max_tip_colors <-
+    df_to_plot_perf_match %>%
+    dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
+    dplyr::select(asv_names, sample) %>%
+    add_row(data.frame(asv_names=REvoBC_object$barcode$asv_names, sample="PRL"))
+  colnames(perc_max_tip_colors) <- c("asv_names", "sample_max_perc")
+  
+  sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
+  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns, perc_max_tip_colors)
+  
+  
+  
+  msa_cna_bc = plot_msa(REvoBC_object$alignment$mutations_df)
+  
+  bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
+  
+  bar_seq_n = plot_asv_length(df_to_plot_final)
+  
+  bar_pid = plot_similarity(df_to_plot_final)
+  
+  bubble = plot_percentage_asv_sample(df_to_plot_final)
+
+  # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
+  # msa and bar_seq_n
+  msa_cna_bc.bar_ins_del_sub_width <- insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
+  # add ggtree_mp
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 0.75)
+  # add bar_seq_n
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp, bar_seq_n, width = 0.2)
+  # add bar_pid
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n, bar_pid, width = 0.2)
+  # add bubbles
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
+  
+  # Save PDF
+  ggsave(filename=file.path(REvoBC_object$output_directory, "summary_mutations.pdf"), 
+         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble, width=60,
+         height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
+  
+  return(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble)
 }

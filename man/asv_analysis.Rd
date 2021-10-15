@@ -51,7 +51,7 @@ to their total counts.
 \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
 \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
-
+\item \code{all_asv_statistics}: all the statistics computed on each ASV grouped toghether in the same tibble.
 }
 }  
 

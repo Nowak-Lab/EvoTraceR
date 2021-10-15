@@ -120,3 +120,94 @@ barplot_nowaklab_theme <- function(axis.title.font = "Helvetica", axis.title.col
   )
   
 }
+
+
+
+### Identify Mutations ------------------------------------------------------ 
+identifyMutations <- function(seq, ref) {
+  
+  indicesToKeep <- as.vector(as.matrix(ref)!="-")
+  seqSubset <- seq[indicesToKeep]
+  refSubset <- ref[indicesToKeep]
+  # vectors for translating the coordinates
+  barcodpToBarcode <- rep(NA, length(seq))
+  barcodpToBarcode[which(indicesToKeep)] <- 1:length(which(indicesToKeep))  
+  barcodpToBarcode <- nafill(barcodpToBarcode, type = "locf")
+  
+  barcodeToBarcodep <- rep(NA, length(indicesToKeep))  
+  barcodeToBarcodep <-  which(!is.na(barcodpToBarcode))
+  
+  # barcode + scale
+  arle.inf.df <- data.frame(unclass(rle(as.numeric(seq == ref)))) 
+  # find start and end coordinates of each segment
+  arle.inf.df$end.barcodep <- cumsum(arle.inf.df$lengths)
+  if (nrow(arle.inf.df)==1) {
+    arle.inf.df$start.barcodep <- 1
+  } else {
+    arle.inf.df$start.barcodep <- c(0, arle.inf.df$end.barcodep[1:(nrow(arle.inf.df)-1)])+1
+  }
+  # mismatches mean mutations - subset to mutations
+  arle.inf.df <- subset(arle.inf.df, values==0)
+  
+  # if any mutations found, add their sequence and type
+  if (nrow(arle.inf.df)>0) {
+    # annotate each mutations with alt and ref alleles, type and sequence ID
+    for (mi in 1:nrow(arle.inf.df)) {
+      arle.inf.df$ref[mi]<-paste(ref[ arle.inf.df$start.barcodep[mi]:arle.inf.df$end.barcodep[mi]], collapse='')
+      arle.inf.df$alt[mi]<-paste(seq[ arle.inf.df$start.barcodep[mi]:arle.inf.df$end.barcodep[mi]], collapse='')
+    }
+    arle.inf.df$type <- "sub"
+    arle.inf.df[arle.inf.df$lengths>1, "type"] <- "complex"
+    # if alt sequence is made entirely of hyphens, it is a deletions
+    arle.inf.df[gsub("-", "", arle.inf.df$alt)=="", "type"] <- "del"
+    arle.inf.df[gsub("-", "", arle.inf.df$ref)=="", "type"] <- "ins"
+    # add the barcode scale
+    arle.inf.df <- subset(arle.inf.df, type=="ins")
+    arle.inf.df$start.barcode <- barcodpToBarcode[arle.inf.df$start.barcodep]
+    arle.inf.df$end.barcode <- arle.inf.df$start.barcode + 1
+    # from the barcodep scale, only select insertions
+    
+  }    
+  
+  
+  ### barcode scale with a scale ------------------------------------------------------ 
+  arle.df <- data.frame(unclass(rle(as.numeric(as.vector(seqSubset) == as.vector(refSubset)))))      
+  # find start and end coordinates of each segment
+  arle.df$end.barcode <- cumsum(arle.df$lengths)
+  if (nrow(arle.df)==1) {
+    arle.df$start.barcode <- 1
+  } else {
+    arle.df$start.barcode <- c(0, arle.df$end.barcode[1:(nrow(arle.df)-1)])+1
+  }   
+  # mismatches mean mutations - subset to mutations
+  arle.df <- subset(arle.df, values==0)
+  
+  # if any mutations found, add their sequence and type
+  if (nrow(arle.df)>0) {
+    # annotate each mutations with alt and ref alleles, type and sequence ID
+    for (mi in 1:nrow(arle.df)) {
+      arle.df$ref[mi]<-paste(refSubset[ arle.df$start.barcode[mi]:arle.df$end.barcode[mi]], collapse='')
+      arle.df$alt[mi]<-paste(seqSubset[ arle.df$start.barcode[mi]:arle.df$end.barcode[mi]], collapse='')
+    }
+    arle.df$type <- "sub"
+    arle.df[arle.df$lengths>1, "type"] <- "complex"
+    # if alt sequence is made entirely of hyphens, it is a deletions
+    arle.df[gsub("-", "", arle.df$alt)=="", "type"] <- "del"
+    # there should not be any insertions here: they are dealt 
+  }    
+  # add the barcodep scale
+  arle.df$start.barcodep <- barcodeToBarcodep[arle.df$start.barcode]
+  arle.df$end.barcodep <- barcodeToBarcodep[arle.df$end.barcode]
+  
+  if ((nrow(arle.inf.df)>0) &&(nrow(arle.df)>0)) {
+    all.muts <- rbind(arle.inf.df[,colnames(arle.df)], arle.df)  
+  } else if ((nrow(arle.inf.df)>0)) {
+    all.muts <- arle.inf.df
+  }  else {
+    all.muts <- arle.df
+  }
+  
+  return(all.muts)
+  
+}
+

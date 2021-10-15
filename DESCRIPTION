@@ -1,5 +1,5 @@
 Package: REvoBC
-Version: 0.99.8
+Version: 0.99.9
 Date: 2021-09-15
 Title: REvoBC
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
@@ -24,7 +24,11 @@ Imports:
     methods,
     stringr,
     forcats,
-    data.table
+    data.table,
+    pheatmap,
+    tibble,
+    Rphylip,
+    phytools
 Suggests:
     BiocGenerics,
     BiocStyle,

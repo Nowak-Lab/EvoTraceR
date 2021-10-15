@@ -118,14 +118,35 @@ names(revo_analyzed)
 
 There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC).
 barcode is the barcode considered for the analysis.
-statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity.
+statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterogeneity;
 
 <<example_msa>>=
 revo_msa = perform_msa(revo_analyzed)
 @
 
-This last step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
+This step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
 After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+This computation stores inside the REvoBC object a new field called alignment, which gets populated by 5 new fields: msa_stringset is the output of multiple sequence alignemnt performed by musle; mutations_df is a tibble
+where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated, the type of alteration and the frequency of that mutation in the corresponding sample; asv_alteration_width is another tibble
+which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation);
+binary_mutations_matrix is finally a binary tibble, where each line corresponds to an ASV, and each column corresponds to a mutation. 1 and 0 indicate respectively the presence or absence of the mutation in the ASV.
+
+<<example_phylogeny, eval=FALSE>>=
+revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program Files/phylip-3.698/exe/')
+@
+
+This step computes the phylogeny, using the binary mutation matrix computed in the previous step. Phylogeny is computed using camin-sokal method, using the implementation found in the package Rphylip.
+Note that prior to running this function, users should install PHYLIP and then provide the path to the folder containing the binary of mix using the parameter phylip_package_path.
+This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the REvoBC objetc.
+
+<<example_plot_summary, eval=FALSE>>=
+summary_figure = plot_summary(revo_phyl)
+@
+
+Finally, a summary plot is prodced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
+representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
+next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
+where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
 
 \section{\Rcode{sessionInfo()}}
 
