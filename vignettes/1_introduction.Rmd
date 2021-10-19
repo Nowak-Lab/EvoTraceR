@@ -22,6 +22,7 @@ The R version of *REvoBC* can be installed from Github. To do so, we need to ins
 
 ```{r eval=FALSE}
 # install REvoBC dependencies
+if (!require("devtools")) install.packages("devtools")
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 if (!require("dada2")) BiocManager::install("dada2")
@@ -34,16 +35,16 @@ if (!require("scales")) install.packages("scales")
 if (!require("phytools")) install.packages("phytools")
 if (!require("muscle")) BiocManager::install("muscle")
 if (!require("R4RNA")) BiocManager::install("R4RNA")
-if (!require("ggmsa")) install.packages("ggmsa")
+if (!require("ggmsa")) devtools::install_github("YuLab-SMU/ggmsa")
 if (!require("utils")) install.packages("utils")
 if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
 if (!require("Rphylip")) BiocManager::install("Rphylip")
+if (!require("phytols")) install.packages("phytools")
 
 # install devtools library and REvoBC
-if (!require("devtools")) install.packages("devtools")
-library("devtools")
-install_github("Nowak-Lab/REvoBC", ref = "master")
+
+devtools::install_github("Nowak-Lab/REvoBC", ref = "master")
 ```
 
 In order to build the phylogenetic tree, REvoBC uses the camin-sokal implementation found in the package Rphylip. In order to use such package, users should also install [mix](https://evolution.genetics.washington.edu/phylip.html).

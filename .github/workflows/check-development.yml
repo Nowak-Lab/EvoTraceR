@@ -169,10 +169,12 @@ jobs:
           BiocManager::install("R4RNA")
           install.packages("proj4")
           install.packages("ggalt")
-          install.packages("ggmsa")
+          remotes::install_github("YuLab-SMU/ggmsa")
           install.packages("utils")
           install.packages("methods")
           install.packages("data.table")
+          install.packages("phytools")
+          BiocManager::install("Rphylip")
         shell: Rscript {0}
 
       - name: Query dependencies
