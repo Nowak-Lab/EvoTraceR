@@ -158,6 +158,7 @@ jobs:
       - name: Install R packages
         run: |
           install.packages("BiocManager")
+          install.packages('remotes')
           BiocManager::install("dada2")
           install.packages("tidyverse")
           install.packages("cli")
