@@ -7,13 +7,10 @@
 plot_summary(REvoBC_object, sample_order = "alphabetical")
 }
 \arguments{
+\item{REvoBC_object}{(Required).}
+
 \item{sample_order}{(Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
 This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples.}
-
-\item{REvoBS_object}{(Required).}
-
-\item{save_dir}{(Optional). Folder where the user wishes to store the plot. By default the figure is saved
-in the main output directory of the \code{REvoBC object} (\code{REvoBC_object$output_directory})}
 }
 \value{
 A summary plot is produced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
@@ -27,7 +24,9 @@ This function plots all the data that have been computed for the phylogenetic an
 \examples{
 \dontrun{
 data(revo_phyl)
-summary_plot = plot_summary(revo_pjhyl)
+output_dir = system.file("extdata", "output", package = "REvoBC")
+revo_phyl$output_directory = output_dir
+summary_plot = plot_summary(revo_phyl)
 }
 
 }

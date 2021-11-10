@@ -15,19 +15,31 @@ perform_msa(REvoBC_object, ...)
 REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 \itemize{
 \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
-\item \code{mutations_df}: tibble where each line corresponds to a position in a mutation, and the columns encode the following information:
+\item \code{mutations_df} : (deprecated, will be removed).
+\item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
 \itemize{
 \item asv_names: name of the ASV
 \item sample: sample identifier
 \item position_bc260: position of the alteration in the original barcode. Note that insertions
 are assigned to the position that coincides with their beginning.
 \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
-\item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
+\item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
 }
 \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
 \item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
+\item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
+This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 }. 
+It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
+all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
+Smoothed is performed in the following way: the start and end site of each deletion are assigned to the cutting site on their left if that
+is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right.
+The following dataframes are stored in the field \code{smoothed deletions}:
+\itemize{
+\item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
+\item coordinate_matrix: matrix which stores all the information regardin the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+}
 In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 \itemize{
 \item dnastringset.fa: fasta file where the sequences are stored.

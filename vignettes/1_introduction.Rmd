@@ -41,6 +41,8 @@ if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
 if (!require("Rphylip")) BiocManager::install("Rphylip")
 if (!require("phytols")) install.packages("phytools")
+if (!require("ggtree")) BiocManager::install("ggtree")
+if (!require("TreeTools")) install.packages('TreeTools')
 
 # install devtools library and REvoBC
 

@@ -138,6 +138,16 @@ identifyMutations <- function(seq, ref) {
   barcodeToBarcodep <-  which(!is.na(barcodpToBarcode))
   
   # barcode + scale
+  # Create a dataframe by first creating a vector of T/F in each position of the sequence
+  # which tells whether there is mutation in each position wrt the reference
+  # then, with the function rle obtain the count of consecutive values (e.g., if the sequence is 1 1 0 0 then, rle 
+  # returns length=2 2 values = 1 0, which means that it found 2 ones followed by two zeros)
+  # In this way, this code treats each subsequent mutatio as a unique mutation
+  # This is ok if that's composed only by deletions, because deletions are acuired together
+  # However, if we have multiple substitutions we want to treat them separate. Also,
+  # if we find first a substitutions and then a deletion (or the opposite, or a substitution between two deletions)
+  # we want to separate the two kinds of mutations.
+  # For substitutions, we want to assign an ID to them based on the insertion
   arle.inf.df <- data.frame(unclass(rle(as.numeric(seq == ref)))) 
   # find start and end coordinates of each segment
   arle.inf.df$end.barcodep <- cumsum(arle.inf.df$lengths)
@@ -153,6 +163,7 @@ identifyMutations <- function(seq, ref) {
   if (nrow(arle.inf.df)>0) {
     # annotate each mutations with alt and ref alleles, type and sequence ID
     for (mi in 1:nrow(arle.inf.df)) {
+      # First extract reference and alternative sequences
       arle.inf.df$ref[mi]<-paste(ref[ arle.inf.df$start.barcodep[mi]:arle.inf.df$end.barcodep[mi]], collapse='')
       arle.inf.df$alt[mi]<-paste(seq[ arle.inf.df$start.barcodep[mi]:arle.inf.df$end.barcodep[mi]], collapse='')
     }

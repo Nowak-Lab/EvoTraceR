@@ -26,9 +26,13 @@ Imports:
     forcats,
     data.table,
     pheatmap,
-    tibble,
     Rphylip,
-    phytools
+    phytools,
+    ggtree,
+    plyr,
+    TreeTools,
+    colorspace,
+    aplot
 Suggests:
     BiocGenerics,
     BiocStyle,

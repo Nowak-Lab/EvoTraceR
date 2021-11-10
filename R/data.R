@@ -64,3 +64,16 @@ NULL
 #' }
 #' } 
 NULL
+
+
+#' @name revo_phyl
+#' @title example data obtained from running function \code{infer_phylogeny}, using only smoothed deletions for phylogeny reconstruction.
+#' @description example data obtained from running function \code{infer_phylogeny}, using only smoothed deletions for phylogeny reconstruction.  
+#' @docType data
+#' @usage data(revo_msa)
+#' @format REvoBC object with a new field named \code{phylogeny}, which is a list with the following fields:
+#' \describe{
+#' \item{mutations_in_phylogeny}{string indiating which mutations were used for phylogeny recontruction}
+#' \item{tree}{Phylogenetic tree reconstructed by Rmix}
+#' } 
+NULL

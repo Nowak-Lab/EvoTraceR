@@ -176,6 +176,8 @@ jobs:
           install.packages("data.table")
           install.packages("phytools")
           BiocManager::install("Rphylip")
+          BiocManager::install("ggtree")
+          install.packages('TreeTools')
         shell: Rscript {0}
 
       - name: Query dependencies

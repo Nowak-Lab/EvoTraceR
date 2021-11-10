@@ -1,9 +1,9 @@
 plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_colors) {
   ggtree_mp <- 
-    ggtree(tree_mp_df) %<+%
+    ggtree::ggtree(tree_mp_df) %<+%
     perc_max_tip_colors + # add data for labelling tips
     #geom_tippoint(aes(color = day_organ_max_perc), size=3) +
-    geom_tiplab(aes(color = sample_max_perc), geom = "text", align=TRUE, linesize=0.5, linetype="dotted", size=6) +
+    ggtree::geom_tiplab(aes(color = sample_max_perc), geom = "text", align=TRUE, linesize=0.5, linetype="dotted", size=6) +
     scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), limits=c(0, 1.15*max(tree_mp_df$x)), breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
@@ -22,30 +22,42 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_color
   return(ggtree_mp)
 }
 
-plot_msa = function(del_sub_ins_df) {
-  ### "msa Plot" - Auxillarry Plot Decorations  ------------------------------------------------------
+plot_msa = function(REvoBC_object, smoothed_deletions = F) {
+  del_sub_ins_df = REvoBC_object$alignment$asv_barcode_alignment
+  if (smoothed_deletions == 'smooth_del') {
+    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
+      mutate(alt = ifelse(alt == 'del', alt, 'smoothed_wt'))
+  } else if (smoothed_deletions == 'smooth_del_ins'){
+    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
+      mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'smoothed_wt'))
+  } else if (smoothed_deletions == 'sub_smooth_del_ins') {
+    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment
+  } else {
+    to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+  }
+  
   # Position of PAM in guides
   pam_pos <- c(17.5, 42.5, 68.5, 94.5, 120.5, 146.5, 171.5, 198.5, 224.5, 251.5) 
   # Adjust for height of tiles -> "sub" smaller
   
-  del_sub_ins_df$tile_height <- ifelse(del_sub_ins_df$alt == "sub", 0.3, 0.75)
+  to_plot_df$tile_height <- ifelse(to_plot_df$alt == "sub", 0.3, 0.75)
   # frames around msa apart ORG
   msa_frame <- data.frame(xmin= 1, xmax =260, 
-                          ymin = seq(from = 1.6, to = nlevels(as.factor(del_sub_ins_df$asv_names)), by=1), 
-                          ymax = seq(from = 2.4, to = nlevels(as.factor(del_sub_ins_df$asv_names))+1, by=1))
+                          ymin = seq(from = 1.6, to = nlevels(as.factor(to_plot_df$asv_names)), by=1), 
+                          ymax = seq(from = 2.4, to = nlevels(as.factor(to_plot_df$asv_names))+1, by=1))
   
   ### "msa Plot" - Barcode; Scale (1-260)  ------------------------------------------------------
   msa_cna_bc <- 
-    ggplot(data=del_sub_ins_df, aes(x=position_bc260, y=asv_names)) +
+    ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
     scale_fill_manual(values=c("wt"="#f2f2f2", "del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "ins_smwr"="pink"), breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
     geom_vline(xintercept=c(26, 52, 78, 104, 130, 156, 182, 208, 234), linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
-    geom_rect(data=msa_frame, mapping=aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +
+    geom_rect(data=msa_frame, mapping=aes_string(xmin="xmin", xmax="xmax", ymin="ymin", ymax="ymax"), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +
     geom_rect(xmin=1, xmax=260, ymin=0.6, ymax=1.4, colour = "#65A7F3", fill=NA, size=0.6) +
-    xlab("Barcode Nucleotides \n (1-260)") +
-    lemon::coord_capped_cart(bottom="both") # axis with lemon
+    xlab("Barcode Nucleotides \n (1-260)") #+
+    #lemon::coord_capped_cart(bottom="both") # axis with lemon
   
   # add theme
   msa_cna_bc <- 
@@ -164,7 +176,7 @@ plot_percentage_asv_sample = function(df_to_plot_final) {
            aes(x=sample, y=asv_names, scale="globalminmax")) + # %>% darop_na() -> for BC10.ORG
     geom_point(aes(size=perc_in_sample, fill=perc_fold_to_max), shape=21, stroke=0.5, col="black") +
     #scale_fill_gradient2(low = "#417dd4", mid = "#f2f2f2", high = "#DC0000FF") + # for log2
-    scale_fill_continuous_sequential(palette = "Plasma", limits=c(0, 100), rev = F, na.value = "grey") +
+    colorspace::scale_fill_continuous_sequential(palette = "Plasma", limits=c(0, 100), rev = F, na.value = "grey") +
     scale_size_area(max_size = 1.75*scale_bubble, limits = c(0, scale_bubble), breaks = c(1, scale_bubble/2, scale_bubble)) + # manual
     xlab("Analyzed \n Samples") +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon

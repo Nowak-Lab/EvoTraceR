@@ -75,8 +75,8 @@
 #' @export initialize_REvoBC
 #' 
 #' @import dada2
-#' @import ggplot2
-#' @import dplyr
+#' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
+#' @rawNamespace import(dplyr, except = count)
 #' @importFrom cli cli_alert_info
 #' @importFrom utils write.csv read.csv unzip untar
 # @importFrom grDevices cairo_pdf
@@ -258,8 +258,8 @@ initialize_REvoBC = function( output_dir,
 #' @importFrom forcats fct_relevel
 #' @importFrom data.table nafill
 # @importFrom grDevices cairo_pdf
-#' @import dplyr
-#' @import ggplot2
+#' @rawNamespace import(dplyr, except = count)
+#' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 asv_analysis = function(REvoBC_object,
                         barcode = 'BC10v0',
@@ -438,19 +438,31 @@ asv_analysis = function(REvoBC_object,
 #' @return REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
 #' \itemize{
 #' \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
-#' \item \code{mutations_df}: tibble where each line corresponds to a position in a mutation, and the columns encode the following information:
+#' \item \code{mutations_df} : (deprecated, will be removed).
+#' \item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
 #' \itemize{
 #' \item asv_names: name of the ASV
 #' \item sample: sample identifier
 #' \item position_bc260: position of the alteration in the original barcode. Note that insertions
 #' are assigned to the position that coincides with their beginning.
 #' \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
-#' \item perc_in_sample: out of all sequences that map to a sample, the percentage of them that display the alteration.
+#' \item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
 #' }
 #' \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 #' \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
 #' \item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
+#' \item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
+#' This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 #' }. 
+#' It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
+#' all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
+#' Smoothed is performed in the following way: the start and end site of each deletion are assigned to the cutting site on their left if that
+#' is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right.
+#' The following dataframes are stored in the field \code{smoothed deletions}:
+#' \itemize{
+#' \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
+#' \item coordinate_matrix: matrix which stores all the information regardin the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+#' }
 #' In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
 #' \itemize{
 #' \item dnastringset.fa: fasta file where the sequences are stored.
@@ -467,12 +479,13 @@ asv_analysis = function(REvoBC_object,
 #' deletion, substitutions and insertions found in the different samples.
 #' 
 #' @export perform_msa
-#' @import dplyr
-#' @import ggplot2
+#' @rawNamespace import(dplyr, except = count)
+#' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
+#' @rawNamespace import(data.table, except = c(last, first, between))
 #' @importFrom muscle muscle
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
-#' @importFrom  ggmsa tidy_msa 
+#' @importFrom ggmsa tidy_msa 
 #' @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom utils write.csv
 #' @importFrom forcats fct_relevel
@@ -481,6 +494,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom methods as
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
+#' @importFrom plyr count
 perform_msa = function(REvoBC_object, ...) {
   dots = list(...)
   output_dir_files = file.path(REvoBC_object$output_directory, "msa")
@@ -489,41 +503,12 @@ perform_msa = function(REvoBC_object, ...) {
   output_dir_figures = file.path(REvoBC_object$output_directory, "msa_figures")
   if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
   
-  df_to_plot_org_tree <- 
-    dplyr::select(REvoBC_object$statistics$asv_toBarcode_similarity, asv_names, seq) %>%
-    filter(!str_detect(asv_names, "NMBC")) %>%
-    distinct() %>%
-    arrange(asv_names)
-  
-  
-  ### Create Biostring and FASTA Files Data
-  
-  dnastringset <- Biostrings::DNAStringSet(df_to_plot_org_tree$seq) 
-  names(dnastringset) <- df_to_plot_org_tree$asv_names
-  
-  # Output as FASTA files
-  outputFileFASTA <- file.path(output_dir_files, "dnastringset.fa")
-  Biostrings::writeXStringSet(dnastringset, outputFileFASTA)
-  
-  utils::write.csv(dnastringset, file.path(output_dir_files, "dnastringset.csv"), quote=FALSE)
-  
-  # Perform Multiple Sequence Alignment with muscle
-  dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),
-                                                   get_args_from_dots(dots, muscle::muscle))) # suggestion: gapopen = -400
-  Biostrings::writeXStringSet(methods::as(dnastringset_msa, "DNAStringSet"), 
-                  file.path(output_dir_files, "dnastringset_muscle-muscle_msa.fasta"))
-  
-  # Store MSA result
-  msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
-  REvoBC_object$alignment$msa_stringset = msa
-  
-  # Transform Alignment to "Tidy Data"
-  alignment_tidy <- ggmsa::tidy_msa(msa=msa, 
-                             start = 1, 
-                             end = ncol(msa))
+  # Store in the field REvoBC_object$alignment$asv_barcode_alignment the tidy alignment
+  # data, which is a tibble where each line corresponds to a nucleotide in a ASV
+  # and there is the information about reference and alternative nucleotides.
+  REvoBC_object = align_asv(REvoBC_object, output_dir_files, output_dir_figures)
   
   REvoBC_object = count_alterations(REvoBC_object, 
-                                    alignment_tidy, 
                                     output_dir_files,
                                     output_dir_figures)
   
@@ -543,15 +528,21 @@ perform_msa = function(REvoBC_object, ...) {
 #' @examples 
 #' \dontrun{
 #' data(revo_msa)
-#' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program Files/rphylip/exe/')
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' revo_msa$output_directory = output_dir
+#' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
 #' }
-#' 
 #' 
 #' @param REvoBC_object (Required)
 #' @param phylip_package_path (Required). Prior to running this function, users should install 
 #' \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
 #' For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
 #' then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.
+#' @param mutations_use (optional). Default = 'smooth_del' A string indicating what type of utations to use for phylogeny reconstruction.
+#' Can be one of c('smooth_del', 'smooth_del_ins', sub_smooth_del_ins, sub_del_ins). The first
+#' corresponds to using only smoothed deletions. The second refers to the case where smoothed deletions
+#' and insertios are considered. The third considers the smoothed deletions/insertions and the substitutions. 
+#' Finally the fourth uses all non-smoothed mutations.
 #' 
 #' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
 #' 
@@ -559,19 +550,45 @@ perform_msa = function(REvoBC_object, ...) {
 #' @importFrom Rphylip Rmix
 #' @importFrom scales comma
 #' @importFrom phytools mrp.supertree
-#' @import dplyr
-#' @import ggplot2
+#' @importFrom TreeTools RootTree
+#' @importFrom ggtree fortify
+#' @rawNamespace import(dplyr, except = count)
+#' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
-infer_phylogeny = function(REvoBC_object, phylip_package_path) {
+infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'smooth_del') {
   
-  output_dir = file.path(REvoBC_object$output_directory, "phylogeny")
+  if (! (mutations_use %in% c('smooth_del', 'smooth_del_ins', 'sub_smooth_del_ins', 'sub_del_ins'))) {
+    cli::cli_alert_danger("Error, muations use must be one of 'smooth_del', 'smooth_del_ins', 'sub_smooth_del_ins', 'sub_del_ins'")
+    stop('Exiting')
+  }
+  REvoBC_object$phylogeny$mutations_in_phylogeny = mutations_use
+  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mutations_use))
+  
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
-  asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix
-  
+  if (mutations_use == 'smooth_del') {
+    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
+      dplyr::select(starts_with('del_')) 
+    barcode_var = asv_bin_var[REvoBC_object$barcode$asv_names,]
+    asv_bin_var = barcode_var %>% 
+      dplyr::bind_rows(asv_bin_var %>% 
+                         filter(rowSums(dplyr::across(dplyr::everything())) > 0))
+  } else if (mutations_use == 'smooth_del_ins'){
+    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>%
+      dplyr::select(starts_with('ins_') | starts_with('del_')) 
+    barcode_var = asv_bin_var[REvoBC_object$barcode$asv_names,]
+    asv_bin_var = barcode_var %>% 
+      dplyr::bind_rows(asv_bin_var %>% 
+                         filter(rowSums(dplyr::across(dplyr::everything())) > 0))
+  } else if (mutations_use == 'sub_smooth_del_ins') {
+    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix
+  } else {
+    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix 
+  }
+
   # Compute phylogeny
   ancestral <<- as.character(rep(0, dim(asv_bin_var)[2]))
-  stop('Dopo creazione di ancestral')
+
   # Run phylip
   set.seed(1980)
 
@@ -585,8 +602,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path) {
   # Rename It
   tree_mp_all <- tree_mp_all_rmix
   
-  
-  ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
+    ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
   set.seed(1980)
   tree_mp <- phytools::mrp.supertree(trees=tree_mp_all, 
                                      start="NJ", 
@@ -608,7 +624,9 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path) {
   ### Re-root in the Original Sequence ------------------------------------------------------ 
   tree_mp <- TreeTools::RootTree(tree_mp, tree_root_mp)
   # Re-fortify tree to data frame
+  options(warn=-1)
   tree_mp_df <- ggtree::fortify(tree_mp)
+  options(warn=0)
   
   REvoBC_object$phylogeny$tree = tree_mp_df
   
@@ -626,12 +644,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path) {
 #' @examples
 #' \dontrun{
 #' data(revo_phyl)
-#' summary_plot = plot_summary(revo_pjhyl)
+#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' revo_phyl$output_directory = output_dir
+#' summary_plot = plot_summary(revo_phyl)
 #' }
 #' 
-#' @param REvoBS_object (Required).
-#' @param save_dir (Optional). Folder where the user wishes to store the plot. By default the figure is saved
-#' in the main output directory of the \code{REvoBC object} (\code{REvoBC_object$output_directory})
+#' @param REvoBC_object (Required).
 #' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
 #' This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples. 
 #' 
@@ -641,16 +659,44 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path) {
 #' where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
 #' 
 #' @export plot_summary
-#' @import ggplot2
+#' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
 #' @import tibble
+#' @import ggtree
+#' @rawNamespace import(dplyr, except = count)
 #' @importFrom scales comma
+#' @importFrom colorspace scale_fill_continuous_sequential
+#' @importFrom aplot insert_right insert_left
 plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
-  tree_mp_df = REvoBC_object$phylogeny$tree
-  # merge with df_to_plot_perf_match
+  mut_in_phyl = REvoBC_object$phylogeny$mutations_in_phylogeny
+  is_smoothed = grepl(pattern = 'smooth', x = mut_in_phyl)
+  
+  
   df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
+  
+  tree_mp_df = REvoBC_object$phylogeny$tree
+  if (is_smoothed) {
+    wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
+    if (length(wt_asv) > 0) {
+      # Need to re-insert the ASV without any smoothed mutation for the visualization
+      barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$barcode$asv_names)
+      
+      vary = 'y'
+      tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$barcode$asv_names | is.na(label)) %>%
+        mutate('{{var}}' = {{var}} + length(wt_asv)) %>%
+        add_row(parent = barcode_tip$parent, 
+                node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
+                label = wt_asv,
+                isTip = TRUE, x = barcode_tip$x, y = c(2:(1+length(wt_asv))),
+                branch = barcode_tip$branch, angle = barcode_tip$angle) %>%
+        add_row(barcode_tip)
+      }
+    }
+  
+  
+  # merge with df_to_plot_perf_match
+  
   if (is.character(sample_order) & length(sample_order) == 1) {
-    
     if (sample_order != 'alphabetical') {
       stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
     }
@@ -669,8 +715,9 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
                                    REvoBC_object$alignment$ASV_alterations_width, 
                                    by.x="asv_names", by.y="asv_names"))
   
-  ##
-  width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), width_total_del:width_total_ins)
+  
+  width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), 
+                              all_of(starts_with('width_')))
   final_nmbc <- filter(df_to_plot_perf_match, str_detect(asv_names, "NMBC"))
   nmbc_mrg <- cbind(final_nmbc, width_nmbc)
   
@@ -678,7 +725,6 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
-  ########### Inizio del codice di 07_draw
   perc_max_tip_colors <-
     df_to_plot_perf_match %>%
     dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
@@ -687,11 +733,12 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   colnames(perc_max_tip_colors) <- c("asv_names", "sample_max_perc")
   
   sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
+  
   ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns, perc_max_tip_colors)
   
-  
-  
-  msa_cna_bc = plot_msa(REvoBC_object$alignment$mutations_df)
+  if (is_smoothed)
+    msa_cna_bc_smoothed = plot_msa(REvoBC_object, smoothed_deletions = mut_in_phyl)
+  msa_cna_bc = plot_msa(REvoBC_object, smoothed_deletions = F)
   
   bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
   
@@ -703,15 +750,19 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
 
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
-  msa_cna_bc.bar_ins_del_sub_width <- insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
+  if (is_smoothed) {
+    msa_cna_bc = aplot::insert_right(msa_cna_bc_smoothed, msa_cna_bc, width = 1)
+  }
+
+  msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
   # add ggtree_mp
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 0.75)
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- aplot::insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 0.75)
   # add bar_seq_n
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp, bar_seq_n, width = 0.2)
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp, bar_seq_n, width = 0.2)
   # add bar_pid
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n, bar_pid, width = 0.2)
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n, bar_pid, width = 0.2)
   # add bubbles
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
   
   # Save PDF
   ggsave(filename=file.path(REvoBC_object$output_directory, "summary_mutations.pdf"), 

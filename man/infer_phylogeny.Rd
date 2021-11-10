@@ -4,7 +4,11 @@
 \alias{infer_phylogeny}
 \title{infer_phylogeny}
 \usage{
-infer_phylogeny(REvoBC_object, phylip_package_path)
+infer_phylogeny(
+  REvoBC_object,
+  phylip_package_path,
+  mutations_use = "smooth_del"
+)
 }
 \arguments{
 \item{REvoBC_object}{(Required)}
@@ -13,6 +17,12 @@ infer_phylogeny(REvoBC_object, phylip_package_path)
 \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
 For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
 then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.}
+
+\item{mutations_use}{(optional). Default = 'smooth_del' A string indicating what type of utations to use for phylogeny reconstruction.
+Can be one of c('smooth_del', 'smooth_del_ins', sub_smooth_del_ins, sub_del_ins). The first
+corresponds to using only smoothed deletions. The second refers to the case where smoothed deletions
+and insertios are considered. The third considers the smoothed deletions/insertions and the substitutions. 
+Finally the fourth uses all non-smoothed mutations.}
 }
 \value{
 REvoBC object with a new filed called phylogeny, that stores the inferred tree.
@@ -24,8 +34,9 @@ with Camin-Sokal.
 \examples{
 \dontrun{
 data(revo_msa)
-revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program Files/rphylip/exe/')
+output_dir = system.file("extdata", "output", package = "REvoBC")
+revo_msa$output_directory = output_dir
+revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
 }
-
 
 }
