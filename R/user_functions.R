@@ -526,10 +526,12 @@ perform_msa = function(REvoBC_object, ...) {
 #' @title infer_phylogeny
 #' 
 #' @examples 
+#' \dontrun{
 #' data(revo_msa)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_msa$output_directory = output_dir
 #' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
+#' }
 #' 
 #' @param REvoBC_object (Required)
 #' @param phylip_package_path (Required). Prior to running this function, users should install 
@@ -648,10 +650,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
 #' 
 #' 
 #' @examples
+#' \dontrun{
 #' data(revo_phyl)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_phyl$output_directory = output_dir
 #' summary_plot = plot_summary(revo_phyl)
+#' }
 #' 
 #' @param REvoBC_object (Required).
 #' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
