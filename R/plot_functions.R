@@ -2,9 +2,9 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_color
   ggtree_mp <- 
     ggtree::ggtree(tree_mp_df) %<+%
     perc_max_tip_colors + # add data for labelling tips
-    #geom_tippoint(aes(color = day_organ_max_perc), size=3) +
-    ggtree::geom_tiplab(aes(color = sample_max_perc), geom = "text", align=TRUE, linesize=0.5, linetype="dotted", size=6) +
-    scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
+    #geom_tippoint(aes(color = cluster), size=3) +
+    ggtree::geom_tiplab(aes(fill=cluster, alpha = 0.5), geom = "label", align=TRUE, linesize=0.5, linetype="dotted", size=6) +
+    #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), limits=c(0, 1.15*max(tree_mp_df$x)), breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
     xlab("Phylogenetic Tree \n Maximum Parsimony Camin-Sokal") +
@@ -26,10 +26,10 @@ plot_msa = function(REvoBC_object, smoothed_deletions = F) {
   del_sub_ins_df = REvoBC_object$alignment$asv_barcode_alignment
   if (smoothed_deletions == 'smooth_del') {
     to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
-      mutate(alt = ifelse(alt == 'del', alt, 'smoothed_wt'))
+      mutate(alt = ifelse(alt == 'del', alt, 'wt'))
   } else if (smoothed_deletions == 'smooth_del_ins'){
     to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
-      mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'smoothed_wt'))
+      mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'wt'))
   } else if (smoothed_deletions == 'sub_smooth_del_ins') {
     to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment
   } else {

@@ -32,7 +32,10 @@ Imports:
     plyr,
     TreeTools,
     colorspace,
-    aplot
+    aplot,
+    ape,
+    dynamicTreeCut,
+    phylogram
 Suggests:
     BiocGenerics,
     BiocStyle,

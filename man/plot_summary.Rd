@@ -22,11 +22,9 @@ where the size of each dot indicate the frequency of each ASV normalized by the 
 This function plots all the data that have been computed for the phylogenetic analysis.
 }
 \examples{
-\dontrun{
 data(revo_phyl)
 output_dir = system.file("extdata", "output", package = "REvoBC")
 revo_phyl$output_directory = output_dir
 summary_plot = plot_summary(revo_phyl)
-}
 
 }

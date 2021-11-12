@@ -178,6 +178,9 @@ jobs:
           BiocManager::install("Rphylip")
           BiocManager::install("ggtree")
           install.packages('TreeTools')
+          install.packages('phangorn')
+          install.packages('dynamicTreeCut')
+          install.packages("phylogram")
         shell: Rscript {0}
 
       - name: Query dependencies

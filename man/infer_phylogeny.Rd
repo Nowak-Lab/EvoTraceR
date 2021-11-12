@@ -32,11 +32,9 @@ This function calls Rmix from package Rphylip to perform the inference of the ph
 with Camin-Sokal.
 }
 \examples{
-\dontrun{
 data(revo_msa)
 output_dir = system.file("extdata", "output", package = "REvoBC")
 revo_msa$output_directory = output_dir
 revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
-}
 
 }

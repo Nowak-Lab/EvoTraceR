@@ -161,6 +161,7 @@ jobs:
       - name: Install R packages
         run: |
           install.packages("BiocManager")
+          install.packages('remotes')
           BiocManager::install("dada2")
           install.packages("tidyverse")
           install.packages("cli")
@@ -172,10 +173,17 @@ jobs:
           BiocManager::install("R4RNA")
           install.packages("proj4")
           install.packages("ggalt")
-          install.packages("ggmsa")
+          remotes::install_github("YuLab-SMU/ggmsa")
           install.packages("utils")
           install.packages("methods")
           install.packages("data.table")
+          install.packages("phytools")
+          BiocManager::install("Rphylip")
+          BiocManager::install("ggtree")
+          install.packages('TreeTools')
+          install.packages('phangorn')
+          install.packages('dynamicTreeCut')
+          install.packages("phylogram")
         shell: Rscript {0}
 
       - name: Query dependencies

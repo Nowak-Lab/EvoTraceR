@@ -526,12 +526,10 @@ perform_msa = function(REvoBC_object, ...) {
 #' @title infer_phylogeny
 #' 
 #' @examples 
-#' \dontrun{
 #' data(revo_msa)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_msa$output_directory = output_dir
 #' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
-#' }
 #' 
 #' @param REvoBC_object (Required)
 #' @param phylip_package_path (Required). Prior to running this function, users should install 
@@ -552,6 +550,9 @@ perform_msa = function(REvoBC_object, ...) {
 #' @importFrom phytools mrp.supertree
 #' @importFrom TreeTools RootTree
 #' @importFrom ggtree fortify
+#' @importFrom dynamicTreeCut cutreeDynamic
+#' @importFrom ape cophenetic.phylo bind.tree drop.tip
+#' @importFrom phylogram as.dendrogram
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
@@ -586,49 +587,54 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix 
   }
 
-  # Compute phylogeny
-  ancestral <<- as.character(rep(0, dim(asv_bin_var)[2]))
-
-  # Run phylip
-  set.seed(1980)
-
-  tree_mp_all_rmix <- Rphylip::Rmix(X=as.matrix(asv_bin_var),
-                                    method = "Camin-Sokal", 
-                                    ancestral = ancestral,
-                                    path = phylip_package_path, 
-                                    cleanup = T)
+  tree_mp = compute_phylogenetic_tree(asv_bin_var, phylip_package_path, REvoBC_object$barcode$asv_names)
   
-  #rm(ancestral)
-  # Rename It
-  tree_mp_all <- tree_mp_all_rmix
-  
-    ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
-  set.seed(1980)
-  tree_mp <- phytools::mrp.supertree(trees=tree_mp_all, 
-                                     start="NJ", 
-                                     method = "optim.parsimony", 
-                                     root=FALSE)
-  # Option 2: Choose What Tree Number to Plot (Arbitrary Choice) -> need to argue why this one, the best score as 1?
-  #tree_mp <- tree_mp_all[100] # plot single tree -> #1 chosen arbitrarily
-  
-  
-  ### Fortify tree to data frame ------------------------------------------------------ 
-  tree_mp_df <- ggtree::fortify(tree_mp)
-  # Find node to root in the original sequence in "bc10_org"
-  tree_root_mp <-
-    tree_mp_df %>%
-    filter(label == REvoBC_object$barcode$asv_names) %>%
-    pull(node)
-  
-  
-  ### Re-root in the Original Sequence ------------------------------------------------------ 
-  tree_mp <- TreeTools::RootTree(tree_mp, tree_root_mp)
   # Re-fortify tree to data frame
   options(warn=-1)
   tree_mp_df <- ggtree::fortify(tree_mp)
   options(warn=0)
   
-  REvoBC_object$phylogeny$tree = tree_mp_df
+  dend_clustered = cut_phyl_dendogram(tree_mp)
+  
+  cluster_labels = sort(unique(dend_clustered$cluster))[-1]
+  # clusters_trees = list()
+  # clusters_trees_df = list()
+  binded_phylogenies = NULL
+  i = 0
+  if (length(cluster_labels) > 0) {
+    for (clust in cluster_labels) {
+      subset_asv = dend_clustered %>% filter(cluster == clust) %>% pull(asv_names)
+      subset_mut = asv_bin_var %>% tibble::rownames_to_column(var = 'asv_names') %>%
+        filter(asv_names %in% subset_asv | asv_names == REvoBC_object$barcode$asv_names) %>%
+        tibble::column_to_rownames('asv_names') #%>% dplyr::select_if(sum(.) > 0)
+      subset_mut = subset_mut[,colSums(subset_mut)>0]
+      tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$barcode$asv_names)
+      
+      if (i > 0) {
+        binded_phylogenies = ape::bind.tree(x = binded_phylogenies, y = tree_sub)
+      } else {
+        binded_phylogenies = tree_sub
+      }
+      i = i + 1
+      # clusters_trees[[clust]] <- tree_sub
+      # clusters_trees_df[[clust]] <- ggtree::fortify(tree_sub)
+      
+    }
+  }
+
+  # The binded phylogeny now has as many barcode nodes as the number of clusters.
+  # We need to remove all barcodes except for one (so, count the number of barcodes),
+  # leave only the one with y = 1 and subtract to all the other nodes the number of removed barcode nodes.
+  tips_barcode = ggtree::fortify(binded_phylogenies) %>% 
+    filter(label == REvoBC_object$barcode$asv_names & y != 1) %>% pull(node)
+  
+  binded_phylogenies = ape::drop.tip(phy = binded_phylogenies, tip = tips_barcode)
+  
+    # filter(label != REvoBC_object$barcode$asv_names | y == 1) %>%
+    # mutate(nuovo_y = ifelse(y != 1, y - length(cluster_labels) + 1, y))
+  
+  REvoBC_object$phylogeny$tree = ggtree::fortify(binded_phylogenies)
+  REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
   
   write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
   
@@ -642,12 +648,10 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
 #' 
 #' 
 #' @examples
-#' \dontrun{
 #' data(revo_phyl)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_phyl$output_directory = output_dir
 #' summary_plot = plot_summary(revo_phyl)
-#' }
 #' 
 #' @param REvoBC_object (Required).
 #' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
@@ -683,7 +687,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
       
       vary = 'y'
       tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$barcode$asv_names | is.na(label)) %>%
-        mutate('{{var}}' = {{var}} + length(wt_asv)) %>%
+        #dplyr::mutate('{{var}}' = {{var}} + length(wt_asv)) %>%
+        dplyr::mutate(y = y + length(wt_asv)) %>%
         add_row(parent = barcode_tip$parent, 
                 node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
                 label = wt_asv,
@@ -725,16 +730,19 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
-  perc_max_tip_colors <-
+  tip_colors <-
     df_to_plot_perf_match %>%
     dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
     dplyr::select(asv_names, sample) %>%
     add_row(data.frame(asv_names=REvoBC_object$barcode$asv_names, sample="PRL"))
-  colnames(perc_max_tip_colors) <- c("asv_names", "sample_max_perc")
+  colnames(tip_colors) <- c("asv_names", "sample_max_perc")
+  
+  tip_colors = merge(tip_colors, REvoBC_object$phylogeny$phylogeny_clustered, by = 'asv_names') %>%
+    mutate(cluster = factor(cluster))
   
   sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
   
-  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns, perc_max_tip_colors)
+  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns, tip_colors)
   
   if (is_smoothed)
     msa_cna_bc_smoothed = plot_msa(REvoBC_object, smoothed_deletions = mut_in_phyl)
@@ -766,7 +774,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   # Save PDF
   ggsave(filename=file.path(REvoBC_object$output_directory, "summary_mutations.pdf"), 
-         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble, width=60,
+         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
   return(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble)

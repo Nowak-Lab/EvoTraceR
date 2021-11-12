@@ -380,7 +380,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
 # mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
 smooth_deletions = function(mut_df) {
   
-  deletions_insertions = mut_df %>% filter(mutation_type != 'ins')
+  deletions_insertions = mut_df #%>% filter(mutation_type != 'ins')
   orange_lines = data.frame(site = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
                             index_cut = c(1:10))
   data.table::setDT(orange_lines)
