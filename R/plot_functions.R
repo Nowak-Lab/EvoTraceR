@@ -22,8 +22,8 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_color
   return(ggtree_mp)
 }
 
-plot_msa = function(REvoBC_object, smoothed_deletions = F) {
-  del_sub_ins_df = REvoBC_object$alignment$asv_barcode_alignment
+plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
+  
   if (smoothed_deletions == 'smooth_del') {
     to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt == 'del', alt, 'wt'))
@@ -35,6 +35,33 @@ plot_msa = function(REvoBC_object, smoothed_deletions = F) {
   } else {
     to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
   }
+  
+  if (smoothed_deletions != FALSE) {
+    # expand deletions of 1nt in a window +-5nts (for visualization pourpouses)
+    del_to_expand = to_plot_df %>% dplyr::group_by(asv_names) %>% 
+      mutate(next_alt = lead(alt), previous_alt = lag(alt)) 
+    del_to_expand_left = del_to_expand %>%
+      filter(alt == 'del' & alt != previous_alt) #& alt != next_alt)
+    
+    del_to_expand_right = del_to_expand %>%
+      filter(alt == 'del' & alt != next_alt)
+    
+    asvs_with_del = unique(c(as.character(del_to_expand_left$asv_names), as.character(del_to_expand_right$asv_names)))
+    
+    for (asv in asvs_with_del) {
+      print(asv)
+      to_plot_sub = to_plot_df %>% filter(asv_names == asv)
+      to_plot_df = to_plot_df %>% filter(asv_names != asv)
+      
+      to_plot_sub$alt <- ifelse(sapply(to_plot_sub$position_bc260, function(p) 
+        any((del_to_expand_left$position_bc260 - 5 <= p & p <= del_to_expand_left$position_bc260 & del_to_expand_left$asv_names == asv)|
+            (del_to_expand_right$position_bc260 + 5 >= p & p >= del_to_expand_left$position_bc260 & del_to_expand_right$asv_names == asv))),
+        "del",to_plot_sub$alt)
+      
+      to_plot_df = to_plot_df %>% bind_rows(to_plot_sub)
+    }
+  }
+  
   
   # Position of PAM in guides
   pam_pos <- c(17.5, 42.5, 68.5, 94.5, 120.5, 146.5, 171.5, 198.5, 224.5, 251.5) 

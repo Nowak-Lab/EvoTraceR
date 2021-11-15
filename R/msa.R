@@ -391,20 +391,26 @@ smooth_deletions = function(mut_df) {
   deletions_insertions[, start_site := start]
   
   deletions_insertions = orange_lines[deletions_insertions, on = "start_site", roll = "nearest"] %>%
-    dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
+    mutate(index_cut = ifelse(start - site > 5, index_cut + 1, index_cut)) %>%
+    mutate(start_smoothed = orange_lines$site[index_cut]) %>%
+    #dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
     dplyr::select(-c(site, index_cut, start_site))
   
   orange_lines = dplyr::rename(orange_lines, end_site = start_site)
   deletions_insertions[, end_site := end]
   deletions_insertions = orange_lines[deletions_insertions, on = "end_site", roll = "nearest"] %>%
-    dplyr::mutate(end_smoothed = ifelse(end - site > 5, orange_lines$site[index_cut +1], site)) %>%
+    mutate(index_cut = ifelse(site - end > 5, index_cut - 1, index_cut)) %>%
+    mutate(end_smoothed = orange_lines$site[index_cut]) %>%
+    #dplyr::mutate(end_smoothed = if_else(site - end > 5, orange_lines$site[index_cut - 1], site))
     dplyr::select(-c(site, index_cut, end_site))
+  
+  deletions_insertions = deletions_insertions %>% dplyr::mutate(end_smoothed = 
+                                                                  ifelse(mutation_type == 'ins', start_smoothed, end_smoothed))
   
   deletions_insertions = mutate(deletions_insertions, 
                                 smoothed_id = ifelse(mutation_type == 'del', 
                                                      paste0("del_", start_smoothed, "-", end_smoothed),
                                                      paste0("ins_", start_smoothed, "-", n_nucleotides, "nts")))
-  #deletions_insertions$smoothed_id = paste0("del_", deletions_insertions$start_smoothed, "-", deletions_insertions$end_smoothed)
   
   return(deletions_insertions)
 }
@@ -429,7 +435,9 @@ tidy_alignment_smoothed = function(REvoBC_object, smoothed_df) {
   to_plot_df = list()
   for (asv in unique(as.character(smoothed_df$asv_names))) {
     tmp_smoothed_del = dplyr::filter(smoothed_del, asv_names == asv)
-    tmp_tidy = dplyr::filter(del_sub_ins_df, asv_names == asv)
+    # Remove insertinons from tidy alignment, as they are a duplicated position
+    # of a wildtype. We remove them and then add to the tidy dataframe the smoothed insertions positions.
+    tmp_tidy = dplyr::filter(del_sub_ins_df, asv_names == asv & alt != 'ins')
     tmp_smoothed_ins = dplyr::filter(smoothed_ins, asv_names == asv) 
     tmp_smoothed_sub = dplyr::filter(smoothed_sub, asv_names == asv) 
     
@@ -438,8 +446,18 @@ tidy_alignment_smoothed = function(REvoBC_object, smoothed_df) {
       "del", 'smoothed_wt')
     
     tmp_tidy = ungroup(tmp_tidy) %>% 
-      mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_ins$start, 'ins', 
-                                   ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt)))
+      mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt))
+    
+    tmp_tidy = tmp_smoothed_ins %>% 
+      rename(position_bc260 = start_smoothed,
+             read_asv = alt_seq, alt = mutation_type) %>%
+      mutate(ref_asv = '-') %>% select(colnames(tmp_tidy)) %>%
+      bind_rows(tmp_tidy) %>%
+      dplyr::arrange(position_bc260)
+    
+    # tmp_tidy = ungroup(tmp_tidy) %>% 
+    #   mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_ins$start, 'ins', 
+    #                                ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt)))
 
     to_plot_df[[asv]] = tmp_tidy
   }
