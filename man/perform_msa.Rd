@@ -33,14 +33,16 @@ This is useful to convey an idea about what is the fraction of total ASVs in eac
 }. 
 It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
 all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
-Smoothed is performed in the following way: the start and end site of each deletion are assigned to the cutting site on their left if that
-is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right.
+Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
+is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
+cutting site on its right if that is less than 5 nucleotides distant, otherwise it is assigned to the cutting site
+on its left.
 The following dataframes are stored in the field \code{smoothed deletions}:
 \itemize{
 \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
 \item coordinate_matrix: matrix which stores all the information regardin the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
 }
-In addition, the following files are saved in the sub-folder "msa" created inthe output directory chosen by the user:
+In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
 \itemize{
 \item dnastringset.fa: fasta file where the sequences are stored.
 \item dnastringset.fa: same as fasta, but in csv format.

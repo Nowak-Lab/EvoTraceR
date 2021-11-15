@@ -497,7 +497,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-perform_msa = function(REvoBC_object, smoothing_threshold, ...) {
+perform_msa = function(REvoBC_object, ...) {
   dots = list(...)
   output_dir_files = file.path(REvoBC_object$output_directory, "msa")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
