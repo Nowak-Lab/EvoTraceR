@@ -391,7 +391,7 @@ smooth_deletions = function(mut_df) {
   deletions_insertions[, start_site := start]
   
   deletions_insertions = orange_lines[deletions_insertions, on = "start_site", roll = "nearest"] %>%
-    mutate(index_cut = ifelse(start - site > 5, index_cut + 1, index_cut)) %>%
+    mutate(index_cut = ifelse(start - site > 5, pmin(index_cut + 1, nrow(orange_lines)), index_cut)) %>%
     mutate(start_smoothed = orange_lines$site[index_cut]) %>%
     #dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
     dplyr::select(-c(site, index_cut, start_site))
@@ -399,7 +399,7 @@ smooth_deletions = function(mut_df) {
   orange_lines = dplyr::rename(orange_lines, end_site = start_site)
   deletions_insertions[, end_site := end]
   deletions_insertions = orange_lines[deletions_insertions, on = "end_site", roll = "nearest"] %>%
-    mutate(index_cut = ifelse(site - end > 5, index_cut - 1, index_cut)) %>%
+    mutate(index_cut = dplyr::if_else(condition = site - end > 5, true = pmax(1, index_cut - 1), false = as.double(index_cut))) %>%
     mutate(end_smoothed = orange_lines$site[index_cut]) %>%
     #dplyr::mutate(end_smoothed = if_else(site - end > 5, orange_lines$site[index_cut - 1], site))
     dplyr::select(-c(site, index_cut, end_site))

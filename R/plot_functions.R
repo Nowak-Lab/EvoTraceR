@@ -49,7 +49,6 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
     asvs_with_del = unique(c(as.character(del_to_expand_left$asv_names), as.character(del_to_expand_right$asv_names)))
     
     for (asv in asvs_with_del) {
-      print(asv)
       to_plot_sub = to_plot_df %>% filter(asv_names == asv)
       to_plot_df = to_plot_df %>% filter(asv_names != asv)
       
