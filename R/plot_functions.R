@@ -63,7 +63,7 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
   
   
   # Position of PAM in guides
-  pam_pos <- c(17.5, 42.5, 68.5, 94.5, 120.5, 146.5, 171.5, 198.5, 224.5, 251.5) 
+  pam_pos <- c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251) 
   # Adjust for height of tiles -> "sub" smaller
   
   to_plot_df$tile_height <- ifelse(to_plot_df$alt == "sub", 0.3, 0.75)
