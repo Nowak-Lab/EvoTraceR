@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">REvoBC</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.99.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.99.10</span>
       </span>
     </div>
 
@@ -81,26 +81,26 @@
       <h1 data-toc-skip>Running REvoBC</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Nowak-Lab/REvoBC/blob/master/vignettes/2_running_REvoBC.Rmd" class="external-link"><code>vignettes/2_running_REvoBC.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Nowak-Lab/REvoBC/blob/HEAD/vignettes/2_running_REvoBC.Rmd" class="external-link"><code>vignettes/2_running_REvoBC.Rmd</code></a></small>
       <div class="hidden name"><code>2_running_REvoBC.Rmd</code></div>
 
     </div>
 
     
     
-<div id="setup-the-environement" class="section level2">
-<h2 class="hasAnchor">
-<a href="#setup-the-environement" class="anchor" aria-hidden="true"></a>Setup the environement</h2>
+<div class="section level2">
+<h2 id="setup-the-environement">Setup the environement<a class="anchor" aria-label="anchor" href="#setup-the-environement"></a>
+</h2>
 <p><em>REvoBC</em> is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants. It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence alignment to identify mutations and finally performs the phylogeny reconstruction. In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. The first step initializes the REvoBC object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/Nowak-Lab/REvoBC" class="external-link">"REvoBC"</a></span><span class="op">)</span></code></pre></div>
-<pre><code>## Registered S3 methods overwritten by 'ggalt':
-##   method                  from   
-##   grid.draw.absoluteGrob  ggplot2
-##   grobHeight.absoluteGrob ggplot2
-##   grobWidth.absoluteGrob  ggplot2
-##   grobX.absoluteGrob      ggplot2
-##   grobY.absoluteGrob      ggplot2</code></pre>
+<pre><code><span class="co">## Registered S3 methods overwritten by 'ggalt':</span>
+<span class="co">##   method                  from   </span>
+<span class="co">##   grid.draw.absoluteGrob  ggplot2</span>
+<span class="co">##   grobHeight.absoluteGrob ggplot2</span>
+<span class="co">##   grobWidth.absoluteGrob  ggplot2</span>
+<span class="co">##   grobX.absoluteGrob      ggplot2</span>
+<span class="co">##   grobY.absoluteGrob      ggplot2</span></code></pre>
 <p>The initialization function computes the set of Amplicon Sequence Variants, by wrapping all the steps performed by dada2, that are the following: (1) Filter and trimming reads. (2) Learning the error rates. (3) Dereplication. (4) Sample Inference. (5) Merging forward and reverse reads. (6) Construction of the Amplicon Sequence Variant table (ASV). (7) Removal of chimeras. (8) Production of a summary which tracks changes in the number of reads at every step of the pipeline.</p>
 <p>The main parameters for the initialization are the directory where the output will be stored and one of the following: input directory: in this case users have the fastq files and want to perform the whole analysis using REvoBC. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. dada2_output_sequences: in case users wish to manually run dada2 steps up to the removal of bimeras, they should provide the path to the csv file containing the output. The output should contain samples on rows and sequences on columns.</p>
 <p>Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided. In order for REvoBC to associate each fastq pair to its sample users have two options: one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case REvoBC will consider as sample ID the second field separated by the underscore. The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c(“file1” = “PRL”)).</p>
@@ -111,67 +111,64 @@
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">revo_initialized</span> <span class="op">=</span> <span class="fu"><a href="../reference/initialize_REvoBC.html">initialize_REvoBC</a></span><span class="op">(</span>input_dir <span class="op">=</span> <span class="va">input_dir</span>, 
                                      output_dir <span class="op">=</span> <span class="va">output_dir</span><span class="op">)</span></code></pre></div>
-<pre><code>## ℹ Found zipped fastq files, extracting</code></pre>
-<pre><code>## ℹ Done extracting</code></pre>
-<pre><code>## Found 2 fastq files</code></pre>
-<pre><code>## ℹ The folliwng files, mapped to the corresponding sample, were found:</code></pre>
-<pre><code>## MMUS1469_HMR_BC10v0_MG_120419  :  HMR 
-## Working directory:  /home/runner/work/REvoBC/REvoBC/vignettesPath:  /home/runner/work/_temp/Library/REvoBC/extdata/input</code></pre>
-<pre><code>## ℹ Creating quality profiles figures</code></pre>
-<pre><code>## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =
-## "none")` instead.
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Found zipped fastq files, extracting</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Done extracting</span></code></pre>
+<pre><code><span class="co">## Found 2 fastq files</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> The folliwng files, mapped to the corresponding sample, were found:</span></code></pre>
+<pre><code><span class="co">## MMUS1469_PRL_BC10v0_MG_120419  :  PRL</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Creating quality profiles figures</span></code></pre>
+<pre><code><span class="co">## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =</span>
+<span class="co">## "none")` instead.</span>
 
-## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =
-## "none")` instead.</code></pre>
-<pre><code>## ℹ Filtering and trimming</code></pre>
-<pre><code>## Overwriting file:/home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_HMR_BC10v0_MG_120419_F_filt.fastq.gz</code></pre>
-<pre><code>## Overwriting file:/home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_HMR_BC10v0_MG_120419_R_filt.fastq.gz</code></pre>
-<pre><code>## Read in 59148 paired-sequences, output 54321 (91.8%) filtered paired-sequences.</code></pre>
-<pre><code>## ℹ Learning errors for forward reads</code></pre>
-<pre><code>## 10908088 total bases in 54321 reads from 1 samples will be used for learning the error rates.</code></pre>
-<pre><code>## ℹ Learning errors for backward reads</code></pre>
-<pre><code>## 11131107 total bases in 54321 reads from 1 samples will be used for learning the error rates.</code></pre>
-<pre><code>## Warning: Transformation introduced infinite values in continuous y-axis</code></pre>
-<pre><code>## Warning: Transformation introduced infinite values in continuous y-axis
+<span class="co">## Warning: `guides(&lt;scale&gt; = FALSE)` is deprecated. Please use `guides(&lt;scale&gt; =</span>
+<span class="co">## "none")` instead.</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Filtering and trimming</span></code></pre>
+<pre><code><span class="co">## Overwriting file:/home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_PRL_BC10v0_MG_120419_F_filt.fastq.gz</span></code></pre>
+<pre><code><span class="co">## Overwriting file:/home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_PRL_BC10v0_MG_120419_R_filt.fastq.gz</span></code></pre>
+<pre><code><span class="co">## Read in 59884 paired-sequences, output 53469 (89.3%) filtered paired-sequences.</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Learning errors for forward reads</span></code></pre>
+<pre><code><span class="co">## 9854358 total bases in 53469 reads from 1 samples will be used for learning the error rates.</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Learning errors for backward reads</span></code></pre>
+<pre><code><span class="co">## 10089157 total bases in 53469 reads from 1 samples will be used for learning the error rates.</span></code></pre>
+<pre><code><span class="co">## Warning: Transformation introduced infinite values in continuous y-axis</span></code></pre>
+<pre><code><span class="co">## Warning: Transformation introduced infinite values in continuous y-axis</span>
 
-## Warning: Transformation introduced infinite values in continuous y-axis
+<span class="co">## Warning: Transformation introduced infinite values in continuous y-axis</span>
 
-## Warning: Transformation introduced infinite values in continuous y-axis</code></pre>
-<pre><code>## ℹ Dereplicating fastqs</code></pre>
-<pre><code>## Dereplicating sequence entries in Fastq file: /home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_HMR_BC10v0_MG_120419_F_filt.fastq.gz</code></pre>
-<pre><code>## Encountered 12705 unique sequences from 54321 total sequences read.</code></pre>
-<pre><code>## Dereplicating sequence entries in Fastq file: /home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_HMR_BC10v0_MG_120419_R_filt.fastq.gz</code></pre>
-<pre><code>## Encountered 14618 unique sequences from 54321 total sequences read.</code></pre>
-<pre><code>## ℹ Inferring samples</code></pre>
-<pre><code>## Sample 1 - 54321 reads in 12705 unique sequences.
-## Sample 1 - 54321 reads in 14618 unique sequences.</code></pre>
-<pre><code>## 40387 paired-reads (in 170 unique pairings) successfully merged out of 51398 (in 693 pairings) input.</code></pre>
-<pre><code>## Warning: Removed 2 rows containing missing values (geom_bar).</code></pre>
-<pre><code>## ℹ Removing bimeras</code></pre>
-<pre><code>## Identified 59 bimeras out of 170 input sequences.</code></pre>
+<span class="co">## Warning: Transformation introduced infinite values in continuous y-axis</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Dereplicating fastqs</span></code></pre>
+<pre><code><span class="co">## Dereplicating sequence entries in Fastq file: /home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_PRL_BC10v0_MG_120419_F_filt.fastq.gz</span></code></pre>
+<pre><code><span class="co">## Encountered 13495 unique sequences from 53469 total sequences read.</span></code></pre>
+<pre><code><span class="co">## Dereplicating sequence entries in Fastq file: /home/runner/work/_temp/Library/REvoBC/extdata/output/filtered_fastq/MMUS1469_PRL_BC10v0_MG_120419_R_filt.fastq.gz</span></code></pre>
+<pre><code><span class="co">## Encountered 15353 unique sequences from 53469 total sequences read.</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Inferring samples</span></code></pre>
+<pre><code><span class="co">## Sample 1 - 53469 reads in 13495 unique sequences.</span>
+<span class="co">## Sample 1 - 53469 reads in 15353 unique sequences.</span></code></pre>
+<pre><code><span class="co">## 37644 paired-reads (in 184 unique pairings) successfully merged out of 49518 (in 645 pairings) input.</span></code></pre>
+<pre><code><span class="co">## Warning: Removed 2 rows containing missing values (geom_bar).</span></code></pre>
+<pre><code><span class="co">## <span style="color: #00BBBB;">ℹ</span> Removing bimeras</span></code></pre>
+<pre><code><span class="co">## Identified 55 bimeras out of 184 input sequences.</span></code></pre>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">revo_initialized</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] "fastq_directory"     "output_directory"    "dada2"              
-## [4] "map_file_sample"     "dada2_asv_prefilter"</code></pre>
+<pre><code><span class="co">## [1] "fastq_directory"     "output_directory"    "dada2"              </span>
+<span class="co">## [4] "map_file_sample"     "dada2_asv_prefilter"</span></code></pre>
 <p>During the above computation, dada2 was run and all ASVs are detected. The result is an object of class REvoBC, which is populated by 5 fields: dada2 is a list which contains the percentage of chimeras found by dada2 and a dataframe that tracks the number of sequences during all dada2 steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated. dada2_asv_prefilter: dataframe that stores all sequences detected by dada2.</p>
 </div>
-<div id="analysis-and-pairwise-alignment-of-asvs" class="section level2">
-<h2 class="hasAnchor">
-<a href="#analysis-and-pairwise-alignment-of-asvs" class="anchor" aria-hidden="true"></a>Analysis and pairwise alignment of ASVs</h2>
+<div class="section level2">
+<h2 id="analysis-and-pairwise-alignment-of-asvs">Analysis and pairwise alignment of ASVs<a class="anchor" aria-label="anchor" href="#analysis-and-pairwise-alignment-of-asvs"></a>
+</h2>
 <p>Next, we can perform the analysis of the ASV sequences identified by dada2. The next function finds those that map to the original barcodes and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98% (parameter pid_cutoff_nmbc) with the original barcode as NMBC. It also removes possible contamination artifacts (ASV that map to other barcodes used in earlier experiments). Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV. It also computes additional measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">revo_analyzed</span> <span class="op">=</span> <span class="fu"><a href="../reference/asv_analysis.html">asv_analysis</a></span><span class="op">(</span>REvoBC_object <span class="op">=</span> <span class="va">revo_initialized</span>, barcode <span class="op">=</span> <span class="st">'BC10v0.ORG'</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning: Removed 1 rows containing missing values (geom_vline).</code></pre>
+<code class="sourceCode R"><span class="va">revo_analyzed</span> <span class="op">=</span> <span class="fu"><a href="../reference/asv_analysis.html">asv_analysis</a></span><span class="op">(</span>REvoBC_object <span class="op">=</span> <span class="va">revo_initialized</span>, barcode <span class="op">=</span> <span class="st">'BC10v0'</span><span class="op">)</span></code></pre></div>
+<pre><code><span class="co">## Warning: Removed 1 rows containing missing values (position_stack).</span></code></pre>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">revo_analyzed</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] "fastq_directory"     "output_directory"    "dada2"              
-## [4] "map_file_sample"     "dada2_asv_prefilter" "barcode"            
-## [7] "clean_asv_dataframe" "statistics"</code></pre>
+<pre><code><span class="co">## [1] "fastq_directory"     "output_directory"    "dada2"              </span>
+<span class="co">## [4] "map_file_sample"     "dada2_asv_prefilter" "barcode"            </span>
+<span class="co">## [7] "clean_asv_dataframe" "statistics"</span></code></pre>
 <p>There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC). barcode is the barcode considered for the analysis. statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">revo_msa</span> <span class="op">=</span> <span class="fu"><a href="../reference/perform_msa.html">perform_msa</a></span><span class="op">(</span><span class="va">revo_analyzed</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning in utils::write.csv(dnastringset, file.path(output_dir,
-## "dnastringset.csv"), : attempt to set 'col.names' ignored</code></pre>
 <pre><code>## 
 ## MUSCLE v3.8.31 by Robert C. Edgar
 ## 
@@ -179,188 +176,187 @@
 ## This software is donated to the public domain.
 ## Please cite: Edgar, R.C. Nucleic Acids Res 32(5), 1792-97.
 ## 
-## filee68624186273 21 seqs, max length 260, avg  length 175
-## 1671 MB(23%)00:00:00                Iter   1    0.43%  K-mer dist pass 1
-1671 MB(23%)00:00:00                Iter   1  100.00%  K-mer dist pass 1
-## 1671 MB(23%)00:00:00                Iter   1    0.43%  K-mer dist pass 2
-1671 MB(23%)00:00:00                Iter   1  100.00%  K-mer dist pass 2
-## 1671 MB(23%)00:00:00                Iter   1    5.00%  Align node       
-1671 MB(23%)00:00:00                Iter   1   10.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   15.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   20.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   25.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   30.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   35.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   40.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   45.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   50.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   55.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   60.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   65.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   70.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   75.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   80.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   85.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   90.00%  Align node
-1671 MB(23%)00:00:00                Iter   1   95.00%  Align node
-1671 MB(23%)00:00:00                Iter   1  100.00%  Align node
-1671 MB(23%)00:00:00                Iter   1  100.00%  Align node
-## 1671 MB(23%)00:00:00                Iter   1    4.76%  Root alignment
-1671 MB(23%)00:00:00                Iter   1    9.52%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   14.29%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   19.05%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   23.81%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   28.57%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   33.33%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   38.10%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   42.86%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   47.62%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   52.38%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   57.14%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   61.90%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   66.67%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   71.43%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   76.19%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   80.95%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   85.71%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   90.48%  Root alignment
-1671 MB(23%)00:00:00                Iter   1   95.24%  Root alignment
-1671 MB(23%)00:00:00                Iter   1  100.00%  Root alignment
-1671 MB(23%)00:00:00                Iter   1  100.00%  Root alignment
-## 1671 MB(23%)00:00:00                Iter   2    5.26%  Refine tree   
-1671 MB(23%)00:00:00                Iter   2   10.53%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   15.79%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   21.05%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   26.32%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   31.58%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   36.84%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   42.11%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   47.37%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   52.63%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   57.89%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   63.16%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   68.42%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   73.68%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   78.95%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   84.21%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   89.47%  Refine tree
-1671 MB(23%)00:00:00                Iter   2   94.74%  Refine tree
-1671 MB(23%)00:00:00                Iter   2  100.00%  Refine tree
-1671 MB(23%)00:00:00                Iter   2  100.00%  Refine tree
-## 1671 MB(23%)00:00:00                Iter   2    4.76%  Root alignment
-1671 MB(23%)00:00:00                Iter   2    9.52%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   14.29%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   19.05%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   23.81%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   28.57%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   33.33%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   38.10%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   42.86%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   47.62%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   52.38%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   57.14%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   61.90%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   66.67%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   71.43%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   76.19%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   80.95%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   85.71%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   90.48%  Root alignment
-1671 MB(23%)00:00:00                Iter   2   95.24%  Root alignment
-1671 MB(23%)00:00:00                Iter   2  100.00%  Root alignment
-1671 MB(23%)00:00:00                Iter   2  100.00%  Root alignment
-## 1671 MB(23%)00:00:00                Iter   2  100.00%  Root alignment
-## 1671 MB(23%)00:00:00                Iter   3    5.13%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3    7.69%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   10.26%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   12.82%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   15.38%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   17.95%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   20.51%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   23.08%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   25.64%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   28.21%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   30.77%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   33.33%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   35.90%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   38.46%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   41.03%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   43.59%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   46.15%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   48.72%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   51.28%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   53.85%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   56.41%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   58.97%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   61.54%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   64.10%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   66.67%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   69.23%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   71.79%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   74.36%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   76.92%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   79.49%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   82.05%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   84.62%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   87.18%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   89.74%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   92.31%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   94.87%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3   97.44%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3  100.00%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3  102.56%  Refine biparts
-1671 MB(23%)00:00:00                Iter   3  100.00%  Refine biparts
-## 1671 MB(23%)00:00:00                Iter   4    5.13%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4    7.69%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   10.26%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   12.82%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   15.38%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   17.95%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   20.51%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   23.08%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   25.64%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   28.21%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   30.77%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   33.33%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   35.90%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   38.46%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   41.03%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   43.59%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   46.15%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   48.72%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   51.28%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   53.85%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   56.41%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   58.97%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   61.54%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   64.10%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   66.67%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   69.23%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   71.79%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   74.36%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   76.92%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   79.49%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   82.05%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   84.62%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   87.18%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   89.74%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   92.31%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   94.87%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4   97.44%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4  100.00%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4  102.56%  Refine biparts
-1671 MB(23%)00:00:00                Iter   4  100.00%  Refine biparts
-## 1671 MB(23%)00:00:00                Iter   5    5.13%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5    7.69%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5   10.26%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5   12.82%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5   15.38%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5   17.95%  Refine biparts
-1671 MB(23%)00:00:00                Iter   5  100.00%  Refine biparts
-## 1671 MB(23%)00:00:00                Iter   5  100.00%  Refine biparts</code></pre>
-<pre><code>## Warning: position_stack requires non-overlapping x intervals</code></pre>
-<pre><code>## Warning: position_stack requires non-overlapping x intervals</code></pre>
-<p>This last step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function. After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.</p>
+## file10bb27be0683e 20 seqs, max length 261, avg  length 176
+## 1768 MB(25%)00:00:00                Iter   1    0.48%  K-mer dist pass 1
+1768 MB(25%)00:00:00                Iter   1  100.00%  K-mer dist pass 1
+## 1768 MB(25%)00:00:00                Iter   1    0.48%  K-mer dist pass 2
+1768 MB(25%)00:00:00                Iter   1  100.00%  K-mer dist pass 2
+## 1768 MB(25%)00:00:00                Iter   1    5.26%  Align node       
+1768 MB(25%)00:00:00                Iter   1   10.53%  Align node
+1768 MB(25%)00:00:00                Iter   1   15.79%  Align node
+1768 MB(25%)00:00:00                Iter   1   21.05%  Align node
+1768 MB(25%)00:00:00                Iter   1   26.32%  Align node
+1768 MB(25%)00:00:00                Iter   1   31.58%  Align node
+1768 MB(25%)00:00:00                Iter   1   36.84%  Align node
+1768 MB(25%)00:00:00                Iter   1   42.11%  Align node
+1768 MB(25%)00:00:00                Iter   1   47.37%  Align node
+1768 MB(25%)00:00:00                Iter   1   52.63%  Align node
+1768 MB(25%)00:00:00                Iter   1   57.89%  Align node
+1768 MB(25%)00:00:00                Iter   1   63.16%  Align node
+1768 MB(25%)00:00:00                Iter   1   68.42%  Align node
+1768 MB(25%)00:00:00                Iter   1   73.68%  Align node
+1768 MB(25%)00:00:00                Iter   1   78.95%  Align node
+1768 MB(25%)00:00:00                Iter   1   84.21%  Align node
+1768 MB(25%)00:00:00                Iter   1   89.47%  Align node
+1768 MB(25%)00:00:00                Iter   1   94.74%  Align node
+1768 MB(25%)00:00:00                Iter   1  100.00%  Align node
+1768 MB(25%)00:00:00                Iter   1  100.00%  Align node
+## 1768 MB(25%)00:00:00                Iter   1    5.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   10.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   15.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   20.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   25.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   30.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   35.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   40.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   45.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   50.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   55.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   60.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   65.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   70.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   75.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   80.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   85.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   90.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1   95.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1  100.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   1  100.00%  Root alignment
+## 1768 MB(25%)00:00:00                Iter   2    5.56%  Refine tree   
+1768 MB(25%)00:00:00                Iter   2   11.11%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   16.67%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   22.22%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   27.78%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   33.33%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   38.89%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   44.44%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   50.00%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   55.56%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   61.11%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   66.67%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   72.22%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   77.78%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   83.33%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   88.89%  Refine tree
+1768 MB(25%)00:00:00                Iter   2   94.44%  Refine tree
+1768 MB(25%)00:00:00                Iter   2  100.00%  Refine tree
+1768 MB(25%)00:00:00                Iter   2  105.56%  Refine tree
+1768 MB(25%)00:00:00                Iter   2  100.00%  Refine tree
+## 1768 MB(25%)00:00:00                Iter   2    5.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   10.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   15.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   20.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   25.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   30.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   35.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   40.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   45.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   50.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   55.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   60.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   65.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   70.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   75.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   80.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   85.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   90.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2   95.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2  100.00%  Root alignment
+1768 MB(25%)00:00:00                Iter   2  100.00%  Root alignment
+## 1768 MB(25%)00:00:00                Iter   2  100.00%  Root alignment
+## 1768 MB(25%)00:00:00                Iter   3    5.41%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3    8.11%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   10.81%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   13.51%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   16.22%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   18.92%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   21.62%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   24.32%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   27.03%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   29.73%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   32.43%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   35.14%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   37.84%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   40.54%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   43.24%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   45.95%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   48.65%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   51.35%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   54.05%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   56.76%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   59.46%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   62.16%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   64.86%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   67.57%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   70.27%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   72.97%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   75.68%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   78.38%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   81.08%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   83.78%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   86.49%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   89.19%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   91.89%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   94.59%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3   97.30%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3  100.00%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3  102.70%  Refine biparts
+1768 MB(25%)00:00:00                Iter   3  100.00%  Refine biparts
+## 1768 MB(25%)00:00:00                Iter   4    5.41%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4    8.11%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   10.81%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   13.51%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   16.22%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   18.92%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   21.62%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   24.32%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   27.03%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   29.73%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   32.43%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   35.14%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   37.84%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   40.54%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   43.24%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   45.95%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   48.65%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   51.35%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   54.05%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   56.76%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   59.46%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   62.16%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   64.86%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   67.57%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   70.27%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   72.97%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   75.68%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   78.38%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   81.08%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   83.78%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   86.49%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   89.19%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   91.89%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   94.59%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4   97.30%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4  100.00%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4  102.70%  Refine biparts
+1768 MB(25%)00:00:00                Iter   4  100.00%  Refine biparts
+## 1768 MB(25%)00:00:00                Iter   5    5.41%  Refine biparts
+1768 MB(25%)00:00:00                Iter   5    8.11%  Refine biparts
+1768 MB(25%)00:00:00                Iter   5   10.81%  Refine biparts
+1768 MB(25%)00:00:00                Iter   5  100.00%  Refine biparts
+## 1768 MB(25%)00:00:00                Iter   5  100.00%  Refine biparts</code></pre>
+<pre><code><span class="co">## Warning: position_stack requires non-overlapping x intervals</span>
+
+<span class="co">## Warning: position_stack requires non-overlapping x intervals</span></code></pre>
+<p><img src="2_running_REvoBC_files/figure-html/unnamed-chunk-5-1.png" width="700"><img src="2_running_REvoBC_files/figure-html/unnamed-chunk-5-2.png" width="700"></p>
+<p>This step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function. After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample. This computation stores inside the REvoBC object a new field called alignment, which gets populated by 5 new fields: msa_stringset is the output of multiple sequence alignemnt performed by muscle; mutations_df is a tibble where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated, the type of alteration and the frequency of that mutation in the corresponding sample; asv_alteration_width is another tibble which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation); binary_mutations_matrix is finally a binary tibble, where each line corresponds to an ASV, and each column corresponds to a mutation. 1 and 0 indicate respectively the presence or absence of the mutation in the ASV.</p>
+<p>This function also creates a new field in the REvoBC object called , which contains the following information for all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites. Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the cutting site on its right if that is less than 5 nucleotides distant, otherwise it is assigned to the cutting site on its left.</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">revo_phyl</span> <span class="op">=</span> <span class="fu"><a href="../reference/infer_phylogeny.html">infer_phylogeny</a></span><span class="op">(</span><span class="va">revo_msa</span>, phylip_package_path <span class="op">=</span> <span class="st">'C:/Users/*/Program Files/phylip-3.698/exe/'</span><span class="op">)</span></code></pre></div>
+<p>This step computes the phylogeny, using the binary mutation matrix computed in the previous step. Phylogeny is computed using camin-sokal method, using the implementation found in the package Rphylip. Note that prior to running this function, users should install PHYLIP and then provide the path to the folder containing the binary of mix using the parameter phylip_package_path. This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the REvoBC objetc.</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">summary_figre</span> <span class="op">=</span> <span class="fu"><a href="../reference/plot_summary.html">plot_summary</a></span><span class="op">(</span><span class="va">revo_phyl</span><span class="op">)</span></code></pre></div>
+<p>Finally, a summary plot is prodced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV; next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.</p>
 </div>
   </div>
 
@@ -381,7 +377,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link external-link">pkgdown</a> 1.6.1.9001.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 1.9000.9000.9000.</p>
 </div>
 
       </footer>

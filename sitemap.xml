@@ -28,10 +28,16 @@
     <loc>/reference/index.html</loc>
   </url>
   <url>
+    <loc>/reference/infer_phylogeny.html</loc>
+  </url>
+  <url>
     <loc>/reference/initialize_REvoBC.html</loc>
   </url>
   <url>
     <loc>/reference/perform_msa.html</loc>
+  </url>
+  <url>
+    <loc>/reference/plot_summary.html</loc>
   </url>
   <url>
     <loc>/reference/revo_analyzed.html</loc>
@@ -41,5 +47,8 @@
   </url>
   <url>
     <loc>/reference/revo_msa.html</loc>
+  </url>
+  <url>
+    <loc>/reference/revo_phyl.html</loc>
   </url>
 </urlset>
