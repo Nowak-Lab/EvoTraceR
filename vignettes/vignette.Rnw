@@ -22,10 +22,10 @@ BiocStyle::latex()
 
 \author[1]{Lucrezia Patruno}
 \author[2]{Daniele Ramazzottii}
-\author[2,3]{Dawid Nowak}
+\author[3]{Dawid Nowak}
 
 \affil[1]{Dept. of Informatics, Systems and Communication, Univ. of Milan-Bicocca, Milan, Italy.}
-\affil[2]{School of Medicine and Surgery, Univ. of Milan-Bicocca, Monza, Italy.}
+\affil[2]{Dept. of Medicine and Surgery, Univ. of Milan-Bicocca, Monza, Italy.}
 \affil[3]{Sandra and Edward Meyer Cancer Center, Weill Cornell Medicine, New York, USA.}
 
 \date{\today}

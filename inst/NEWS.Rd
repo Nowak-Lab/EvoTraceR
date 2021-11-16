@@ -2,9 +2,9 @@
 \title{News for package \pkg{REvoBC}}
 \encoding{UTF-8}
 
-\section{Changes in Version 0.99.10}{
+\section{Changes in Version 0.99.11}{
     \itemize{
-        \item Package pre-released (v0.99.10) on November 2021.
+        \item Package pre-released (v0.99.11) on November 2021.
     }
 }
 
