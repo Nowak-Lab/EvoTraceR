@@ -393,6 +393,7 @@ asv_analysis = function(REvoBC_object,
                                  nmbc,
                                 output_dir = output_dir)
 
+  
   if (output_figures) {
     track_data = data.frame(name=c("Starting Seq", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASV"),
                                  num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
