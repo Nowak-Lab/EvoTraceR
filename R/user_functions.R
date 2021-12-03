@@ -397,13 +397,18 @@ asv_analysis = function(REvoBC_object,
   if(output_figures) {
     # assemble data  with all number for each step of filtering
     track_data <- data.frame(name=as.factor(c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")), num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
+    # set order of columns
     track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")))
-
+    # calculate percent loss comparing to "Starting ASVs" 
+    track_data <- mutate(track_data, num_perc = ceiling(x=num/filter(track_data, name == "Starting ASVs")$num*100))
+    track_data$num_perc <- paste0(track_data$num_perc, " %")
+    
     # start graph
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
-      geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=4) + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=num_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white") + # change order to have up whatever you choose, opposte to order
       scale_y_continuous(expand = c(0, 0), limits = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) +
       scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
       labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
