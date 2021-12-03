@@ -394,25 +394,30 @@ asv_analysis = function(REvoBC_object,
                                 output_dir = output_dir)
 
   
-  if (output_figures) {
-    track_data = data.frame(name=c("Starting Seq", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASV"),
-                                 num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
+  if(output_figures) {
+    # assemble data  with all number for each step of filtering
+    track_data <- data.frame(name=as.factor(c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")), num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
+    track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")))
+
+    # start graph
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
-      geom_bar(aes(x=name, y=num), position = "dodge", stat = "identity", width=0.8, size=0.2) +
+      geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
       geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
-      labs(x = "Number of ASVs", y = "") 
-      barplot_nowaklab_theme() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
-    # save pdf
-    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), 
-           plot=seqtab_df_clean_track, 
-           #device=grDevices::cairo_pdf, 
-           width=10, height=10, units = "cm")
+      scale_y_continuous(expand = c(0, 0), limits = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) +
+      scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
+      labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
+      lemon::coord_capped_cart(left="both", ylim = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) + # axis with lemon
+      barplot_nowaklab_theme() + # add theme 
+      theme(plot.margin = unit(c(0, 0, 0, 0), "mm"), # update theme specifically 
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
+            axis.line.x = element_blank(), # disable x axis lines
+            axis.ticks.x = element_blank()) # disable x axis ticks lines
 
-    write.csv(track_data,  
-              file.path(figure_dir, "/track_asv_number_data.csv"),
-              row.names = FALSE, quote = FALSE)
+    # save pdf
+    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=10, height=10, units = "cm")
+    # save csv
+    write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
   
   return(REvoBC_object)
