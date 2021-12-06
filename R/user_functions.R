@@ -359,8 +359,7 @@ asv_analysis = function(REvoBC_object,
     arrange(-asv_total_freq)  %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
-  seqtab_df_clean_nmbc <- seqtab_df_clean_asv[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, 
-                                                         pattern = "NMBC"),]
+  seqtab_df_clean_nmbc <- seqtab_df_clean_asv[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, pattern = "NMBC"),]
   
   # skip NMBC
   seqtab_df_clean_asv <-
@@ -378,12 +377,10 @@ asv_analysis = function(REvoBC_object,
     arrange(-asv_total_freq) %>%
     dplyr::select(-c("seq_names", "asv_total_freq")) %>%
     relocate(asv_names)
-  
+  # final number of ASVs for analysis
   clean_asv <- nrow(seqtab_df_clean_asv)
-  
-  utils::write.csv(seqtab_df_clean_asv, 
-            file.path(output_dir, "/clean_asv_dataframe.csv"),
-            row.names = F)
+  # save csv with final ASvs
+  utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
   REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
   REvoBC_object = asv_statistics(REvoBC_object, 
@@ -391,7 +388,7 @@ asv_analysis = function(REvoBC_object,
                                  asv_count_cutoff,
                                  figure_dir,
                                  nmbc,
-                                output_dir = output_dir)
+                                 output_dir = output_dir)
 
   
   if(output_figures) {
@@ -399,16 +396,26 @@ asv_analysis = function(REvoBC_object,
     track_data <- data.frame(name=as.factor(c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")), num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
     # set order of columns
     track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")))
+    track_data$num_names <- paste0(track_data$num, " x ASVs") 
+    
     # calculate percent loss comparing to "Starting ASVs" 
     track_data <- mutate(track_data, num_perc = ceiling(x=num/filter(track_data, name == "Starting ASVs")$num*100))
     track_data$num_perc <- paste0(track_data$num_perc, " %")
+    
+    # percent change
+    track_data <- mutate(track_data, diff_perc = ceiling(x=(num/lag(num)-1)*100))
+    track_data <- mutate(track_data, diff_perc = replace_na(diff_perc, 0))
+    track_data$diff_perc <- replace(track_data$diff_perc, track_data$diff_perc == 0, "")
+    track_data$diff_perc <- paste0(track_data$diff_perc, " %")
+    track_data$diff_perc <- replace(track_data$diff_perc, track_data$diff_perc == " %", "")
     
     # start graph
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
-      geom_text(aes(x=name, y=num, label=num), check_overlap = TRUE, vjust=-0.25, size=4) + # change order to have up whatever you choose, opposte to order
-      geom_text(aes(x=name, y=num, label=num_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white") + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=num_names), check_overlap = TRUE, vjust=-0.25, size=4) + # change order to have up whatever you choose, opposte to order
+      #geom_text(aes(x=name, y=num, label=num_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white", fontface = "bold") + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=diff_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white") + # change order to have up whatever you choose, opposte to order
       scale_y_continuous(expand = c(0, 0), limits = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) +
       scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
       labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
@@ -420,7 +427,7 @@ asv_analysis = function(REvoBC_object,
             axis.ticks.x = element_blank()) # disable x axis ticks lines
 
     # save pdf
-    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=10, height=10, units = "cm")
+    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
