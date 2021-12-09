@@ -425,8 +425,7 @@ asv_analysis = function(REvoBC_object,
             axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
             axis.line.x = element_blank(), # disable x axis lines
             axis.ticks.x = element_blank()) # disable x axis ticks lines
-    ggsave(filename="~/Desktop/track_asv_number.pdf", plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
-    
+    ggsave(filename="~/Desktop/track_asv_number.pdf", plot=seqtab_df_clean_track, width=15, height=12.5, units = "cm")
     # save pdf
     #ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
     # save csv
