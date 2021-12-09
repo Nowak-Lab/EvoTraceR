@@ -394,40 +394,41 @@ asv_analysis = function(REvoBC_object,
   if(output_figures) {
     # assemble data  with all number for each step of filtering
     track_data <- data.frame(name=as.factor(c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")), num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
-    # set order of columns
+    # set order of columns DGN
     track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")))
-    track_data$num_names <- paste0(track_data$num, " x ASVs") 
+    track_data$num_names <- paste0(track_data$num, " x ASVs") # numbers of ASV included on the top of bar  
     
-    # calculate percent loss comparing to "Starting ASVs" 
-    track_data <- mutate(track_data, num_perc = ceiling(x=num/filter(track_data, name == "Starting ASVs")$num*100))
-    track_data$num_perc <- paste0(track_data$num_perc, " %")
-    
-    # percent change
-    track_data <- mutate(track_data, diff_perc = ceiling(x=(num/lag(num)-1)*100))
-    track_data <- mutate(track_data, diff_perc = replace_na(diff_perc, 0))
-    track_data$diff_perc <- replace(track_data$diff_perc, track_data$diff_perc == 0, "")
-    track_data$diff_perc <- paste0(track_data$diff_perc, " %")
-    track_data$diff_perc <- replace(track_data$diff_perc, track_data$diff_perc == " %", "")
-    
-    # start graph
+    # calculate percent change from previous filter
+    track_data <-
+      track_data %>%
+      mutate(track_data, diff_perc = ceiling(x=(num/lag(num)-1)*100)) %>%
+      mutate(diff_perc = paste0(diff_perc, " %")) %>%
+      mutate(diff_perc = if_else(name == "Starting ASVs" | name == "Final ASVs", "", diff_perc)) %>%
+      mutate(num_names_sf = if_else(name == "Starting ASVs" | name == "Final ASVs", num_names, "")) %>%
+      mutate(num_names_ins = if_else(name == "Starting ASVs" | name == "Final ASVs", "", num_names))
+
+    # start graph 
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
-      geom_text(aes(x=name, y=num, label=num_names), check_overlap = TRUE, vjust=-0.25, size=4) + # change order to have up whatever you choose, opposte to order
-      #geom_text(aes(x=name, y=num, label=num_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white", fontface = "bold") + # change order to have up whatever you choose, opposte to order
-      geom_text(aes(x=name, y=num, label=diff_perc), check_overlap = TRUE, vjust=1.25, size=4, col="white") + # change order to have up whatever you choose, opposte to order
-      scale_y_continuous(expand = c(0, 0), limits = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) +
+      geom_text(aes(x=name, y=num, label=num_names_sf), vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=num_names_ins), vjust=-1.75, size=3) + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=diff_perc), vjust=-0.25, size=3, col="blue") + # change order to have up whatever you choose, opposte to order
+      scale_y_continuous(expand = c(0, 0), 
+                         limits= c(0, plyr::round_any(max(track_data$num), 100, f = ceiling)+100/4), 
+                         breaks = seq(0, (plyr::round_any(max(track_data$num), 100, f = ceiling)), 100)) +
       scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
       labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
-      lemon::coord_capped_cart(left="both", ylim = c(0, plyr::round_any(max(track_data$num)*1.1, 10, f = ceiling))) + # axis with lemon
+      lemon::coord_capped_cart(left="both") + # axis with lemon
       barplot_nowaklab_theme() + # add theme 
       theme(plot.margin = unit(c(0, 0, 0, 0), "mm"), # update theme specifically 
             axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
             axis.line.x = element_blank(), # disable x axis lines
             axis.ticks.x = element_blank()) # disable x axis ticks lines
-
+    ggsave(filename="~/Desktop/track_asv_number.pdf", plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
+    
     # save pdf
-    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
+    #ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
