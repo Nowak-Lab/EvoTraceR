@@ -108,13 +108,13 @@ initialize_REvoBC = function( output_dir,
   REvoBC_object$dada2 = list()
   
   output_dir_files = file.path(output_dir, "dada2_files")
-  if (!dir.exists(output_dir_files)) dir.create(output_dir_files)
+  if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = TRUE)
   
   if (is.null(dada2_output_sequences)) {
     # Fastq were provided as input -> perform alignment with dada2
     # Check if input files are compressed
-    zip_files = list.files(input_dir, pattern = '.zip$', full.names = T)
-    tar_files = list.files(input_dir, pattern = '.tar$', full.names = T)
+    zip_files = list.files(input_dir, pattern = '.zip$', full.names = TRUE)
+    tar_files = list.files(input_dir, pattern = '.tar$', full.names = TRUE)
     
     if (length(zip_files) > 0) {
       cli::cli_alert_info("Found zipped fastq files, extracting")
