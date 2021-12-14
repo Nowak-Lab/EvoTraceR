@@ -407,7 +407,7 @@ asv_analysis = function(REvoBC_object,
       mutate(num_names_sf = if_else(name == "Starting ASVs" | name == "Final ASVs", num_names, "")) %>%
       mutate(num_names_ins = if_else(name == "Starting ASVs" | name == "Final ASVs", "", num_names))
 
-    # start graph 
+    # start graph ploting 
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
