@@ -202,6 +202,16 @@ initialize_REvoBC = function( output_dir,
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param barcode (Required). String indicating the barcode used in the experiment.
+#' @param ref_name String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',
+#' @param ref_seq String indicating the reference sequence used in the experimenti. Default is 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
+#' @param ref_flank_left String indicating the first nucleotides of the reference sequence that never mutate over the
+#' course of the experiment. Default is "^TCTAC",
+#' @param ref_Flank_right String indicating the first nucleotides of the reference sequence that never mutate over the
+#' course of the experiment. Default is "CCCGTGGATC$",
+#' @param flanking_filtering Which among the flaning regions to use to filter out contaminated sequences.
+#' Must be one of c('left', 'right', 'both'),
+#' @param ref_cut_sites Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
+#' @param ref_border_sites c(26, 52, 78, 104, 130, 156, 182, 208, 234).
 #' @param output_figures (Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
 #' @param pid_cutoff_nmbc (Optional). Default to 98\%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
 #' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
@@ -262,12 +272,20 @@ initialize_REvoBC = function( output_dir,
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 asv_analysis = function(REvoBC_object,
-                        barcode = 'BC10v0',
+                        #barcode = 'BC10v0',
+                        ref_name = 'BC10v0',
+                        ref_seq = 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
+                        ref_flank_left = "^TCTAC",
+                        ref_flank_right = "CCCGTGGATC$",
+                        flanking_filtering = 'both',
+                        ref_cut_sites = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
+                        ref_border_sites = c(26, 52, 78, 104, 130, 156, 182, 208, 234),
                         output_figures = TRUE,
                         pid_cutoff_nmbc = 98,
                         asv_count_cutoff = 2,
                         ...) {
   dots = list(...)
+  #ref_length = nchar(ref_seq),
   if (output_figures) {
     figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
@@ -277,24 +295,18 @@ asv_analysis = function(REvoBC_object,
   output_dir = file.path(REvoBC_object$output_directory, "asv_analysis")
   if (!dir.exists(output_dir)) dir.create(output_dir)
   
-  barcodes_info = data.frame(
-    asv_names = c("BC10v0", "BC10v1", "BC10v2", "BC10v3", "BC10v4"),
-    seq_start = c("^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC", "^TCTAC"), # 5x nts
-    seq_end = c("CCCGTGGATC$", "GCCGGGGATC$", "ACCGGGGATC$", "ACCCTGGATC$", "GCCGCGGATC$"),
-    seq = c("TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
-            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTGTTACACACGCATTCAACCGCGGACTATTACACGCTCGTTCAACCAGGGATATTTACACGCAAGTTCAACCACGGATTTATACACGCGCACTCAACCAGGGTCATCTACGCAAGCGTTCAATCGAGGTACATTCCACGCGCATTCAACCGGGGCTTTTTACACCCGCGCTCAACAGGGGAACTTTACACGTGCGATCAGCCGGGGATC",
-            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACGCATTCAACCACGGTTTATTACACGCACATTCAACCGTGGACTGCTACACACGCGCTCAACCACGGATATTTACGCACACGTTCAACCGCGGATTGTTACACCCGCATTCAACCGAGGTCACCTACACCCGCACTCAACCGGGGTACGCGACACGTGCGATCAACCGAGGCTTACTACCCGCACGTTCAACTGGGGAACACTGCACGCGAGTTCGACCGGGGATC",
-            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACATTCAACCGTGGTTTACTACACAAGCGTTCAACCAAGGACTCCTACACATACGTTCAACCGTGGATATTTACACGTTCGTTCAACCAGGGATTTTTACAAACGAGTTCAACCGGGGTCACTTATACGCTCGTTCAACCGAGGTACTCTACACGCACCTTCAATCACGGCTTCCTACAGGAGCGTTCAAACGCGGAACTCAACGGGCGCGTTCAACCCTGGATC",
-            "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACATTCAACCGTGGTTTATTACACGCACGTTCAACCAGGGACTTTTACATACGCATTCAACCGGGGATATTTACTCACACGTTCAACCGGGGATTGCTACACGAACGTTCAATCGCGGTCATCAACGTGCGCATTCAACCGTGGTACACTACGCACCCGTTCAACCGGGGCTTTGGACACGCGCATACAACCGTGGAACTCTACACAGGCATTCAGCCGCGGATC"),
+  barcodes_info = list(
+    ref_name = ref_name,
+    ref_seq = ref_seq,
+    ref_flank_left = ref_flank_left, # 5x nts
+    ref_flank_right = ref_flank_right,
+    ref_cut_sites = ref_cut_sites,
+    ref_border_sites = ref_border_sites,
     stringsAsFactors = FALSE)
-  
-  if(!barcode %in% barcodes_info$asv_names) {
-    stop("The barcode provided doesn't match any of the possible ones, exiting")
-  }
   
   seqtab_df = REvoBC_object$dada2_asv_prefilter
   
-  REvoBC_object$barcode = barcodes_info[barcodes_info$asv_names == barcode,]
+  REvoBC_object$barcode = barcodes_info
   
   # Store the original number of sequences and that after chimeras removal
   orgseq <- REvoBC_object$dada2$original_sequences
@@ -302,24 +314,30 @@ asv_analysis = function(REvoBC_object,
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
-  match_seq = match(seqtab_df$seq, barcodes_info$seq)
-  barcodes_idx = match_seq[!is.na(match_seq)]
-  seqtab_df$seq_names[!is.na(match_seq)] = paste0(barcodes_info$asv_names[barcodes_idx], ".NMBC")
-  #gsub(pattern = '.ORG',replacement = '.NMBC', x = barcodes_info$asv_names[barcodes_idx])
-  seqtab_df_original = seqtab_df
-  utils::write.csv(seqtab_df,
-            file.path(output_dir,
-                      "sequences_barcode_mapping.csv"),
-            row.names = FALSE)
+  seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
   
+  seqtab_df_original = seqtab_df
   # Removal of contamination: keep only those ASV that start (5 nucleotides) and end (10 nuceotides) like the original barcode.
   # The first 5 nts are the same for all barcodes, while the end is barcode-specific
-  RD1_10 <- barcodes_info[barcodes_info$asv_names == barcode, 'seq_start']# as.character(dplyr::select(filter(bc_ver, asv_names == bc10_org), seq_start))
-  RD2_10 <- barcodes_info[barcodes_info$asv_names == barcode, 'seq_end']
-  nmbc <- paste0(barcode, ".NMBC")#gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
+  RD1_10 <- barcodes_info$ref_flank_left
+  RD2_10 <- barcodes_info$ref_flank_right
+  nmbc <- paste0(ref_name, ".NMBC")#gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
   # filter based on 5' and 3' 10x nts of 
-  seqtab_df <- dplyr::filter(seqtab_df, 
-                             stringr::str_detect(string = seq, pattern = RD1_10) & stringr::str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
+  if (flanking_filtering == 'left') {
+    seqtab_df <- dplyr::filter(seqtab_df, 
+                               stringr::str_detect(string = seq, pattern = RD1_10) & stringr::str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
+    
+  } else if (flanking_filtering == 'right') {
+    seqtab_df <- dplyr::filter(seqtab_df, 
+                               stringr::str_detect(string = seq, pattern = RD2_10)) # the same for different barcodes: 1.0 - site less affected
+    
+  } else if(flanking_filtering == 'both') {
+    seqtab_df <- dplyr::filter(seqtab_df, 
+                               stringr::str_detect(string = seq, pattern = RD1_10)) # the same for different barcodes: 1.0 - site less affected
+    
+  } else {
+    stop('Flanking filtering must be one of "left", "right" or "both". Exiting.')
+  }
   
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
@@ -335,7 +353,7 @@ asv_analysis = function(REvoBC_object,
   endseq_filter <- nrow(seqtab_df)
   
   pwa <- do.call(Biostrings::pairwiseAlignment, 
-                 c(list(subject = barcodes_info[barcodes_info$asv_names == barcode, 'seq'], 
+                 c(list(subject = barcodes_info$ref_seq, 
                         pattern = seqtab_df$seq, 
                         type="global"),
                    get_args_from_dots(dots, Biostrings::pairwiseAlignment)))
@@ -593,14 +611,14 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   if (mutations_use == 'smooth_del') {
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
       dplyr::select(starts_with('del_')) 
-    barcode_var = asv_bin_var[REvoBC_object$barcode$asv_names,]
+    barcode_var = asv_bin_var[REvoBC_object$barcode$ref_name,]
     asv_bin_var = barcode_var %>% 
       dplyr::bind_rows(asv_bin_var %>% 
                          filter(rowSums(dplyr::across(dplyr::everything())) > 0))
   } else if (mutations_use == 'smooth_del_ins'){
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>%
       dplyr::select(starts_with('ins_') | starts_with('del_')) 
-    barcode_var = asv_bin_var[REvoBC_object$barcode$asv_names,]
+    barcode_var = asv_bin_var[REvoBC_object$barcode$ref_name,]
     asv_bin_var = barcode_var %>% 
       dplyr::bind_rows(asv_bin_var %>% 
                          filter(rowSums(dplyr::across(dplyr::everything())) > 0))
@@ -610,7 +628,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix 
   }
 
-  tree_mp = compute_phylogenetic_tree(asv_bin_var, phylip_package_path, REvoBC_object$barcode$asv_names)
+  tree_mp = compute_phylogenetic_tree(asv_bin_var, phylip_package_path, REvoBC_object$barcode$ref_name)
   
   # Re-fortify tree to data frame
   options(warn=-1)
@@ -628,10 +646,10 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     for (clust in cluster_labels) {
       subset_asv = dend_clustered %>% filter(cluster == clust) %>% pull(asv_names)
       subset_mut = asv_bin_var %>% tibble::rownames_to_column(var = 'asv_names') %>%
-        filter(asv_names %in% subset_asv | asv_names == REvoBC_object$barcode$asv_names) %>%
+        filter(asv_names %in% subset_asv | asv_names == REvoBC_object$barcode$ref_name) %>%
         tibble::column_to_rownames('asv_names') #%>% dplyr::select_if(sum(.) > 0)
       subset_mut = subset_mut[,colSums(subset_mut)>0]
-      tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$barcode$asv_names)
+      tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$barcode$ref_name)
       
       if (i > 0) {
         binded_phylogenies = ape::bind.tree(x = binded_phylogenies, y = tree_sub)
@@ -649,7 +667,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   # We need to remove all barcodes except for one (so, count the number of barcodes),
   # leave only the one with y = 1 and subtract to all the other nodes the number of removed barcode nodes.
   tips_barcode = ggtree::fortify(binded_phylogenies) %>% 
-    filter(label == REvoBC_object$barcode$asv_names & y != 1) %>% pull(node)
+    filter(label == REvoBC_object$barcode$ref_name & y != 1) %>% pull(node)
   
   binded_phylogenies = ape::drop.tip(phy = binded_phylogenies, tip = tips_barcode)
   
@@ -708,10 +726,10 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
     if (length(wt_asv) > 0) {
       # Need to re-insert the ASV without any smoothed mutation for the visualization
-      barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$barcode$asv_names)
+      barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$barcode$ref_name)
       
       vary = 'y'
-      tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$barcode$asv_names | is.na(label)) %>%
+      tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$barcode$ref_name | is.na(label)) %>%
         #dplyr::mutate('{{var}}' = {{var}} + length(wt_asv)) %>%
         dplyr::mutate(y = y + length(wt_asv)) %>%
         add_row(parent = barcode_tip$parent, 
@@ -759,7 +777,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     df_to_plot_perf_match %>%
     dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
     dplyr::select(asv_names, sample) %>%
-    add_row(data.frame(asv_names=REvoBC_object$barcode$asv_names, sample="PRL"))
+    add_row(data.frame(asv_names=REvoBC_object$barcode$ref_name, sample="PRL"))
   colnames(tip_colors) <- c("asv_names", "sample_max_perc")
   
   tip_colors = merge(tip_colors, REvoBC_object$phylogeny$phylogeny_clustered, by = 'asv_names') %>%
