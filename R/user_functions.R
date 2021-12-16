@@ -198,7 +198,7 @@ initialize_REvoBC = function( output_dir,
 #' data(revo_initialized)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_initialized$output_directory = output_dir
-#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0')
+#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, )
 #' 
 #' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
 #' @param ref_name String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',
