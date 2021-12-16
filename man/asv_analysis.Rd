@@ -6,7 +6,14 @@
 \usage{
 asv_analysis(
   REvoBC_object,
-  barcode = "BC10v0",
+  ref_name = "BC10v0",
+ 
+    ref_seq = "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
+  ref_flank_left = "^TCTAC",
+  ref_flank_right = "CCCGTGGATC$",
+  flanking_filtering = "both",
+  ref_cut_sites = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
+  ref_border_sites = c(26, 52, 78, 104, 130, 156, 182, 208, 234),
   output_figures = TRUE,
   pid_cutoff_nmbc = 98,
   asv_count_cutoff = 2,
@@ -16,7 +23,22 @@ asv_analysis(
 \arguments{
 \item{REvoBC_object}{(Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}}
 
-\item{barcode}{(Required). String indicating the barcode used in the experiment.}
+\item{ref_name}{String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',}
+
+\item{ref_seq}{String indicating the reference sequence used in the experimenti. Default is 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',}
+
+\item{ref_flank_left}{String indicating the first nucleotides of the reference sequence that never mutate over the
+course of the experiment. Default is "^TCTAC",}
+
+\item{ref_flank_right}{String indicating the first nucleotides of the reference sequence that never mutate over the
+course of the experiment. Default is "CCCGTGGATC$",}
+
+\item{flanking_filtering}{Which among the flaning regions to use to filter out contaminated sequences.
+Must be one of c('left', 'right', 'both'), default is 'both'}
+
+\item{ref_cut_sites}{Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),}
+
+\item{ref_border_sites}{c(26, 52, 78, 104, 130, 156, 182, 208, 234).}
 
 \item{output_figures}{(Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
@@ -33,9 +55,9 @@ The REvoBC object passed as a parameter with the following new fields:
 sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
 aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
 to their total counts. 
-\item \code{barcode}: Info about the barcode selected for the current analysis.
+\item \code{reference}: Info about the reference sequence used for the current analysis.
 
- \item \code{statistics}: another list with the following sub-fileds: 
+ \item \code{statistics}: another list with the following sub-fields: 
 \itemize{
 
 \item \code{asv_df_percentages}: dataframe with six columns. \code{asv_names} is the name of the ASV.

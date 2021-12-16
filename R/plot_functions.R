@@ -63,12 +63,13 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
   
   
   # Position of PAM in guides
-  pam_pos <- c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251) 
+  pam_pos <- REvoBC_object$reference$ref_cut_sites
+  bc_len = nchar(REvoBC_object$reference$ref_seq)
   # Adjust for height of tiles -> "sub" smaller
   
   to_plot_df$tile_height <- ifelse(to_plot_df$alt == "sub", 0.3, 0.75)
   # frames around msa apart ORG
-  msa_frame <- data.frame(xmin= 1, xmax =260, 
+  msa_frame <- data.frame(xmin= 1, xmax =bc_len, 
                           ymin = seq(from = 1.6, to = nlevels(as.factor(to_plot_df$asv_names)), by=1), 
                           ymax = seq(from = 2.4, to = nlevels(as.factor(to_plot_df$asv_names))+1, by=1))
   
@@ -77,7 +78,7 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
     scale_fill_manual(values=c("wt"="#f2f2f2", "del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "ins_smwr"="pink"), breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
-    geom_vline(xintercept=c(26, 52, 78, 104, 130, 156, 182, 208, 234), linetype="solid", size=0.3, col="grey50") + # lines for guide targets
+    geom_vline(xintercept=REvoBC_object$reference$ref_cut_sites, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
     geom_rect(data=msa_frame, mapping=aes_string(xmin="xmin", xmax="xmax", ymin="ymin", ymax="ymax"), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +

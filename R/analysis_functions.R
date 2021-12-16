@@ -149,13 +149,15 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
                                              y=dplyr::select(REvoBC_object$clean_asv_dataframe, seq, asv_names), 
                                              by="asv_names") %>%
-    add_row(dplyr::select(REvoBC_object$barcode, -c("seq_start", "seq_end")))
+    add_row(data.frame(asv_names = REvoBC_object$reference$ref_name, 
+                       seq = REvoBC_object$reference$ref_seq, 
+                       stringsAsFactors = F))
   
 
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$barcode$seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
+  pwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']), 
                                        pattern = df_to_plot_perf_match$seq, 
                                        type="global", gapOpening = 20, gapExtension = 1)
   
@@ -176,21 +178,23 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   REvoBC_object$statistics$all_asv_statistics = df_to_plot_perf_match
   # Histogram of Length    
   # skip nmbc
-  data_for_hist = df_to_plot_perf_match %>% filter(!stringr::str_detect(asv_names, "NMBC|ORG"))
+  data_for_hist = df_to_plot_perf_match %>% filter(stringr::str_detect(asv_names, "ASV"))
   if (!is.null(figure_dir)) {
     hist_seq_count <- 
       ggplot(data=data_for_hist, 
              aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
       geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(52, 520, 52)), 
-                         limits=c(0, 520), 
+      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(REvoBC_object$reference$ref_seq)*2/10), 
+                                                               nchar(REvoBC_object$reference$ref_seq)*2, 
+                                                               floor(nchar(REvoBC_object$reference$ref_seq)*2/10))), 
+                         limits=c(0, nchar(REvoBC_object$reference$ref_seq)*2), 
                          expand = c(0.01, 0.01)) +
       scale_y_continuous(labels=function(x) paste0(x, "%"),
                          limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
                          expand = c(0.01, 0.01)) +
       xlab("ASV Length") +
       ylab("ASV Frequency") +
-      geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") + # expected size
+      geom_vline(xintercept=nchar(REvoBC_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
       lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
       lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
       # add theme

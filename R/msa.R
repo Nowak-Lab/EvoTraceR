@@ -6,7 +6,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   alignment_tidy_ref_alt = REvoBC_object$alignment$asv_barcode_alignment
   
   percentages = REvoBC_object$statistics$asv_df_percentages %>%
-    ungroup() %>% add_row(dplyr::select(REvoBC_object$barcode, !c(seq_start, seq_end, seq)))
+    ungroup() %>% add_row(data.frame(asv_names = REvoBC_object$reference$ref_name,
+                                     stringsAsFactors = F))
   
   # Join with the sequences df to have the frequency of each ASV in each sample
   alignment_tidy_ref_alt_mrg_final <- inner_join(alignment_tidy_ref_alt, 
@@ -84,25 +85,31 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   
   
   # Position of PAM in guides
-  pam_pos <- c(17.5, 42.5, 68.5, 94.5, 120.5, 146.5, 171.5, 198.5, 224.5, 251.5)
+  pam_pos <- REvoBC_object$reference$ref_cut_sites
+  bc_len = nchar(REvoBC_object$reference$ref_seq)
   # plot
   alt_count_bc <-
     ggplot(data= del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt, group=sample)) +
-    annotate("rect", xmin=1, xmax=26, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    annotate("rect", xmin=52, xmax=78, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    annotate("rect", xmin=104, xmax=130, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    annotate("rect", xmin=156, xmax=182, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    annotate("rect", xmin=208, xmax=234, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+    # annotate("rect", xmin=1, xmax=26, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+    # annotate("rect", xmin=52, xmax=78, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+    # annotate("rect", xmin=104, xmax=130, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+    # annotate("rect", xmin=156, xmax=182, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+    # annotate("rect", xmin=208, xmax=234, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
     # geom bar
     geom_bar(stat="identity", width=1.5, size=1) +
     scale_fill_manual(values=c("sub"="#329932", "ins" = "#FF0033", "ins_smwr" = "pink", "del" = "#3366FF", "wt" = "#f2f2f2"), breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
-    scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), limits=c(-4, 265), expand = c(0.001, 0.001)) +
+    scale_x_continuous(labels=scales::comma, breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), limits=c(-4, bc_len + 5), expand = c(0.001, 0.001)) +
     scale_y_continuous(labels=function(x) paste0(x, "%"),
                        limits=c(0, 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc)), 
                        expand = c(0, 0)) +
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
     lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) 
+  
+  annot_lines = REvoBC_object$reference$ref_border_sites
+  for (i in seq(2, length(annot_lines))) {
+    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i - 1], xmax=annot_lines[i], ymin=-Inf, max=Inf, fill="black", alpha=.1)
+  }
   
   # Add Theme
   alt_count_bc <- 
@@ -279,7 +286,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   
   
   # Now smooth deletions and insertions (assign start and end to the closest cutting site)
-  smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'))
+  smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), REvoBC_object$reference$ref_cut_sites)
   
   # After smoothing, we insert back substitutions, but we need to remove those that
   # fall within a smoothed deletion
@@ -340,30 +347,36 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # assign BC10 variant (for plotting purposes)
   
   mut_df <- tibble::tibble(mut_df) %>%
-    dplyr::add_row(asv_names  = REvoBC_object$barcode$asv_names, mutation_type = 'wt', n_nucleotides = 0)
+    dplyr::add_row(asv_names  = REvoBC_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
   
   # In case some ASVs are not affected by any mutation, add a row to the binary mutation matrix 
   # which contains all zeros
   #wt_asv = c(setdiff(mut_df$asv_names, smoothed_del$asv_names))
   smoothed_mutations <- tibble::tibble(smoothed_mutations) %>%
-    dplyr::add_row(asv_names  = REvoBC_object$barcode$asv_names, mutation_type = 'wt', n_nucleotides = 0)
+    dplyr::add_row(asv_names  = REvoBC_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
   bc_mut = as.list(rep(0, ncol(mut_df_wide)))
   names(bc_mut) = colnames(mut_df_wide)
-  mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$barcode$asv_names),
+  mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
                                  mut_df_wide)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
   bc_mut = as.list(rep(0, ncol(smoothed_df_wide)))
   names(bc_mut) = colnames(smoothed_df_wide)
 
-  smoothed_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$barcode$asv_names),
+  smoothed_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
                                       data.frame(smoothed_df_wide))
   
   write.csv(mut_df_wide, file.path(output_dir_files, "/binary_mutation_matrix.csv"))
+  write.csv(smoothed_df_wide, file.path(output_dir_files, "/smoothed_binary_mutation_matrix.csv"))
+  
   utils::write.csv(mut_df, 
                    file.path(output_dir_files, "mutations_coordinates.csv"), 
+                   row.names = FALSE)
+  
+  utils::write.csv(smoothed_mutations, 
+                   file.path(output_dir_files, "smoothed_mutations_coordinates.csv"), 
                    row.names = FALSE)
   
   REvoBC_object$alignment$binary_mutation_matrix = mut_df_wide
@@ -378,10 +391,10 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
 }
 
 # mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
-smooth_deletions = function(mut_df) {
+smooth_deletions = function(mut_df, orange_lines) {
   
   deletions_insertions = mut_df #%>% filter(mutation_type != 'ins')
-  orange_lines = data.frame(site = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
+  orange_lines = data.frame(site = orange_lines,
                             index_cut = c(1:10))
   data.table::setDT(orange_lines)
   data.table::setDT(deletions_insertions)    
@@ -449,10 +462,10 @@ tidy_alignment_smoothed = function(REvoBC_object, smoothed_df) {
       mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt))
     
     tmp_tidy = tmp_smoothed_ins %>% 
-      rename(position_bc260 = start_smoothed,
+      dplyr::rename(position_bc260 = start_smoothed,
              read_asv = alt_seq, alt = mutation_type) %>%
-      mutate(ref_asv = '-') %>% select(colnames(tmp_tidy)) %>%
-      bind_rows(tmp_tidy) %>%
+      dplyr::mutate(ref_asv = '-') %>% dplyr::select(colnames(tmp_tidy)) %>%
+      dplyr::bind_rows(tmp_tidy) %>%
       dplyr::arrange(position_bc260)
     
     # tmp_tidy = ungroup(tmp_tidy) %>% 

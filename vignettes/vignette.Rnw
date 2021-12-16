@@ -106,18 +106,21 @@ that tracks the number of sequences during all dada2 steps. map_file_sample is a
 dada2_asv_prefilter: dataframe that stores all sequences detected by dada2.
 
 Next, we can perform the analysis of the ASV sequences identified by dada2. 
-The next function finds those that map to the original barcodes and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98\% (parameter pid_cutoff_nmbc) with the original barcode as NMBC.
-It also removes possible contamination artifacts (ASV that map to other barcodes used in earlier experiments).
+The next function finds those that map to the original reference and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98\% (parameter pid_cutoff_nmbc) with the original reference as NMBC.
+It also removes possible contamination artifacts (ASVs whose flanking regions don't map the ones of the reference).
+In order to run, this function needs the reference name, reference sequence, flanking sequences (beginning and end of the ASV that never mutate over the course of the experiment),
+cutting sites positions and the positions of lines that equally divide the reference (just for visualization purpouses). By default, these values correspond to the informationrelated to
+barcode BC10v0.
 Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV.
 It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
 
 <<example_analysis>>=
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, barcode = 'BC10v0')
+revo_analyzed = asv_analysis(REvoBC_object = revo_initialized)
 names(revo_analyzed)
 @
 
 There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC).
-barcode is the barcode considered for the analysis.
+reference is the information on the reference sequence considered for the analysis. 
 statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterogeneity;
 
 <<example_msa>>=
@@ -125,7 +128,7 @@ revo_msa = perform_msa(revo_analyzed)
 @
 
 This step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
-After MSA, REvoBC identifies, for each position in the original barcode, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+After MSA, REvoBC identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
 This computation stores inside the REvoBC object a new field called alignment, which gets populated by 5 new fields: msa_stringset is the output of multiple sequence alignemnt performed by musle; mutations_df is a tibble
 where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated, the type of alteration and the frequency of that mutation in the corresponding sample; asv_alteration_width is another tibble
 which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation);
@@ -145,7 +148,7 @@ summary_figure = plot_summary(revo_phyl)
 
 Finally, a summary plot is prodced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
 representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
-next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
+next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original reference; finally, there is a dot plot
 where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
 
 \section{\Rcode{sessionInfo()}}

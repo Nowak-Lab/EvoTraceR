@@ -56,5 +56,11 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   return(tree_mp)
 }
 
+# cluster_sequences_jaccard = function(asv_bin_var) {
+#   # The function from package ade4 dist.binary computes the distance matrix for binary data,
+#   # using a similarity index (parameter method)
+#   prova2 = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+# }
+
 
 

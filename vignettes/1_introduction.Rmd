@@ -43,6 +43,7 @@ if (!require("Rphylip")) BiocManager::install("Rphylip")
 if (!require("phytols")) install.packages("phytools")
 if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require("TreeTools")) install.packages('TreeTools')
+if (!require("phylogram")) install.packages('phylogram')
 
 # install devtools library and REvoBC
 
@@ -52,7 +53,7 @@ devtools::install_github("Nowak-Lab/REvoBC", ref = "master")
 In order to build the phylogenetic tree, REvoBC uses the camin-sokal implementation found in the package Rphylip. In order to use such package, users should also install [mix](https://evolution.genetics.washington.edu/phylip.html).
 The path to the mix binary needs to be provided to the REvoBC function that performs the phylogeny inference.
 
-```
+```{r eval=FALSE}
 # load REvoBC library
 library("REvoBC")
 ```
