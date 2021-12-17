@@ -423,13 +423,13 @@ asv_analysis = function(REvoBC_object,
       mutate(num_names_sf = if_else(name == "Starting ASVs" | name == "Final ASVs", num_names, "")) %>%
       mutate(num_names_ins = if_else(name == "Starting ASVs" | name == "Final ASVs", "", num_names))
 
-    # start graph ploting 
+    # start graph plotting 
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
       geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
-      geom_text(aes(x=name, y=num, label=num_names_sf), vjust=-0.25, size=3) + # change order to have up whatever you choose, opposte to order
-      geom_text(aes(x=name, y=num, label=num_names_ins), vjust=-1.75, size=3) + # change order to have up whatever you choose, opposte to order
-      geom_text(aes(x=name, y=num, label=diff_perc), vjust=-0.25, size=3, col="blue") + # change order to have up whatever you choose, opposte to order
+      geom_text(aes(x=name, y=num, label=num_names_sf), vjust=-0.25, size=3) + # change order to have up whatever you choose, opposite to order
+      geom_text(aes(x=name, y=num, label=num_names_ins), vjust=-1.75, size=3) + # change order to have up whatever you choose, opposite to order
+      geom_text(aes(x=name, y=num, label=diff_perc), vjust=-0.25, size=3, col="blue") + # change order to have up whatever you choose, opposite to order
       scale_y_continuous(expand = c(0, 0), 
                          limits= c(0, plyr::round_any(max(track_data$num), 100, f = ceiling)+100/4), 
                          breaks = seq(0, (plyr::round_any(max(track_data$num), 100, f = ceiling)), 100)) +
