@@ -35,7 +35,8 @@ Imports:
     aplot,
     ape,
     dynamicTreeCut,
-    phylogram
+    phylogram,
+    ade4
 Suggests:
     BiocGenerics,
     BiocStyle,

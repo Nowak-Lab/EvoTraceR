@@ -1,11 +1,13 @@
-cut_phyl_dendogram = function(tree_mp) {
+cut_phyl_dendogram = function(tree_mp, asv_bin_var) {
   # di default il barcode deve stare da solo o dalle sequenze non mutate
   set.seed(1)
   dend = phylogram::as.dendrogram(tree_mp)
   set.seed(1)
-  #dend = ape::as.hclust.phylo(tree_mp)
+
   dist = ape::cophenetic.phylo(tree_mp)
-  clust_dist <- dynamicTreeCut::cutreeDynamic(as.hclust(dend), distM=dist, minClusterSize = 1)
+  # dist jaccard
+  dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+  clust_dist <- dynamicTreeCut::cutreeDynamic(as.hclust(dend), distM=dist_j, minClusterSize = 1)
   
   df_clusters = tibble(asv_names = tree_mp$tip.label, cluster = clust_dist)
   
@@ -56,11 +58,11 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   return(tree_mp)
 }
 
-# cluster_sequences_jaccard = function(asv_bin_var) {
-#   # The function from package ade4 dist.binary computes the distance matrix for binary data,
-#   # using a similarity index (parameter method)
-#   prova2 = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
-# }
+cluster_sequences_jaccard = function(asv_bin_var) {
+  # The function from package ade4 dist.binary computes the distance matrix for binary data,
+  # using a similarity index (parameter method)
+  prova2 = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+}
 
 
 

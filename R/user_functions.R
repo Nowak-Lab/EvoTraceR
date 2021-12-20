@@ -590,6 +590,7 @@ perform_msa = function(REvoBC_object, ...) {
 #' @importFrom dynamicTreeCut cutreeDynamic
 #' @importFrom ape cophenetic.phylo bind.tree drop.tip
 #' @importFrom phylogram as.dendrogram
+#' @importFrom ade4 dist.binary
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
@@ -631,7 +632,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   tree_mp_df <- ggtree::fortify(tree_mp)
   options(warn=0)
   
-  dend_clustered = cut_phyl_dendogram(tree_mp)
+  dend_clustered = cut_phyl_dendogram(tree_mp, asv_bin_var)
   
   cluster_labels = sort(unique(dend_clustered$cluster))[-1]
   # clusters_trees = list()
@@ -670,7 +671,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     # filter(label != REvoBC_object$barcode$asv_names | y == 1) %>%
     # mutate(nuovo_y = ifelse(y != 1, y - length(cluster_labels) + 1, y))
   
-  REvoBC_object$phylogeny$tree = ggtree::fortify(binded_phylogenies)
+  REvoBC_object$phylogeny$tree = ggtree::fortify(tree_mp_df) #binded_phylogenies
   REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
   
   write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))

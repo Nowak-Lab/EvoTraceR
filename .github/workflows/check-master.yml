@@ -184,6 +184,7 @@ jobs:
           install.packages('phangorn')
           install.packages('dynamicTreeCut')
           install.packages("phylogram")
+          install.packages("ade4")
         shell: Rscript {0}
 
       - name: Query dependencies
