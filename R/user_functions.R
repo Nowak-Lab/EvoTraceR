@@ -312,7 +312,17 @@ asv_analysis = function(REvoBC_object,
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
-  seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
+  # In case no original barcode is found then insert it with 0 counts
+  if (sum(seqtab_df$seq == barcodes_info$ref_seq) == 0){
+    
+    seqtab_df = seqtab_df %>% dplyr::add_row(seq_names = paste0(barcodes_info$ref_name, ".NMBC"), 
+                        seq = barcodes_info$ref_seq)
+    seqtab_df[seqtab_df$seq_names == paste0(barcodes_info$ref_name, ".NMBC"), sample_columns] = 0
+
+  } else {
+    seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
+  }
+  
   
   seqtab_df_original = seqtab_df
   # Removal of contamination: keep only those ASV that start (5 nucleotides) and end (10 nuceotides) like the original barcode.
