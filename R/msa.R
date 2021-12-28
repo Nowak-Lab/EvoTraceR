@@ -107,8 +107,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) 
   
   annot_lines = REvoBC_object$reference$ref_border_sites
-  for (i in seq(2, length(annot_lines))) {
-    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i - 1], xmax=annot_lines[i], ymin=-Inf, max=Inf, fill="black", alpha=.1)
+  for (i in seq(1, length(annot_lines), by = 2)) {
+    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i], xmax=annot_lines[i+1], ymin=-Inf, max=Inf, fill="black", alpha=.1)
   }
   
   # Add Theme
