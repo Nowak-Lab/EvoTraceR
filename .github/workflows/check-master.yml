@@ -185,6 +185,7 @@ jobs:
           install.packages('dynamicTreeCut')
           install.packages("phylogram")
           install.packages("ade4")
+          install.packages("foreach")
         shell: Rscript {0}
 
       - name: Query dependencies

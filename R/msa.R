@@ -150,7 +150,16 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   
 }
 
-align_asv = function(REvoBC_object, output_dir_files, output_dir_figures, ...) {
+align_asv = function(REvoBC_object, 
+                     output_dir_files, 
+                     output_dir_figures,  
+                     pwa_match= 15,
+                     pwa_mismatch = -4,
+                     pwa_gapOpening = -25,
+                     pwa_gapExtension = 0,
+                     pwa_type = 'global',
+                     compute_msa = F,
+                     ...) {
   dots = list(...)
   df_to_plot_org_tree <- 
     dplyr::select(REvoBC_object$statistics$asv_toBarcode_similarity, asv_names, seq) %>%
@@ -169,29 +178,58 @@ align_asv = function(REvoBC_object, output_dir_files, output_dir_figures, ...) {
   
   utils::write.csv(dnastringset, file.path(output_dir_files, "dnastringset.csv"), quote=FALSE)
   
-  # Perform Multiple Sequence Alignment with muscle
-  dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),
-                                                get_args_from_dots(dots, muscle::muscle))) # suggestion: gapopen = -400
-  Biostrings::writeXStringSet(methods::as(dnastringset_msa, "DNAStringSet"), 
-                              file.path(output_dir_files, "dnastringset_muscle-muscle_msa.fasta"))
+  mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   
-  # Store MSA result
-  msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
-  REvoBC_object$alignment$msa_stringset = msa
-  
-  # Transform Alignment to "Tidy Data"
-  alignment_tidy <- ggmsa::tidy_msa(msa=msa, 
-                                    start = 1, 
-                                    end = ncol(msa))
-  
-  # Create tidy alignment df where, for each position and each ASV you store the 
-  # reference and the observed nucleotide
-  alignment_tidy_ref_alt <- 
-    merge(alignment_tidy, filter(alignment_tidy, !stringr::str_detect(name, "ASV")), by="position") %>%
-    dplyr::select(1, 2, 5, 3)
-  
-  # Adjust Column Names
-  colnames(alignment_tidy_ref_alt) <- c("position", "asv_names", "ref_asv", "read_asv")
+  if (compute_msa) {
+    # # Perform Multiple Sequence Alignment with muscle
+    dnastringset_msa <- do.call(muscle::muscle, c(list(stringset = dnastringset),
+                                                  get_args_from_dots(dots, muscle::muscle))) # suggestion: gapopen = -400
+    Biostrings::writeXStringSet(methods::as(dnastringset_msa, "DNAStringSet"),
+                                file.path(output_dir_files, "dnastringset_muscle-muscle_msa.fasta"))
+    
+    # # Store MSA result
+    msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
+    REvoBC_object$alignment$msa_stringset = msa
+
+    # Transform Alignment to "Tidy Data"
+    alignment_tidy <- ggmsa::tidy_msa(msa=msa,
+                                      start = 1,
+                                      end = ncol(msa))
+    
+    # # Create tidy alignment df where, for each position and each ASV you store the
+    # # reference and the observed nucleotide
+    alignment_tidy_ref_alt <-
+      merge(alignment_tidy, filter(alignment_tidy, !stringr::str_detect(name, "ASV")), by="position") %>%
+      dplyr::select(1, 2, 5, 3)
+
+    # Adjust Column Names
+    colnames(alignment_tidy_ref_alt) <- c("position", "asv_names", "ref_asv", "read_asv")
+    
+  } else {
+    
+    
+    mpwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$reference$ref_seq, 
+                                          pattern = dnastringset, 
+                                          substitutionMatrix = mx_crispr,
+                                          gapOpening = pwa_gapOpening,
+                                          gapExtension = pwa_gapExtension,
+                                          type = pwa_type)
+    
+    # mpwa = Biostrings::pairwiseAlignment(pattern = dnastringset, 
+    #                                      subject = REvoBC_object$reference$ref_seq)
+    aligned_sequences = as.data.frame(Biostrings::DNAStringSet(mpwa))
+    aligned_reference = as.data.frame(Biostrings::DNAStringSet(mpwa@subject))
+    
+    #library(foreach)
+    
+    alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, nrow(aligned_sequences)), .combine=rbind) %do% {
+      data.frame("asv_names" = rownames(aligned_sequences)[i],
+                 "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], 
+                 "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]], 
+                 "position" = seq(1, nchar(aligned_reference$x[i])))
+    }
+    alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, asv_names)
+  }
   
   # Assign Alterations types; wt - wild type, del - deletions, ins - insertion, sub - substitution
   # In cases where ref_asv == "-" & read_asv == "-", then the alteration type is set to ins_smwr 
@@ -214,10 +252,16 @@ align_asv = function(REvoBC_object, output_dir_files, output_dir_figures, ...) {
     dplyr::select(asv_names,  position, position_bc260, ref_asv, read_asv, alt, alt_bin)#,  sample, perc_in_sample,)  
   
   # recount for consecutive
-  alignment_tidy_ref_alt$position_bc260 <- as.numeric(as.character(factor(alignment_tidy_ref_alt$position_bc260, 
-                                                                          levels = unique(alignment_tidy_ref_alt$position_bc260), 
-                                                                          labels = seq_along(unique(alignment_tidy_ref_alt$position_bc260)))))
-  
+  alignment_tidy_ref_alt = foreach::foreach(asv = unique(alignment_tidy_ref_alt$asv_names), .combine=rbind) %do% {
+    tmp = alignment_tidy_ref_alt %>% filter(asv_names == asv)
+    tmp$position_bc260 = as.numeric(as.character(factor(x = tmp$position_bc260, levels = unique(tmp$position_bc260),
+                                                        labels = seq_along(unique(tmp$position_bc260)))))
+    tmp
+  }
+  # alignment_tidy_ref_alt$position_bc260 <- as.numeric(as.character(factor(alignment_tidy_ref_alt$position_bc260, 
+  #                                                                         levels = unique(alignment_tidy_ref_alt$position_bc260), 
+  #                                                                         labels = seq_along(unique(alignment_tidy_ref_alt$position_bc260)))))
+  # 
   alignment_tidy_ref_alt = dplyr::filter(alignment_tidy_ref_alt, alt != 'ins_smwr')
   
   REvoBC_object$alignment$asv_barcode_alignment = alignment_tidy_ref_alt %>% 

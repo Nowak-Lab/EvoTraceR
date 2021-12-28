@@ -60,6 +60,9 @@ cutting sites positions and the positions of lines that equally divide the refer
 barcode BC10v0.
 Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV. 
 It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
+Finally, the ASVs that passed the previous filters are aligned again, either through multi-sequence alignment
+using the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm, or computing pairwise alignment (PWA) of each sequence againts the reference. 
+PWA is performed by default, in order to perform msa users need to set the parameter comput_msa to TRUE in the following function. In this case users can provide any optional parameter for the algorithm through this function.
 
 ```{r}
 revo_analyzed = asv_analysis(REvoBC_object = revo_initialized)
@@ -69,15 +72,15 @@ names(revo_analyzed)
 There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC). 
 reference is the information on the reference sequence considered for the analysis. 
 statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity. 
+alignemnt: is a new list containing the result of the alignment step. It contains two fields:  msa_stringset is the output of multiple sequence alignemnt performed by muscle; asv_barcode_alignment is a tibble
+where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated and the type of alteration.
 
 ```{r}
-revo_msa = perform_msa(revo_analyzed)
+revo_msa = analyse_mutations(revo_analyzed)
 ```
 
-This step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
-After MSA, REvoBC identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
-This computation stores inside the REvoBC object a new field called alignment, which gets populated by 5 new fields: msa_stringset is the output of multiple sequence alignemnt performed by muscle; mutations_df is a tibble
-where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated, the type of alteration and the frequency of that mutation in the corresponding sample; asv_alteration_width is another tibble
+After alignment, REvoBC identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+This computation stores the field called alignment, 3 new fields: asv_alteration_width is another tibble
 which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation);
 binary_mutations_matrix is finally a binary tibble, where each line corresponds to an ASV, and each column corresponds to a mutation. 1 and 0 indicate respectively the presence or absence of the mutation in the ASV.
 

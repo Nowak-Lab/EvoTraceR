@@ -180,17 +180,21 @@ initialize_REvoBC = function( output_dir,
   
 }
 
-#' This function performs the analysis on ASV sequences identified by dada2.
+#' This function performs the analysis on ASV sequences identified by dada2 and aligns them to the reference sequence.
 #' First, it removes possible contamination sequences (ASVs resulting from other barcodes). 
 #' Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
 #' in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
 #' (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
 #' Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_nmbc} with the original barcode as Non-Marking Guide Controls.
-#' Finally, it computes different statistics for the ASVS, storing:
+#' Then, it computes different statistics for the ASVS, storing:
 #'  the relative frequency of all ASVs in each sample. 
 #'  the relative frequency of each ASV in the samples.
 #'  the counts for each ASV normalized to the counts of the sample with maximum frequency
 #'  the frequency of the different ASVs in each sample.
+#'  
+#' Finally, the ASVs that passed the previous filters are aligned again, either through multi-sequence alignment
+#' using the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm, or using the same 
+#' \code{pairwiseAlignment} function from \code{Biostrings} used to compute the similarity.
 #'  
 #' @title ASV_analysis
 #' 
@@ -214,7 +218,16 @@ initialize_REvoBC = function( output_dir,
 #' @param output_figures (Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
 #' @param pid_cutoff_nmbc (Optional). Default to 98\%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.
 #' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
-#' @param ... Any additional parameters passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
+#' @param pwa_gapOpening (Optional). Delafult is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
+#' @param pwa_gapExtension (Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description). Default is 0.
+#' @param pwa_mismatch (Optional). Default is -4. Parameter indicating the penalty for mismatch events during pairwise alignment with \code{Biostrings}.
+#' @param pwa_match (Optional). Default is 15. Parameter indicating the score for matches during pairwise alignment with \code{Biostrings}. This parameter,
+#' together with the previous one, are used to construct the substitution matrix used by the function \code{pairwiseAlignment}.
+#' @param pwa_type (Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
+#' For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation} 
+#' @param compute_msa (Optional) Default is FALSE. If TRUE, multi-sequence alignment using muscle is performed on the ASVs.
+#' @param ... (Optional). Additional parameter passed to muscle.
+#' 
 #'
 #' @return  The REvoBC object passed as a parameter with the following new fields:
 #' \itemize{
@@ -240,9 +253,23 @@ initialize_REvoBC = function( output_dir,
 #' \item \code{asv_persample_frequency}: counts for each ASV in each sample.
 #' \item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
 #' \item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
-#' \item \code{all_asv_statistics}: all the statistics computed on each ASV grouped toghether in the same tibble.
+#' \item \code{all_asv_statistics}: all the statistics computed on each ASV grouped together in the same tibble.
 #' }
-#' }  
+#' \item \code{alignment}, another list with the following fields:
+#' \itemize{
+#' \item \code{msa_stringset}: output of MSA performed with MUSCLE.
+#' \item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
+#' \itemize{
+#' \item asv_names: name of the ASV
+#' \item sample: sample identifier
+#' \item position_bc260: position of the alteration in the original barcode. Note that insertions
+#' are assigned to the position that coincides with their beginning.
+#' \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
+#' \item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
+#' }
+#' }
+#' }
+#' 
 #' 
 #' It saves the following \code{.csv} files in a sub-folder \code{asv_analysis} of the main output folder:
 #' \itemize{
@@ -257,7 +284,7 @@ initialize_REvoBC = function( output_dir,
 #'  
 #' @export asv_analysis
 #'
-#' @importFrom Biostrings pairwiseAlignment pid nedit score
+#' @importFrom Biostrings pairwiseAlignment pid nedit score nucleotideSubstitutionMatrix DNAStringSet
 #' @importFrom benthos total_abundance species_richness margalef rygg simpson hpie hill1 hill2 shannon
 #' @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom scales comma
@@ -270,6 +297,7 @@ initialize_REvoBC = function( output_dir,
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
+#' @import foreach
 asv_analysis = function(REvoBC_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
@@ -282,8 +310,14 @@ asv_analysis = function(REvoBC_object,
                         output_figures = TRUE,
                         pid_cutoff_nmbc = 98,
                         asv_count_cutoff = 2,
+                        pwa_gapOpening = -25,
+                        pwa_gapExtension = 0,
+                        pwa_match = 15,
+                        pwa_mismatch = -4,
+                        pwa_type = 'global',
+                        compute_msa = FALSE,
                         ...) {
-  dots = list(...)
+
   if (output_figures) {
     figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
@@ -360,11 +394,14 @@ asv_analysis = function(REvoBC_object,
   
   endseq_filter <- nrow(seqtab_df)
   
-  pwa <- do.call(Biostrings::pairwiseAlignment, 
-                 c(list(subject = barcodes_info$ref_seq, 
-                        pattern = seqtab_df$seq, 
-                        type="global"),
-                   get_args_from_dots(dots, Biostrings::pairwiseAlignment)))
+  mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
+  
+  pwa <- Biostrings::pairwiseAlignment(subject = barcodes_info$ref_seq, 
+                                       pattern = seqtab_df$seq, 
+                                       substitutionMatrix = mx_crispr,
+                                       gapOpening = pwa_gapOpening,
+                                       gapExtension = pwa_gapExtension,
+                                       type = pwa_type)
   # Compute the percent sequence identity
   seqtab_df$pid <- Biostrings::pid(pwa)
   
@@ -456,41 +493,45 @@ asv_analysis = function(REvoBC_object,
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
+  output_dir_files_alignment = file.path(REvoBC_object$output_directory, "alignment")
+  if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
+  
+  output_dir_figures_alignment = file.path(REvoBC_object$output_directory, "alignment_figures")
+  if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
+  
+
+  REvoBC_object = align_asv(REvoBC_object, 
+                            pwa_match= pwa_match,
+                            pwa_mismatch = pwa_mismatch,
+                            pwa_gapOpening = pwa_gapOpening,
+                            pwa_gapExtension = pwa_gapExtension,
+                            output_dir_files = output_dir_files_alignment, 
+                            output_dir_figures = output_dir_figures_alignment,
+                            pwa_type = pwa_type,
+                            compute_msa = compute_msa,
+                            ...)
   
   return(REvoBC_object)
   
 }
 
-#' This function performs multi-sequence alignment and outputs statistics about mutations. 
-#' Multiple Sequence Alignment is performed through the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm.
-#' This function also compute the binary matrix indicating the presence/absence of
+#' This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the binary matrix indicating the presence/absence of
 #' mutations in each ASV. Each mutation is characterized by a start position and an end position, it is thus identified through an ID
 #' which indicates the start, end and type of mutation.
 #' 
-#' @title perform_msa
+#' @title analyse_mutations
 #' 
 #' @examples 
 #' data(revo_analyzed)
 #' output_dir = system.file("extdata", "output", package = "REvoBC")
 #' revo_analyzed$output_directory = output_dir
-#' revo_msa = perform_msa(revo_analyzed)
+#' revo_msa = analyse_mutations(revo_analyzed)
 #' 
 #' @param REvoBC_object REvoBC object on which we want to perform msa.
 #' @param ... Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.
 #' 
-#' @return REvoBC object with a new field named \code{alignment}, which is a list with the following fileds:
+#' @return REvoBC object with the field \code{alignment}, updated with the following fileds:
 #' \itemize{
-#' \item \code{msa_stringset}: output of MSA peformed with MUSCLE.
-#' \item \code{mutations_df} : (deprecated, will be removed).
-#' \item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
-#' \itemize{
-#' \item asv_names: name of the ASV
-#' \item sample: sample identifier
-#' \item position_bc260: position of the alteration in the original barcode. Note that insertions
-#' are assigned to the position that coincides with their beginning.
-#' \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
-#' \item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
-#' }
 #' \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 #' \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
 #' \item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
@@ -523,7 +564,7 @@ asv_analysis = function(REvoBC_object,
 #' This function also produces an output figure that contain the frequency of 
 #' deletion, substitutions and insertions found in the different samples.
 #' 
-#' @export perform_msa
+#' @export analyse_mutations
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
@@ -540,18 +581,18 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-perform_msa = function(REvoBC_object, ...) {
+analyse_mutations = function(REvoBC_object, ...) {
   dots = list(...)
-  output_dir_files = file.path(REvoBC_object$output_directory, "msa")
+  output_dir_files = file.path(REvoBC_object$output_directory, "alignment")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
   
-  output_dir_figures = file.path(REvoBC_object$output_directory, "msa_figures")
+  output_dir_figures = file.path(REvoBC_object$output_directory, "alignment_figures")
   if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
   
   # Store in the field REvoBC_object$alignment$asv_barcode_alignment the tidy alignment
   # data, which is a tibble where each line corresponds to a nucleotide in a ASV
   # and there is the information about reference and alternative nucleotides.
-  REvoBC_object = align_asv(REvoBC_object, output_dir_files, output_dir_figures)
+  #REvoBC_object = align_asv(REvoBC_object, output_dir_files, output_dir_figures)
   
   REvoBC_object = count_alterations(REvoBC_object, 
                                     output_dir_files,
@@ -651,11 +692,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   i = 0
   if (length(cluster_labels) > 0) {
     for (clust in cluster_labels) {
+      print(clust)
       subset_asv = dend_clustered %>% filter(cluster == clust) %>% pull(asv_names)
       subset_mut = asv_bin_var %>% tibble::rownames_to_column(var = 'asv_names') %>%
         filter(asv_names %in% subset_asv | asv_names == REvoBC_object$reference$ref_name) %>%
         tibble::column_to_rownames('asv_names') #%>% dplyr::select_if(sum(.) > 0)
-      subset_mut = subset_mut[,colSums(subset_mut)>0]
+      subset_mut = subset_mut[,colSums(subset_mut)>0, drop=F]
       tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$reference$ref_name)
       
       if (i > 0) {
@@ -681,7 +723,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     # filter(label != REvoBC_object$barcode$asv_names | y == 1) %>%
     # mutate(nuovo_y = ifelse(y != 1, y - length(cluster_labels) + 1, y))
   
-  REvoBC_object$phylogeny$tree = ggtree::fortify(tree_mp_df) #binded_phylogenies
+  REvoBC_object$phylogeny$tree = ggtree::fortify(binded_phylogenies) #
   REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
   
   write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
