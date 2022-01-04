@@ -1,6 +1,6 @@
 Package: REvoBC
-Version: 0.99.15
-Date: 2021-11-16
+Version: 0.99.16
+Date: 2022-01-04
 Title: REvoBC
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),

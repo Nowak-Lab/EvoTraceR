@@ -23,7 +23,7 @@ initialize_REvoBC(
 \item{output_dir}{(Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 \itemize{
 \item \code{quality_track_reads.csv}: track of the number of sequences during the 
-different stepsof \code{dada2} analysis.
+different steps of \code{dada2} analysis.
 \item \code{ dada2_asv_prefilter.csv}: sequences detected by dada2, with the counts detected in each sample.
 }}
 

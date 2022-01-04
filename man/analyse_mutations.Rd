@@ -4,15 +4,19 @@
 \alias{analyse_mutations}
 \title{analyse_mutations}
 \usage{
-analyse_mutations(REvoBC_object, ...)
+analyse_mutations(REvoBC_object, smoothing_window = 5)
 }
 \arguments{
 \item{REvoBC_object}{REvoBC object on which we want to perform msa.}
 
-\item{...}{Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.}
+\item{smoothing_window}{(Optional) Deafult is 5. Number of nucleotides used for
+assigning deletions and insertions to the closest orange line (i.e., smoothing). Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
+is less distant then \code{smoothing_window} nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
+cutting site on its right if that is less than \code{smoothing_window} nucleotides distant, otherwise it is assigned to the cutting site
+on its left.}
 }
 \value{
-REvoBC object with the field \code{alignment}, updated with the following fileds:
+REvoBC object with the field \code{alignment}, updated with the following fields:
 \itemize{
 \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
@@ -22,14 +26,10 @@ This is useful to convey an idea about what is the fraction of total ASVs in eac
 }. 
 It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
 all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
-Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
-is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
-cutting site on its right if that is less than 5 nucleotides distant, otherwise it is assigned to the cutting site
-on its left.
 The following dataframes are stored in the field \code{smoothed deletions}:
 \itemize{
 \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
-\item coordinate_matrix: matrix which stores all the information regardin the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+\item coordinate_matrix: matrix which stores all the information regarding the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
 }
 In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
 \itemize{

@@ -275,7 +275,7 @@ align_asv = function(REvoBC_object,
   
 }
 # Create the binary mutations matrix
-binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures) {
+binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, smoothing_window = 5) {
   
   
   # Start from the dataframe that contains a line for each position in each ASV.
@@ -330,7 +330,9 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   
   
   # Now smooth deletions and insertions (assign start and end to the closest cutting site)
-  smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), REvoBC_object$reference$ref_cut_sites)
+  smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), 
+                                      REvoBC_object$reference$ref_cut_sites,
+                                      smoothing_window)
   
   # After smoothing, we insert back substitutions, but we need to remove those that
   # fall within a smoothed deletion
@@ -435,7 +437,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
 }
 
 # mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
-smooth_deletions = function(mut_df, orange_lines) {
+smooth_deletions = function(mut_df, orange_lines, smoothing_window = 5) {
   
   deletions_insertions = mut_df #%>% filter(mutation_type != 'ins')
   orange_lines = data.frame(site = orange_lines,
@@ -448,7 +450,7 @@ smooth_deletions = function(mut_df, orange_lines) {
   deletions_insertions[, start_site := start]
   
   deletions_insertions = orange_lines[deletions_insertions, on = "start_site", roll = "nearest"] %>%
-    mutate(index_cut = ifelse(start - site > 5, pmin(index_cut + 1, nrow(orange_lines)), index_cut)) %>%
+    mutate(index_cut = ifelse(start - site > smoothing_window, pmin(index_cut + 1, nrow(orange_lines)), index_cut)) %>%
     mutate(start_smoothed = orange_lines$site[index_cut]) %>%
     #dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
     dplyr::select(-c(site, index_cut, start_site))
@@ -456,13 +458,27 @@ smooth_deletions = function(mut_df, orange_lines) {
   orange_lines = dplyr::rename(orange_lines, end_site = start_site)
   deletions_insertions[, end_site := end]
   deletions_insertions = orange_lines[deletions_insertions, on = "end_site", roll = "nearest"] %>%
-    mutate(index_cut = dplyr::if_else(condition = site - end > 5, true = pmax(1, index_cut - 1), false = as.double(index_cut))) %>%
+    mutate(index_cut = dplyr::if_else(condition = site - end > smoothing_window, 
+                                      true = pmax(1, index_cut - 1), 
+                                      false = as.double(index_cut))) %>%
     mutate(end_smoothed = orange_lines$site[index_cut]) %>%
     #dplyr::mutate(end_smoothed = if_else(site - end > 5, orange_lines$site[index_cut - 1], site))
     dplyr::select(-c(site, index_cut, end_site))
   
-  deletions_insertions = deletions_insertions %>% dplyr::mutate(end_smoothed = 
-                                                                  ifelse(mutation_type == 'ins', start_smoothed, end_smoothed))
+  # Before, the insiertions were assigned both to the beginning point BUT this is not correct
+  # Because, if an insertion has the beginning and end swapped, it means that the position is either to
+  # the right of an orange line (and more than 5 nts distant) or it is to the left of the closest orange
+  # line but again more than 5 nts distant (so it needs not to be considered).
+  # deletions_insertions = deletions_insertions %>% dplyr::mutate(end_smoothed = 
+  #                                                                 ifelse(mutation_type == 'ins', start_smoothed, end_smoothed))
+  
+  # We need to remove those mutations that get assigned swapped start and end (the smoothed end is before the smoothed start)
+  # This happens when a mutation is in between two orange lines and it its start is more distant than 5 nts to the
+  # smoothed orange line on the left and also its end is more than 5 nts away from the orange line on its right.
+  # In this case these mutations cannot be assigned to any orange line, because they don't span any line and are too
+  # far to having being caused by Cas9.
+  deletions_insertions = deletions_insertions %>% dplyr::filter(end_smoothed >= start_smoothed)
+  
   
   deletions_insertions = mutate(deletions_insertions, 
                                 smoothed_id = ifelse(mutation_type == 'del', 

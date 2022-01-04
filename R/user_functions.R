@@ -23,7 +23,7 @@
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
 #' \item \code{quality_track_reads.csv}: track of the number of sequences during the 
-#' different stepsof \code{dada2} analysis.
+#' different steps of \code{dada2} analysis.
 #' \item \code{ dada2_asv_prefilter.csv}: sequences detected by dada2, with the counts detected in each sample.
 #' }
 #' @param input_dir Path to the directory containing \code{.fastq} files for forward and reverse reads.
@@ -81,18 +81,18 @@
 #' @importFrom utils write.csv read.csv unzip untar
 # @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
-initialize_REvoBC = function( output_dir,
-                              input_dir = NULL,
-                              dada2_output_sequences = NULL,
-                              output_dir_dada2 = NULL,
-                              random_seed = NULL,
-                              output_figures = TRUE,
-                              multithread = TRUE,
-                              map_file_sample = NULL,
-                              dada2_pooled_analysis = FALSE,
-                              dada2_chimeras_minFoldParentOverAbundance = 8,
-                              verbose = TRUE,
-                              ...) {
+initialize_REvoBC = function(output_dir,
+                             input_dir = NULL,
+                             dada2_output_sequences = NULL,
+                             output_dir_dada2 = NULL,
+                             random_seed = NULL,
+                             output_figures = TRUE,
+                             multithread = TRUE,
+                             map_file_sample = NULL,
+                             dada2_pooled_analysis = FALSE,
+                             dada2_chimeras_minFoldParentOverAbundance = 8,
+                             verbose = TRUE,
+                             ...) {
   # Check that the user inserted the correct parameters
   if (is.null(input_dir) & is.null(dada2_output_sequences)) {
     stop('Please provide either a directory containing fastqs for dada2 or the path to dada2 output')
@@ -528,9 +528,13 @@ asv_analysis = function(REvoBC_object,
 #' revo_msa = analyse_mutations(revo_analyzed)
 #' 
 #' @param REvoBC_object REvoBC object on which we want to perform msa.
-#' @param ... Optional parameters (options and flags) passed to MUSCLE. See the \href{http://www.drive5.com/muscle/muscle_userguide3.8.html}{original guide} for detailed information on all possible options.
+#' @param smoothing_window (Optional) Deafult is 5. Number of nucleotides used for
+#' assigning deletions and insertions to the closest orange line (i.e., smoothing). Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
+#' is less distant then \code{smoothing_window} nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
+#' cutting site on its right if that is less than \code{smoothing_window} nucleotides distant, otherwise it is assigned to the cutting site
+#' on its left.
 #' 
-#' @return REvoBC object with the field \code{alignment}, updated with the following fileds:
+#' @return REvoBC object with the field \code{alignment}, updated with the following fields:
 #' \itemize{
 #' \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 #' \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
@@ -540,14 +544,10 @@ asv_analysis = function(REvoBC_object,
 #' }. 
 #' It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
 #' all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
-#' Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
-#' is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
-#' cutting site on its right if that is less than 5 nucleotides distant, otherwise it is assigned to the cutting site
-#' on its left.
 #' The following dataframes are stored in the field \code{smoothed deletions}:
 #' \itemize{
 #' \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
-#' \item coordinate_matrix: matrix which stores all the information regardin the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+#' \item coordinate_matrix: matrix which stores all the information regarding the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
 #' }
 #' In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
 #' \itemize{
@@ -581,8 +581,8 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-analyse_mutations = function(REvoBC_object, ...) {
-  dots = list(...)
+analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
+
   output_dir_files = file.path(REvoBC_object$output_directory, "alignment")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
   
@@ -600,7 +600,8 @@ analyse_mutations = function(REvoBC_object, ...) {
   
   REvoBC_object = binary_mutation_matrix(REvoBC_object, 
                                          output_dir_files, 
-                                         output_dir_figures)
+                                         output_dir_figures,
+                                         smoothing_window)
   
   return(REvoBC_object)
   
@@ -624,7 +625,7 @@ analyse_mutations = function(REvoBC_object, ...) {
 #' \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
 #' For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
 #' then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.
-#' @param mutations_use (optional). Default = 'smooth_del' A string indicating what type of utations to use for phylogeny reconstruction.
+#' @param mutations_use (optional). Default = 'smooth_del' A string indicating what type of mutations to use for phylogeny reconstruction.
 #' Can be one of c('smooth_del', 'smooth_del_ins', sub_smooth_del_ins, sub_del_ins). The first
 #' corresponds to using only smoothed deletions. The second refers to the case where smoothed deletions
 #' and insertios are considered. The third considers the smoothed deletions/insertions and the substitutions. 
@@ -865,7 +866,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
   
   # Save PDF
-  ggsave(filename=file.path(REvoBC_object$output_directory, "summary_mutations.pdf"), 
+  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
          plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   

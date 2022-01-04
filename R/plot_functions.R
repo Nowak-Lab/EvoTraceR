@@ -37,7 +37,7 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
   }
   
   if (smoothed_deletions != FALSE) {
-    # expand deletions of 1nt in a window +-5nts (for visualization pourpouses)
+    # expand deletions of 1nt in a window +-5nts (for visualization purpouses)
     del_to_expand = to_plot_df %>% dplyr::group_by(asv_names) %>% 
       mutate(next_alt = lead(alt), previous_alt = lag(alt)) 
     del_to_expand_left = del_to_expand %>%
@@ -60,7 +60,8 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
       to_plot_df = to_plot_df %>% bind_rows(to_plot_sub)
     }
   }
-  
+  # Put insertions after wt for visualization
+  to_plot_df = to_plot_df %>% dplyr::arrange(asv_names, position_bc260, desc(alt))
   
   # Position of PAM in guides
   pam_pos <- REvoBC_object$reference$ref_cut_sites
@@ -74,10 +75,11 @@ plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
                           ymax = seq(from = 2.4, to = nlevels(as.factor(to_plot_df$asv_names))+1, by=1))
   
   ### "msa Plot" - Barcode; Scale (1-260)  ------------------------------------------------------
+  to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
   msa_cna_bc <- 
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
-    scale_fill_manual(values=c("wt"="#f2f2f2", "del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "ins_smwr"="pink"), breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
+    scale_fill_manual(values=c("del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "wt"="#f2f2f2"), breaks=c("ins", "wt", "del", "sub")) +
     geom_vline(xintercept=REvoBC_object$reference$ref_cut_sites, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
