@@ -676,7 +676,15 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   } else {
     asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix 
   }
-
+  
+  # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
+  # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
+  dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+  asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j) == (ncol(dist_j) - 1)], REvoBC_object$reference$ref_name)
+  
+  asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
+  asv_bin_var = asv_bin_var[,colSums(asv_bin_var) > 0]
+  
   tree_mp = compute_phylogenetic_tree(asv_bin_var, phylip_package_path, REvoBC_object$reference$ref_name)
   
   # Re-fortify tree to data frame
@@ -701,6 +709,9 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
       subset_mut = subset_mut[,colSums(subset_mut)>0, drop=F]
       tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$reference$ref_name)
       
+      ape::write.tree(ape::compute.brlen(tree_sub), file = paste0(output_dir, "/cluster", clust, "phyl.newick"),
+                 append = FALSE,
+                 digits = 10, tree.names = FALSE)
       if (i > 0) {
         binded_phylogenies = ape::bind.tree(x = binded_phylogenies, y = tree_sub)
       } else {
