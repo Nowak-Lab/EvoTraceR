@@ -137,7 +137,7 @@ plot_asv_length = function(df_to_plot_final) {
     ggplot(data=dplyr::select(df_to_plot_final, asv_names, seq_n) %>% 
              unique() %>%
              mutate(seq_n_col=ifelse(seq_n == 260, "260", ifelse(seq_n < 260, "< 260", "> 260"))) %>%
-             filter(!str_detect(asv_names, paste0(c("NMBC"), collapse = "|")))) +
+             filter(!str_detect(asv_names, "NMBC"))) +
     geom_bar(aes(x=seq_n, y=asv_names, fill=seq_n_col), position = "dodge", stat = "identity", width=0.8, size=0.2) +
     geom_text(aes(x=1, y=asv_names, label = seq_n), col="white", size=4, hjust="left") + #, position=position_dodge(width=0.9)
     scale_fill_manual(values=c("260" = "#84B48F", "< 260" = "#377EB8", "> 260" = "#F39B7FFF"), breaks=c("260", "< 260", "> 260")) +
@@ -197,16 +197,27 @@ plot_similarity = function(df_to_plot_final) {
 plot_percentage_asv_sample = function(df_to_plot_final) {
   ### "Bubble Plot" - ASV % of colony  ------------------------------------------------------ 
   # bubble graph size coresponds to percentage of colony in i.e. Days or Organ
-  scale_bubble <- ceiling(max(df_to_plot_final %>% filter(str_detect(asv_names, "ASV")) %>% dplyr::pull(perc_in_sample)))
+  scale_bubble <- ceiling(max(df_to_plot_final %>% 
+                                dplyr::pull(perc_in_sample), na.rm = T))
+  
+  scale_bubble_nonmbc <- ceiling(max(df_to_plot_final %>% 
+                        filter(str_detect(asv_names, "ASV")) %>% 
+                        dplyr::pull(perc_in_sample), na.rm = T))
+  
+  df_to_plot_final = df_to_plot_final %>% filter(str_detect(asv_names, "ASV") | str_detect(asv_names, '.NMBC'))
+  df_to_plot_final$asv_names = stringr::str_replace_all(string = df_to_plot_final$asv_names, pattern = '.NMBC', '')
   # plot
   bubble <- 
-    ggplot(data=df_to_plot_final %>% 
-             filter(str_detect(asv_names, "ASV")),
+    ggplot(data=df_to_plot_final, #%>% 
+             #filter(str_detect(asv_names, "ASV")),
            aes(x=sample, y=asv_names, scale="globalminmax")) + # %>% darop_na() -> for BC10.ORG
     geom_point(aes(size=perc_in_sample, fill=perc_fold_to_max), shape=21, stroke=0.5, col="black") +
     #scale_fill_gradient2(low = "#417dd4", mid = "#f2f2f2", high = "#DC0000FF") + # for log2
     colorspace::scale_fill_continuous_sequential(palette = "Plasma", limits=c(0, 100), rev = F, na.value = "grey") +
-    scale_size_area(max_size = 1.75*scale_bubble, limits = c(0, scale_bubble), breaks = c(1, scale_bubble/2, scale_bubble)) + # manual
+    scale_size_area(#max_size = scale_bubble, 
+                    limits = c(0, scale_bubble), 
+                    trans = 'log1p',
+                    breaks = c(1, scale_bubble_nonmbc/2, scale_bubble_nonmbc, scale_bubble)) + # manual
     xlab("Analyzed \n Samples") +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon
     # Add theme

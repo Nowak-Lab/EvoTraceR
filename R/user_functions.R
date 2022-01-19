@@ -809,13 +809,18 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     if (sample_order != 'alphabetical') {
       stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
     }
-    df_to_plot_perf_match = dplyr::arrange(df_to_plot_perf_match, sample, asv_names)
+    #df_to_plot_perf_match = dplyr::arrange(df_to_plot_perf_match, sample, asv_names)
+    sample_order = sort(unique(df_to_plot_perf_match$sample))
+    if ('PRL' %in% sample_order)
+      sample_order = c('PRL', setdiff(sample_order, 'PRL'))
+    df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
   } else {
     if (length(intersect(sample_order, df_to_plot_perf_match$sample)) != length(sample_order)) {
       cli::cli_alert_danger('The samples found in variable sample_order do not match the samples contained in the dataset.')
       cat("The following samples need to be provided: ", unique(df_to_plot_perf_match$sample))
       stop("Exiting")
     }
+    
     df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
     #= dplyr::arrange(df_to_plot_perf_match, match(sample, sample_order), asv_names)
   }
@@ -863,7 +868,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
   if (is_smoothed) {
-    msa_cna_bc = aplot::insert_right(msa_cna_bc_smoothed, msa_cna_bc, width = 1)
+    smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
+    msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
   }
 
   msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
@@ -874,13 +880,13 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   # add bar_pid
   msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n, bar_pid, width = 0.2)
   # add bubbles
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
+  #msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
   
   # Save PDF
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
-         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble, width=80,
+         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
-  return(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble)
+  return(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid)
 }
