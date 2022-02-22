@@ -23,7 +23,7 @@ dada2_alignment = function(fnFs,
   if (!dir.exists(filt_input_dir)) dir.create(filt_input_dir, recursive = T)
   
   if (output_figures) {
-    figure_dir = file.path(output_dir, "dada2_plots")
+    figure_dir = file.path(output_dir, "dada2_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
   } else {
     figure_dir = NULL
@@ -56,7 +56,10 @@ dada2_alignment = function(fnFs,
   # dada2 filter and trim
   cli::cli_alert_info('Filtering and trimming')
   out = do.call(dada2::filterAndTrim, 
-                              c(list(fwd = fnFs, filt = filtFs, rev=fnRs, filt.rev = filtRs, verbose=verbose),
+                              c(list(fwd = fnFs, filt = filtFs, 
+                                     #rev=fnRs, filt.rev = filtRs, 
+                                     verbose=verbose,
+                                     truncQ=0, minLen = 2),
                                 get_args_from_dots(dots, dada2::filterAndTrim)))
   
   # dada2 Learn errors

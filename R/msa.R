@@ -25,7 +25,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     rename_at(vars(!matches("asv_names")), ~ paste0("width_total_", .))
   
   utils::write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
-            file.path(output_dir_files, "ASV_alterations_width.csv"), 
+            file.path(output_dir_files, "asv_alterations_width.csv"), 
             row.names = FALSE)
   
   REvoBC_object$alignment$ASV_alterations_width = alignment_tidy_ref_alt_mrg_final_width_summ
@@ -51,10 +51,16 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     
   
   sample_columns = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
+  
+  sample_order = sort(sample_columns)
+  prostate_samples = sample_order[stringr::str_detect(string = sample_order, pattern = 'PRL')]
+  if (length(prostate_samples) > 0)
+    sample_order = c(prostate_samples, setdiff(sample_order, prostate_samples))
+  
   # prepare levels and orders
   del_sub_ins_df <- 
     del_sub_ins_df %>%
-    dplyr::mutate(sample = forcats::fct_relevel(sample, sample_columns)) %>%
+    dplyr::mutate(sample = forcats::fct_relevel(sample, sample_order)) %>%
     arrange(match(sample, sample_columns))
   
   
@@ -78,10 +84,10 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   # bind "ins" after recalculation with "del_sub"
   del_sub_ins_df_data_to_plot_sum_perc <- rbind(del_sub_df_data_to_plot_sum_perc, ins_df_data_to_plot_sum_perc)
 
-  # Save File
-  utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
-            file.path(output_dir_files, "mutations_frequency.csv"), 
-            row.names = FALSE)
+  # # Save File
+  # utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
+  #           file.path(output_dir_files, "mutations_frequency.csv"), 
+  #           row.names = FALSE)
   
   
   # Position of PAM in guides

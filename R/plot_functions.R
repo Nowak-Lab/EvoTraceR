@@ -3,7 +3,8 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_color
     ggtree::ggtree(tree_mp_df) %<+%
     perc_max_tip_colors + # add data for labelling tips
     #geom_tippoint(aes(color = cluster), size=3) +
-    ggtree::geom_tiplab(aes(fill=cluster, alpha = 0.5), geom = "label", align=TRUE, linesize=0.5, linetype="dotted", size=6) +
+    ggtree::geom_tiplab(#aes(fill=NA, alpha = 0.5), geom = "label", 
+                        align=TRUE, linesize=0.5, linetype="dotted", size=6) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), limits=c(0, 1.15*max(tree_mp_df$x)), breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
