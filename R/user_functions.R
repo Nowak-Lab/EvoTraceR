@@ -819,8 +819,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
       } else {
         new_y = c(2:(1+length(wt_asv)))
       }
-      tree_mp_df = tree_mp_df %>% 
-        filter(label != REvoBC_object$reference$ref_name | is.na(label)) %>% # Ho commentato perché se non usiamo più il barcode per la ricostruzione non lo troviamo 
+      tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$reference$ref_name | is.na(label)) %>%  
         dplyr::mutate(y = y + length(wt_asv)) %>%
         add_row(parent = root_node, 
                 node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
@@ -829,7 +828,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
                 x = 3, #first_tip$x, 
                 branch.length = 2,
                 y = new_y,
-                branch = first_tip$branch, angle = first_tip$angle) %>% # Commentato qnche questo perché non c'è bisogno di riaggiungere la foglia
+                branch = first_tip$branch, angle = first_tip$angle) %>% 
         add_row(barcode_tip)
       }
     }
