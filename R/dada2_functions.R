@@ -57,9 +57,9 @@ dada2_alignment = function(fnFs,
   cli::cli_alert_info('Filtering and trimming')
   out = do.call(dada2::filterAndTrim, 
                               c(list(fwd = fnFs, filt = filtFs, 
-                                     #rev=fnRs, filt.rev = filtRs, 
-                                     verbose=verbose,
-                                     truncQ=0, minLen = 2),
+                                     rev=fnRs, filt.rev = filtRs, 
+                                     verbose=verbose),
+                                     #truncQ=0, minLen = 2),
                                 get_args_from_dots(dots, dada2::filterAndTrim)))
   
   # dada2 Learn errors
