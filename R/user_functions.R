@@ -803,9 +803,9 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
           current_barcode_y = barcode_tip$y
           tree_mp_df = tree_mp_df %>% 
             dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
-            dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) %>%
-            dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
-            dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
+            dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
+            #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+            #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
             # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
             # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
             
@@ -826,7 +826,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
                 label = wt_asv,
                 isTip = TRUE, 
                 x = 3, #first_tip$x, 
-                branch.length = 2,
+                #branch.length = 2,
                 y = new_y,
                 branch = first_tip$branch, angle = first_tip$angle) %>% 
         add_row(barcode_tip)
