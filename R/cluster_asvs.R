@@ -1,24 +1,4 @@
-cut_phyl_dendogram = function(tree_mp, asv_bin_var) {
-  # di default il barcode deve stare da solo o dalle sequenze non mutate
-  set.seed(1)
-  asv_sub = asv_bin_var[setdiff(rownames(asv_bin_var), c('BC10v0')),]
-  dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
-  #hclust_avg <- hclust(dist_j, method = 'complete')
-  dend = phylogram::as.dendrogram(tree_mp)
-  set.seed(1)
 
-  # dist jaccard
-  
-  clust_dist <- dynamicTreeCut::cutreeDynamic(as.hclust(dend), distM=dist_j, minClusterSize = 1)
-  # clust_dist <- dynamicTreeCut::cutreeDynamic(hclust_avg, 
-  #                                             distM=as.matrix(dist_j), 
-  #                                             deepSplit = 3,
-  #                                             minClusterSize = 2)
-  
-  df_clusters = tibble(asv_names = tree_mp$tip.label, cluster = clust_dist)
-  
-  return(df_clusters)
-}
 
 compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) {
   # Compute phylogeny
@@ -75,11 +55,29 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   return(list(tree_mp = tree_mp, tree_mp_df = tree_mp_df))
 }
 
-cluster_sequences_jaccard = function(asv_bin_var) {
-  # The function from package ade4 dist.binary computes the distance matrix for binary data,
-  # using a similarity index (parameter method)
-  prova2 = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+
+compute_tree_cassiopeia = function(asv_bin_var, barcode) {
+  # Compute phylogeny
+
+  tree_mp_all_rmix <- Rphylip::Rmix(X = as.matrix(asv_bin_var),
+                                    method = "Camin-Sokal", 
+                                    ancestral = ancestral,
+                                    path = phylip_package_path, 
+                                    cleanup = T)
+  
+  
+
+  tree_mp = tree_mp_all_rmix[[1]]
+  ### Fortify tree to data frame
+  tree_mp_df <- ggtree::fortify(tree_mp)
+  
+
+  
+  
+  return(list(tree_mp = tree_mp, tree_mp_df = tree_mp_df))
 }
+
+
 
 
 

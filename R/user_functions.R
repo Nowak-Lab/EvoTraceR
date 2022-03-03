@@ -661,18 +661,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
       dplyr::select(starts_with('del_')) %>%
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
-    # barcode_var = asv_bin_var[REvoBC_object$reference$ref_name,]
-    # asv_bin_var = barcode_var %>% 
-    #   dplyr::bind_rows(asv_bin_var %>% 
-    #                      filter(rowSums(dplyr::across(dplyr::everything())) > 0))
+
   } else if (mutations_use == 'smooth_del_ins'){
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>%
       dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
-    # barcode_var = asv_bin_var[REvoBC_object$reference$ref_name,]
-    # asv_bin_var = barcode_var %>% 
-    #   dplyr::bind_rows(asv_bin_var %>% 
-    #                      filter(rowSums(dplyr::across(dplyr::everything())) > 0))
+
   } else if (mutations_use == 'sub_smooth_del_ins') {
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix
   } else {
@@ -693,54 +687,17 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   phyl_result = compute_phylogenetic_tree(asv_bin_var,#[setdiff(rownames(asv_bin_var), c('BC10v0')),], 
                                       phylip_package_path, 
                                       REvoBC_object$reference$ref_name)
+  
+  #phyl_result = compute_tree_cassiopeia(asv_bin_var)
 
-  dend_clustered = cut_phyl_dendogram(phyl_result$tree_mp, asv_bin_var)
+  #dend_clustered = cut_phyl_dendogram(phyl_result$tree_mp, asv_bin_var)
   ape::write.tree(ape::compute.brlen(phyl_result$tree_mp), file = paste0(output_dir, "/phyl.newick"),
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
-  cluster_labels = sort(unique(dend_clustered$cluster))[-1]
-  # clusters_trees = list()
-  # clusters_trees_df = list()
-  # binded_phylogenies = NULL
-  # i = 0
-  # if (length(cluster_labels) > 0) {
-  #   for (clust in cluster_labels) {
-  #     print(clust)
-  #     subset_asv = dend_clustered %>% filter(cluster == clust) %>% pull(asv_names)
-  #     subset_mut = asv_bin_var %>% tibble::rownames_to_column(var = 'asv_names') %>%
-  #       filter(asv_names %in% subset_asv | asv_names == REvoBC_object$reference$ref_name) %>%
-  #       tibble::column_to_rownames('asv_names') #%>% dplyr::select_if(sum(.) > 0)
-  #     subset_mut = subset_mut[,colSums(subset_mut)>0, drop=F]
-  #     tree_sub = compute_phylogenetic_tree(subset_mut, phylip_package_path, REvoBC_object$reference$ref_name)
-  #     
-  #     ape::write.tree(ape::compute.brlen(tree_sub), file = paste0(output_dir, "/cluster", clust, "phyl.newick"),
-  #                append = FALSE,
-  #                digits = 10, tree.names = FALSE)
-  #     if (i > 0) {
-  #       binded_phylogenies = ape::bind.tree(x = binded_phylogenies, y = tree_sub)
-  #     } else {
-  #       binded_phylogenies = tree_sub
-  #     }
-  #     i = i + 1
-  #     # clusters_trees[[clust]] <- tree_sub
-  #     # clusters_trees_df[[clust]] <- ggtree::fortify(tree_sub)
-  #     
-  #   }
-  # }
-
-  # # The binded phylogeny now has as many barcode nodes as the number of clusters.
-  # # We need to remove all barcodes except for one (so, count the number of barcodes),
-  # # leave only the one with y = 1 and subtract to all the other nodes the number of removed barcode nodes.
-  # tips_barcode = ggtree::fortify(binded_phylogenies) %>% 
-  #   filter(label == REvoBC_object$reference$ref_name & y != 1) %>% pull(node)
-  # 
-  # binded_phylogenies = ape::drop.tip(phy = binded_phylogenies, tip = tips_barcode)
-  
-    # filter(label != REvoBC_object$barcode$asv_names | y == 1) %>%
-    # mutate(nuovo_y = ifelse(y != 1, y - length(cluster_labels) + 1, y))
+  #cluster_labels = sort(unique(dend_clustered$cluster))[-1]
   
   REvoBC_object$phylogeny$tree = phyl_result$tree_mp_df#ggtree::fortify(binded_phylogenies) #
-  REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
+  #REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
   
   write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
   
@@ -870,19 +827,19 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
-  tip_colors <-
-    df_to_plot_perf_match %>%
-    dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
-    dplyr::select(asv_names, sample) %>%
-    add_row(data.frame(asv_names=REvoBC_object$reference$ref_name, sample="PRL"))
-  colnames(tip_colors) <- c("asv_names", "sample_max_perc")
+  # tip_colors <-
+  #   df_to_plot_perf_match %>%
+  #   dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
+  #   dplyr::select(asv_names, sample) %>%
+  #   add_row(data.frame(asv_names=REvoBC_object$reference$ref_name, sample="PRL"))
+  # colnames(tip_colors) <- c("asv_names", "sample_max_perc")
   
-  tip_colors = merge(tip_colors, REvoBC_object$phylogeny$phylogeny_clustered, by = 'asv_names') %>%
-    mutate(cluster = factor(cluster))
+  # tip_colors = merge(tip_colors, REvoBC_object$phylogeny$phylogeny_clustered, by = 'asv_names') %>%
+  #   mutate(cluster = factor(cluster))
   
   sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
   
-  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns, tip_colors)
+  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns)
   
   if (is_smoothed)
     msa_cna_bc_smoothed = plot_msa(REvoBC_object, smoothed_deletions = mut_in_phyl)

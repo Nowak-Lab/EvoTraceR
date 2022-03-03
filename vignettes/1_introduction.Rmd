@@ -44,7 +44,7 @@ if (!require("phytols")) install.packages("phytools")
 if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require("TreeTools")) install.packages('TreeTools')
 if (!require("phylogram")) install.packages('phylogram')
-if (!require('ade4')) install.packages('ape4')
+if (!require('ade4')) install.packages('ade4')
 if (!require('foreach')) install.packages('foreach')
 
 # install devtools library and REvoBC

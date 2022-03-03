@@ -1,7 +1,7 @@
-plot_phylogenetic_tree = function(tree_mp_df, sample_columns, perc_max_tip_colors) {
+plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
   ggtree_mp <- 
-    ggtree::ggtree(tree_mp_df) %<+%
-    perc_max_tip_colors + # add data for labelling tips
+    ggtree::ggtree(tree_mp_df) + #%<+%
+    # perc_max_tip_colors + # add data for labelling tips
     #geom_tippoint(aes(color = cluster), size=3) +
     ggtree::geom_tiplab(#aes(fill=NA, alpha = 0.5), geom = "label", 
                         align=TRUE, linesize=0.5, linetype="dotted", size=6) +

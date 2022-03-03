@@ -223,12 +223,11 @@ align_asv = function(REvoBC_object,
     
     # mpwa = Biostrings::pairwiseAlignment(pattern = dnastringset, 
     #                                      subject = REvoBC_object$reference$ref_seq)
-    aligned_sequences = as.data.frame(Biostrings::DNAStringSet(mpwa))
-    aligned_reference = as.data.frame(Biostrings::DNAStringSet(mpwa@subject))
+    aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
+    aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
+
     
-    #library(foreach)
-    
-    alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, nrow(aligned_sequences)), .combine=rbind) %do% {
+    alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, length(mpwa)), .combine=rbind) %do% {
       data.frame("asv_names" = rownames(aligned_sequences)[i],
                  "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], 
                  "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]], 
