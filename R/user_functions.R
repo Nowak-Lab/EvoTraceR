@@ -54,6 +54,9 @@
 #' It can be set to TRUE in case of multiple samples coming from the same mouse (e.g. different organs or multiple time points) (See \href{https://benjjneb.github.io/dada2/pool.html}{here} for more information).
 #' @param dada2_chimeras_minFoldParentOverAbundance (Optional). Deafult = 8. parameter passed to the \code{dada2} function \code{isBimeraDenovo} during the call to \code{dada2 removeBimeraDenovo}. 
 #' @param verbose (Optional). Default TRUE. Boolean indicating whether or not to print the text output of dada2 functions.
+#' @param dada2_errorRate_estimation (Optional). Must be one of c('default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4').
+#' In case the fastq quality scores are in the range 0-40, keep the default option. The other 4 functions need to be used when dealing with NovaSeq data,
+#' where the quality scores in the fastq files are binned to only 4 different values. See \href{https://github.com/ErnakovichLab/dada2_ernakovichlab#learn-the-error-rates}{here} for more details.
 #' @param ... (Optional) Any additional parameters passed to \code{dada2} functions.
 #' 
 #' @return An object of type REvoBC, which is a list that will contain the following fields: 
@@ -92,6 +95,7 @@ initialize_REvoBC = function(output_dir,
                              dada2_pooled_analysis = FALSE,
                              dada2_chimeras_minFoldParentOverAbundance = 8,
                              verbose = TRUE,
+                             dada2_errorRate_estimation = 'default', 
                              ...) {
   # Check that the user inserted the correct parameters
   if (is.null(input_dir) & is.null(dada2_output_sequences)) {
@@ -100,7 +104,11 @@ initialize_REvoBC = function(output_dir,
   if (is.null(output_dir)) {
     stop('Please provide a path where output files will be stored.')
   }
-
+  
+  if (! dada2_errorRate_estimation %in% c('default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4')) {
+    stop("Parameter dada2_errorRate_estimation must be one of 'default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4'")
+  }
+  
   set.seed(random_seed)
   REvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
   
@@ -141,7 +149,7 @@ initialize_REvoBC = function(output_dir,
     # Get sample names, assuming files named as so: SAMPLENAME_XXX.fastq
     sample.names = stringr::str_remove_all(fnFs, "_R1.fastq")
     map_file_sample = check_input(sample.names = sample.names, 
-                                   map_file_sample = map_file_sample)
+                                  map_file_sample = map_file_sample)
     # Specify the full path to the fnFs and fnRs
     fnFs = file.path(input_dir, fnFs)
     fnRs = file.path(input_dir, fnRs)
@@ -158,6 +166,7 @@ initialize_REvoBC = function(output_dir,
                                    dada2_pooled_analysis = dada2_pooled_analysis,
                                    verbose =  T,
                                    dada2_minFoldParentOverAbundance = dada2_chimeras_minFoldParentOverAbundance,
+                                   dada2_errorRate_estimation = dada2_errorRate_estimation,
                                    ...)
     
     seqtab.nochim = align_output$seqtab.nochim
@@ -167,10 +176,10 @@ initialize_REvoBC = function(output_dir,
     
   } else {
     seqtab.nochim = utils::read.csv(dada2_output_sequences, 
-                             stringsAsFactors = FALSE,
-                             row.names = 1)
+                                    stringsAsFactors = FALSE,
+                                    row.names = 1)
     map_file_sample = check_input(sample.names = rownames(seqtab.nochim), 
-                                   map_file_sample = map_file_sample)
+                                  map_file_sample = map_file_sample)
   }
   REvoBC_object$map_file_sample = map_file_sample
   REvoBC_object$dada2_asv_prefilter = adjust_seqtab(seqtab.nochim = seqtab.nochim,
@@ -304,7 +313,7 @@ asv_analysis = function(REvoBC_object,
                         ref_seq = 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
                         ref_flank_left = "^TCTAC",
                         ref_flank_right = "CCCGTGGATC$",
-                        flanking_filtering = 'both',
+                        flanking_filtering = 'right',
                         ref_cut_sites = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
                         ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
                         output_figures = TRUE,
@@ -317,7 +326,7 @@ asv_analysis = function(REvoBC_object,
                         pwa_type = 'global',
                         compute_msa = FALSE,
                         ...) {
-
+  
   if (output_figures) {
     figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
@@ -350,9 +359,9 @@ asv_analysis = function(REvoBC_object,
   if (sum(seqtab_df$seq == barcodes_info$ref_seq) == 0){
     
     seqtab_df = seqtab_df %>% dplyr::add_row(seq_names = paste0(barcodes_info$ref_name, ".NMBC"), 
-                        seq = barcodes_info$ref_seq)
+                                             seq = barcodes_info$ref_seq)
     seqtab_df[seqtab_df$seq_names == paste0(barcodes_info$ref_name, ".NMBC"), sample_columns] = 0
-
+    
   } else {
     seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
   }
@@ -364,23 +373,23 @@ asv_analysis = function(REvoBC_object,
   RD1_10 <- barcodes_info$ref_flank_left
   RD2_10 <- barcodes_info$ref_flank_right
   nmbc <- paste0(ref_name, ".NMBC")#gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
-  # filter based on 5' and 3' 10x nts of 
+  # filter based on 5' and 3' 10x nts of
   if (flanking_filtering == 'both') {
-    seqtab_df <- dplyr::filter(seqtab_df, 
+    seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10) & stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-    
+
   } else if (flanking_filtering == 'right') {
-    seqtab_df <- dplyr::filter(seqtab_df, 
+    seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-    
+
   } else if(flanking_filtering == 'left') {
-    seqtab_df <- dplyr::filter(seqtab_df, 
+    seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10)) # the same for different barcodes: 1.0 - site less affected
-    
+
   } else {
     stop('Flanking filtering must be one of "left", "right" or "both". Exiting.')
   }
-  
+
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
   seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample_columns])
@@ -452,7 +461,7 @@ asv_analysis = function(REvoBC_object,
                                  figure_dir,
                                  nmbc,
                                  output_dir = output_dir)
-
+  
   
   if(output_figures) {
     # assemble data  with all number for each step of filtering
@@ -469,7 +478,7 @@ asv_analysis = function(REvoBC_object,
       mutate(diff_perc = if_else(name == "Starting ASVs" | name == "Final ASVs", "", diff_perc)) %>%
       mutate(num_names_sf = if_else(name == "Starting ASVs" | name == "Final ASVs", num_names, "")) %>%
       mutate(num_names_ins = if_else(name == "Starting ASVs" | name == "Final ASVs", "", num_names))
-
+    
     # start graph plotting 
     seqtab_df_clean_track <-
       ggplot(data=track_data) +
@@ -499,7 +508,7 @@ asv_analysis = function(REvoBC_object,
   output_dir_figures_alignment = file.path(REvoBC_object$output_directory, "alignment_figures")
   if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
   
-
+  
   REvoBC_object = align_asv(REvoBC_object, 
                             pwa_match= pwa_match,
                             pwa_mismatch = pwa_mismatch,
@@ -582,7 +591,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
 analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
-
+  
   output_dir_files = file.path(REvoBC_object$output_directory, "alignment_files")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
   
@@ -634,6 +643,7 @@ analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
 #' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
 #' 
 #' @export infer_phylogeny
+# @import reticulate
 #' @importFrom Rphylip Rmix
 #' @importFrom scales comma
 #' @importFrom phytools mrp.supertree
@@ -661,12 +671,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
       dplyr::select(starts_with('del_')) %>%
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
-
+    
   } else if (mutations_use == 'smooth_del_ins'){
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>%
       dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
-
+    
   } else if (mutations_use == 'sub_smooth_del_ins') {
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix
   } else {
@@ -683,21 +693,18 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   
   write.csv(asv_bin_var, file.path(output_dir, "/used_binary_mutation_matrix.csv"))
   
-  
-  phyl_result = compute_phylogenetic_tree(asv_bin_var,#[setdiff(rownames(asv_bin_var), c('BC10v0')),], 
-                                      phylip_package_path, 
-                                      REvoBC_object$reference$ref_name)
+  phyl_result = compute_phylogenetic_tree(asv_bin_var,
+                                          phylip_package_path, 
+                                          REvoBC_object$reference$ref_name)
   
   #phyl_result = compute_tree_cassiopeia(asv_bin_var)
-
-  #dend_clustered = cut_phyl_dendogram(phyl_result$tree_mp, asv_bin_var)
-  ape::write.tree(ape::compute.brlen(phyl_result$tree_mp), file = paste0(output_dir, "/phyl.newick"),
+  
+  ape::write.tree(phyl_result$tree_mp, #phyl_result$tree_uncollapsed, 
+                  file = paste0(output_dir, "/phyl_uncollapsed.newick"),
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
-  #cluster_labels = sort(unique(dend_clustered$cluster))[-1]
   
-  REvoBC_object$phylogeny$tree = phyl_result$tree_mp_df#ggtree::fortify(binded_phylogenies) #
-  #REvoBC_object$phylogeny$phylogeny_clustered = dend_clustered
+  REvoBC_object$phylogeny$tree = phyl_result$tree_mp_df#phyl_result$tree_collapsed_df
   
   write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
   
@@ -761,12 +768,12 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
           tree_mp_df = tree_mp_df %>% 
             dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
             dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-            #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
-            #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-            # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
-            # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
-            
-          }
+          #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+          #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
+          # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+          # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
+          
+        }
         
       } 
       barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
@@ -787,8 +794,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
                 y = new_y,
                 branch = first_tip$branch, angle = first_tip$angle) %>% 
         add_row(barcode_tip)
-      }
     }
+  }
   
   
   # merge with df_to_plot_perf_match
@@ -812,7 +819,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
     #= dplyr::arrange(df_to_plot_perf_match, match(sample, sample_order), asv_names)
   }
-    
+  
   df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
                                    REvoBC_object$alignment$ASV_alterations_width, 
                                    by.x="asv_names", by.y="asv_names"))
@@ -852,14 +859,14 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   bar_pid = plot_similarity(df_to_plot_final)
   
   bubble = plot_percentage_asv_sample(df_to_plot_final)
-
+  
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
   if (is_smoothed) {
     smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
     msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
   }
-
+  
   msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
   # add ggtree_mp
   msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- aplot::insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 0.75)

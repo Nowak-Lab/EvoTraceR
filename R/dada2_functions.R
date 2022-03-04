@@ -11,6 +11,7 @@ dada2_alignment = function(fnFs,
                            dada2_pooled_analysis = FALSE,
                            dada2_chimeras_minFoldParentOverAbundance = 8,
                            verbose = TRUE,
+                           dada2_errorRate_estimation = 'default',
                            ...) {
   dots = list(...)
   # Make directories for the filtered fastqs and (optionally) for figures
@@ -64,10 +65,13 @@ dada2_alignment = function(fnFs,
   
   # dada2 Learn errors
   cli::cli_alert_info('Learning errors for forward reads')
-  errF = do.call(dada2::learnErrors, c(list(fls = filtFs, multithread = multithread), 
+  
+  error_estimation = ifelse(dada2_errorRate_estimation == 'default', 'loessErrfun', dada2_errorRate_estimation)
+  
+  errF = do.call(dada2::learnErrors, c(list(fls = filtFs, multithread = multithread, errorEstimationFunction = get(error_estimation)), 
                                                      get_args_from_dots(dots, dada2::learnErrors)))
   cli::cli_alert_info('Learning errors for backward reads')
-  errR = do.call(dada2::learnErrors, c(list(fls = filtRs, multithread = multithread), 
+  errR = do.call(dada2::learnErrors, c(list(fls = filtRs, multithread = multithread, errorEstimationFunction = get(error_estimation)), 
                                                      get_args_from_dots(dots, dada2::learnErrors)))
   
   if (output_figures) {

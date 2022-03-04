@@ -16,6 +16,7 @@ initialize_REvoBC(
   dada2_pooled_analysis = FALSE,
   dada2_chimeras_minFoldParentOverAbundance = 8,
   verbose = TRUE,
+  dada2_errorRate_estimation = "default",
   ...
 )
 }
@@ -63,6 +64,10 @@ It can be set to TRUE in case of multiple samples coming from the same mouse (e.
 \item{dada2_chimeras_minFoldParentOverAbundance}{(Optional). Deafult = 8. parameter passed to the \code{dada2} function \code{isBimeraDenovo} during the call to \code{dada2 removeBimeraDenovo}.}
 
 \item{verbose}{(Optional). Default TRUE. Boolean indicating whether or not to print the text output of dada2 functions.}
+
+\item{dada2_errorRate_estimation}{(Optional). Must be one of c('default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4').
+In case the fastq quality scores are in the range 0-40, keep the default option. The other 4 functions need to be used when dealing with NovaSeq data,
+where the quality scores in the fastq files are binned to only 4 different values. See \href{https://github.com/ErnakovichLab/dada2_ernakovichlab#learn-the-error-rates}{here} for more details.}
 
 \item{...}{(Optional) Any additional parameters passed to \code{dada2} functions.}
 }

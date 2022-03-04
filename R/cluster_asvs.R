@@ -58,23 +58,32 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
 
 compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   # Compute phylogeny
-
-  tree_mp_all_rmix <- Rphylip::Rmix(X = as.matrix(asv_bin_var),
-                                    method = "Camin-Sokal", 
-                                    ancestral = ancestral,
-                                    path = phylip_package_path, 
-                                    cleanup = T)
+  cas = reticulate::import('cassiopeia')
+  pd = reticulate::import('pandas')
+  np = reticulate::import('numpy')
   
+  df = reticulate::py_to_r(asv_bin_var)
   
-
-  tree_mp = tree_mp_all_rmix[[1]]
+  cas_tree = cas$data$CassiopeiaTree(character_matrix=df)
+  
+  vanilla_greedy = cas$solver$VanillaGreedySolver()
+  
+  vanilla_greedy$solve(cas_tree, collapse_mutationless_edges=F)
+  
+  cas_tree$get_newick(record_branch_lengths = T)
+  
+  tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+  
+  cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
+  
+  tree_collapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+  
   ### Fortify tree to data frame
-  tree_mp_df <- ggtree::fortify(tree_mp)
+  tree_mp_df <- ggtree::fortify(tree_collapsed)
   
-
-  
-  
-  return(list(tree_mp = tree_mp, tree_mp_df = tree_mp_df))
+  return(list(tree_uncollapsed = tree_uncollapsed, 
+              #tree_collapsed = tree_collapsed, 
+              tree_collapsed_df = tree_mp_df))
 }
 
 
