@@ -56,37 +56,37 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
 }
 
 
-compute_tree_cassiopeia = function(asv_bin_var, barcode) {
-  # Compute phylogeny
-  cas = reticulate::import('cassiopeia')
-  pd = reticulate::import('pandas')
-  np = reticulate::import('numpy')
-  
-  df = reticulate::py_to_r(asv_bin_var)
-  
-  cas_tree = cas$data$CassiopeiaTree(character_matrix=df)
-  
-  vanilla_greedy = cas$solver$VanillaGreedySolver()
-  
-  vanilla_greedy$solve(cas_tree, collapse_mutationless_edges=F)
-  
-  cas_tree$get_newick(record_branch_lengths = T)
-  
-  tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
-  
-  cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
-  
-  tree_collapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
-  
-  ### Fortify tree to data frame
-  tree_mp_df <- ggtree::fortify(tree_collapsed)
-  
-  return(list(tree_uncollapsed = tree_uncollapsed, 
-              #tree_collapsed = tree_collapsed, 
-              tree_collapsed_df = tree_mp_df))
-}
-
-
-
-
-
+# compute_tree_cassiopeia = function(asv_bin_var, barcode) {
+#   # Compute phylogeny
+#   cas = reticulate::import('cassiopeia')
+#   pd = reticulate::import('pandas')
+#   np = reticulate::import('numpy')
+#   
+#   df = reticulate::py_to_r(asv_bin_var)
+#   
+#   cas_tree = cas$data$CassiopeiaTree(character_matrix=df)
+#   
+#   vanilla_greedy = cas$solver$VanillaGreedySolver()
+#   
+#   vanilla_greedy$solve(cas_tree, collapse_mutationless_edges=F)
+#   
+#   cas_tree$get_newick(record_branch_lengths = T)
+#   
+#   tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+#   
+#   cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
+#   
+#   tree_collapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+#   
+#   ### Fortify tree to data frame
+#   tree_mp_df <- ggtree::fortify(tree_collapsed)
+#   
+#   return(list(tree_uncollapsed = tree_uncollapsed, 
+#               #tree_collapsed = tree_collapsed, 
+#               tree_collapsed_df = tree_mp_df))
+# }
+# 
+# 
+# 
+# 
+# 

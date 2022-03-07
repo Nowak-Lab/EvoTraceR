@@ -197,7 +197,7 @@ dada2_alignment = function(fnFs,
   # Save as Data csv
   utils::write.csv(track, file.path(output_dir_files, "quality_track_reads.csv"))
   
-  return(list(seqtab.nochim=seqtab.nochim, track=track, bimera_perc = bimera_perc, 
+  return(list(seqtab.nochim=seqtab.nochim, track = track, bimera_perc = bimera_perc, 
               nSequences_with_chimeras = dim(seqtab)[2]))
 }
 
@@ -238,7 +238,7 @@ check_input = function(sample.names = NULL,
   
   # At this point in the code, map_file_sample exists either because it was provided
   # as a parameter, or because it was not provided and created from sample names.
-  cli::cli_alert_info('The folliwng files, mapped to the corresponding sample, were found: ')
+  cli::cli_alert_info('The following files, mapped to the corresponding sample, were found: ')
   lapply(rownames(map_file_sample),  function(x) {cat(x, " : ", map_file_sample[x, 'sample'], "\n")})
   return(map_file_sample)
 }

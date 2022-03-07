@@ -85,9 +85,9 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   del_sub_ins_df_data_to_plot_sum_perc <- rbind(del_sub_df_data_to_plot_sum_perc, ins_df_data_to_plot_sum_perc)
 
   # # Save File
-  # utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, 
-  #           file.path(output_dir_files, "mutations_frequency.csv"), 
-  #           row.names = FALSE)
+  utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc,
+            file.path(output_dir_files, "mutations_frequency.csv"),
+            row.names = FALSE)
   
   
   # Position of PAM in guides
@@ -102,25 +102,29 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     # annotate("rect", xmin=156, xmax=182, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
     # annotate("rect", xmin=208, xmax=234, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
     # geom bar
-    geom_bar(stat="identity", width=1.5, size=1) +
-    scale_fill_manual(values=c("sub"="#329932", "ins" = "#FF0033", "ins_smwr" = "pink", "del" = "#3366FF", "wt" = "#f2f2f2"), breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
+    geom_bar(stat="identity", width=1.5, size=1, alpha=1) +
+    scale_fill_manual(values=alpha(c("sub"="#329932", "ins" = "#FF0033", "ins_smwr" = "pink", "del" = "#3366FF", "wt" = "#f2f2f2"), 1), 
+                      breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), limits=c(-4, bc_len + 5), expand = c(0.001, 0.001)) +
     scale_y_continuous(labels=function(x) paste0(x, "%"),
-                       limits=c(0, 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc)), 
-                       expand = c(0, 0)) +
+                       limits=c(0, 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc))) +
+                       #expand = c(0, 0)) +
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
     lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) 
   
   annot_lines = REvoBC_object$reference$ref_border_sites
   for (i in seq(1, length(annot_lines), by = 2)) {
-    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i], xmax=annot_lines[i+1], ymin=-Inf, max=Inf, fill="black", alpha=.1)
+    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i], 
+                                           xmax=annot_lines[i+1], ymin=-Inf, max=Inf, 
+                                           #ymax = 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc),
+                                           fill="black", alpha=.1)
   }
   
   # Add Theme
   alt_count_bc <- 
     alt_count_bc + 
-    theme_bw() +
+    #theme_bw() +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
           axis.ticks = element_blank(), # disable ticks lines
           axis.line.y = element_line(colour="black", size=0.3), # axis y line only
@@ -137,7 +141,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
           axis.ticks.y = element_line(colour="black", size=0.3),
           legend.position="bottom", legend.box = "horizontal",
           strip.background=element_blank(),
-          panel.background = element_rect(fill="white"))
+          panel.background = element_rect(fill="white")) 
   
   # Save PDF
   ggsave(filename=file.path(output_dir_figures, "hist_del_sub_ins_perc.pdf"), 
@@ -146,9 +150,9 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
          width=25, 
          height=5*length(sample_columns), 
          units = "cm") 
-  write.csv(del_sub_ins_df_data_to_plot_sum_perc,  
-            file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"),
-            row.names = FALSE, quote = FALSE)
+  # write.csv(del_sub_ins_df_data_to_plot_sum_perc,  
+  #           file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"),
+  #           row.names = FALSE, quote = FALSE)
   
   
   REvoBC_object$alignment$mutations_df = del_sub_ins_df
