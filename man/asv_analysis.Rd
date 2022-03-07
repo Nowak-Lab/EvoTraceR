@@ -40,7 +40,7 @@ course of the experiment. Default is "^TCTAC",}
 course of the experiment. Default is "CCCGTGGATC$",}
 
 \item{flanking_filtering}{Which among the flaning regions to use to filter out contaminated sequences.
-Must be one of c('left', 'right', 'both'), default is 'both'}
+Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{ref_cut_sites}{Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),}
 

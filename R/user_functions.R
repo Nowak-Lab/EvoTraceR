@@ -221,7 +221,7 @@ initialize_REvoBC = function(output_dir,
 #' @param ref_flank_right String indicating the first nucleotides of the reference sequence that never mutate over the
 #' course of the experiment. Default is "CCCGTGGATC$",
 #' @param flanking_filtering Which among the flaning regions to use to filter out contaminated sequences.
-#' Must be one of c('left', 'right', 'both'), default is 'both'
+#' Must be one of c('left', 'right', 'both', 'either'), default is 'both'
 #' @param ref_cut_sites Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
 #' @param ref_border_sites c(26, 52, 78, 104, 130, 156, 182, 208, 234).
 #' @param output_figures (Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
@@ -386,8 +386,11 @@ asv_analysis = function(REvoBC_object,
     seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10)) # the same for different barcodes: 1.0 - site less affected
 
+  } else if (flanking_filtering == 'either'){
+    seqtab_df <- dplyr::filter(seqtab_df,
+                               stringr::str_detect(string = seq, pattern = !!RD1_10) | stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less a
   } else {
-    stop('Flanking filtering must be one of "left", "right" or "both". Exiting.')
+    stop('Flanking filtering must be one of "left", "right", "both" or "either". Exiting.')
   }
 
   seqtab_df_original$condition = 'removed'

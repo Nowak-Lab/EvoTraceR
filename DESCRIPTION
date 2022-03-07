@@ -1,5 +1,5 @@
 Package: REvoBC
-Version: 0.99.17
+Version: 0.99.18
 Date: 2022-01-04
 Title: REvoBC
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
