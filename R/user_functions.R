@@ -461,10 +461,12 @@ asv_analysis = function(REvoBC_object,
   REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
-  norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                           REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+  norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
+                                                           REvoBC_object$dada2$track[sample_columns,'input'], '/') 
   
-  norm_seqtab_df_clean_asv[sample_columns] <- sapply(norm_seqtab_df_clean_asv[sample_columns],as.integer)
+  norm_seqtab_df_clean_asv[sample_columns] <- norm_seqtab_df_clean_asv[sample_columns]
+  
+  REvoBC_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
   
   utils::write.csv(norm_seqtab_df_clean_asv, 
                    file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
