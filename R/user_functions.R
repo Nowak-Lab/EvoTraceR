@@ -462,7 +462,7 @@ asv_analysis = function(REvoBC_object,
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                               evo_obj$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+                                                           REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
   
   norm_seqtab_df_clean_asv[sample_columns] <- sapply(norm_seqtab_df_clean_asv[sample_columns],as.integer)
   
