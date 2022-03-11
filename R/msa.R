@@ -1,6 +1,10 @@
 # Input: "dnastringset_msa.fasta" -> "alignment_tidy_ref_alt_final.csv"   ------------------------------------------------------
 # Output 1: "alignment_tidy_ref_alt_final.csv" -> "del_sub_ins_df.csv" ------------------------------------------------------
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
+
+# temp
+REvoBC_object <- EvoTraceR_object 
+
 count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figures) {
   
   alignment_tidy_ref_alt = REvoBC_object$alignment$asv_barcode_alignment
@@ -64,8 +68,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     arrange(match(sample, sample_columns))
   
   
-  ################
-  ### Plot CNA Frequency based on "del_sub_ins_df" ------------------------------------------------------
+### Plot CNA Frequency based on "del_sub_ins_df" ------------------------------------------------------
   # summarize stat for "del" and "sub" -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
   del_sub_df_data_to_plot_sum_perc <-
     del_sub_ins_df %>% ungroup() %>%
@@ -83,44 +86,44 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     dplyr::summarise(sum_perc = sum(perc_in_sample), .groups = 'drop')
   # bind "ins" after recalculation with "del_sub"
   del_sub_ins_df_data_to_plot_sum_perc <- rbind(del_sub_df_data_to_plot_sum_perc, ins_df_data_to_plot_sum_perc)
-
-  # # Save File
-  utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc,
-            file.path(output_dir_files, "mutations_frequency.csv"),
-            row.names = FALSE)
+  # save file
+  utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_files, "mutations_frequency.csv"), row.names = FALSE)
   
-  # Position of PAM in guides
+  # position of PAM in guides
   pam_pos <- REvoBC_object$reference$ref_cut_sites
-  bc_len = nchar(REvoBC_object$reference$ref_seq)
-  # plot
-  alt_count_bc <-
-    ggplot(data= del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt, group=sample)) +
-    # annotate("rect", xmin=1, xmax=26, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    # annotate("rect", xmin=52, xmax=78, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    # annotate("rect", xmin=104, xmax=130, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    # annotate("rect", xmin=156, xmax=182, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
-    # annotate("rect", xmin=208, xmax=234, ymin=-Inf, max=Inf, fill="black", alpha=.1) +
+  
+  # length of barcode
+  bc_len <- nchar(REvoBC_object$reference$ref_seq)
+
+### histogram graph ###  
+  # annotating rectangles for target sites = 26 bp -> 20x bp (target site) + 3x bp (PAM) + 3x bp (spacer)
+  alt_count_annot_rect <-
+    ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt, group=sample))
+  # add rectangles
+    annot_rect <- REvoBC_object$reference$ref_border_sites
+  for (i in seq(1, length(annot_rect), by = 2)) {
+    alt_count_annot_rect = alt_count_annot_rect + annotate("rect", xmin=annot_rect[i], xmax=annot_rect[i+1], ymin=-Inf, max=Inf, fill="black", alpha=0.1) 
+  }
+  # plot rest of histogram
+    alt_count_bc <-
+      alt_count_annot_rect + # add rectangles to graph
     # geom bar
-    geom_bar(stat="identity", width=1.5, size=1, alpha=1) +
-    scale_fill_manual(values=alpha(c("sub"="#329932", "ins" = "#FF0033", "ins_smwr" = "pink", "del" = "#3366FF", "wt" = "#f2f2f2"), 1), 
-                      breaks=c("wt", "del", "sub", "ins", "ins_smwr")) +
-    scale_x_continuous(labels=scales::comma, breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), limits=c(-4, bc_len + 5), expand = c(0.001, 0.001)) +
-    scale_y_continuous(labels=function(x) paste0(x, "%"),
-                       limits=c(0, 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc))) +
-                       #expand = c(0, 0)) +
+    geom_bar(stat="identity", width=1.5) + #, size=1
+    scale_fill_manual(values=c("sub"="#329932", "ins" = "#FF0033", "del" = "#3366FF", "wt" = "#f2f2f2"), 
+                        breaks=c("wt", "del", "sub", "ins")) +
+    scale_x_continuous(labels=scales::comma, 
+                       breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), 
+                       limits=c(-4, bc_len + 5), 
+                       expand = c(0.001, 0.001)) +
+     scale_y_continuous(labels=function(x) paste0(x, "%"),
+                       limits=c(0, plyr::round_any(max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc), 10, f = ceiling)), # automatic
+                       breaks=seq(from=0, to=plyr::round_any(max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc), 10, f = ceiling), by=10),
+                       #breaks=c(0, 25, 50, 75, 100), # manual 
+                       expand = c(0, 0)) +
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
-    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) 
-  
-  annot_lines = REvoBC_object$reference$ref_border_sites
-  for (i in seq(1, length(annot_lines), by = 2)) {
-    alt_count_bc = alt_count_bc + annotate("rect", xmin=annot_lines[i], 
-                                           xmax=annot_lines[i+1], ymin=-Inf, max=Inf, 
-                                           #ymax = 3+max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc),
-                                           fill="black", alpha=.1)
-  }
-  
-  # Add Theme
+    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE)
+  # add theme
   alt_count_bc <- 
     alt_count_bc + 
     #theme_bw() +
@@ -130,9 +133,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
           axis.line.x = element_line(colour="black", size=0.3), # axis x line only
           axis.title = element_blank(), # disable panel border,
           panel.border = element_blank(), # disable panel border
-          #panel.grid.major.y = element_blank(), # y grid line 
           panel.grid.major = element_blank(), # disable lines in grid on X-axis
-          #panel.grid.minor.x = element_blank(), # disable lines in grid on X-axis
           panel.grid.minor = element_blank(), # disable lines in grid on X-axis
           axis.text.y = element_text(size=6, angle=0, hjust=1, vjust=0.5),
           axis.text.x = element_text(size=6, angle=0, hjust=0.5, vjust=0.5),
@@ -143,17 +144,12 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
           panel.background = element_rect(fill="white")) 
   
   # Save PDF
-  ggsave(filename=file.path(output_dir_figures, "hist_del_sub_ins_perc.pdf"), 
-         plot=alt_count_bc, 
-         #device=grDevices::cairo_pdf, 
-         width=25, 
-         height=5*length(sample_columns), 
-         units = "cm") 
-  # write.csv(del_sub_ins_df_data_to_plot_sum_perc,  
-  #           file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"),
-  #           row.names = FALSE, quote = FALSE)
-  
-  
+  #ggsave(filename=file.path(output_dir_figures, "hist_del_sub_ins_perc.pdf"), plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm")
+  # temp
+  ggsave(filename="~/Desktop/hist_del_sub_ins_perc.pdf", plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
+
+  # write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), row.names = FALSE, quote = FALSE)
+
   REvoBC_object$alignment$mutations_df = del_sub_ins_df
   return(REvoBC_object)
   
