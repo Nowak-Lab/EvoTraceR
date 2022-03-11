@@ -85,6 +85,14 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     dplyr::summarise(sum_perc = sum(perc_in_sample), .groups = 'drop')
   # bind "ins" after recalculation with "del_sub"
   del_sub_ins_df_data_to_plot_sum_perc <- rbind(del_sub_df_data_to_plot_sum_perc, ins_df_data_to_plot_sum_perc)
+  
+  # add full names for labeling of plots
+  del_sub_ins_df_data_to_plot_sum_perc <-
+    del_sub_ins_df_data_to_plot_sum_perc %>%
+    mutate(alt_long_names = ifelse(alt == "ins", "Insertions", 
+                                   ifelse(alt == "del", "Deletions", 
+                                          ifelse(alt == "sub", "Substitutions", "No Edits"))))
+  
   # save file
   utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_files, "mutations_frequency.csv"), row.names = FALSE)
   
@@ -95,18 +103,9 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   bc_len <- nchar(REvoBC_object$reference$ref_seq)
 
 ### histogram graph ###  
-  del_sub_ins_df_data_to_plot_sum_perc <-
-    del_sub_ins_df_data_to_plot_sum_perc %>%
-    mutate(alt_long_names = ifelse(alt == "ins", "Insertions", 
-                                   ifelse(alt == "del", "Deletions", 
-                                          ifelse(alt == "sub", "Substitutions",
-                                                 ifelse(alt == "wt", "No Edits")))))
-      
-  #alt_names <- c("sub"="Substitutions", "ins" = "Insertions", "del" = "Deletions", "wt" = "No Edits")
-  
   # annotating rectangles for target sites = 26 bp -> 20x bp (target site) + 3x bp (PAM) + 3x bp (spacer)
   alt_count_annot_rect <-
-    ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt, group=sample))
+    ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt_long_names, group=sample))
   # add rectangles
     annot_rect <- REvoBC_object$reference$ref_border_sites
   for (i in seq(1, length(annot_rect), by = 2)) {
@@ -117,10 +116,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
       alt_count_annot_rect + # add earlier prepared rectangles to graph
     # geom bar
     geom_bar(stat="identity", width=1.5) + #, size=1
-    scale_fill_manual(values=c("sub"="#329932", "ins" = "#FF0033", "del" = "#3366FF", "wt" = "#f2f2f2"), 
-                      breaks=c("wt", "del", "sub", "ins"),
-                      labels=alt_names) +
-      
+    scale_fill_manual(values=c("Substitutions"="#329932", "Insertions" = "#FF0033", "Deletions" = "#3366FF"), 
+                      breaks=c("Deletions", "Substitutions", "Insertions")) +
     scale_x_continuous(labels=scales::comma, 
                        breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), 
                        limits=c(-4, bc_len + 5), 
@@ -132,7 +129,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
                        expand = c(0, 0)) +
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
-    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) +
+    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt_long_names), repeat.tick.labels = TRUE) +
     labs(y = "Editing Frequency", x = "Position of Nucleotides", fill = "Type of Editing")
     
   # add theme
