@@ -53,7 +53,6 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   del_sub_ins_df <- 
     rbind(del_sub_df, ins_df) #%>%
     
-  
   sample_columns = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
   
   sample_order = sort(sample_columns)
@@ -96,6 +95,15 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   bc_len <- nchar(REvoBC_object$reference$ref_seq)
 
 ### histogram graph ###  
+  del_sub_ins_df_data_to_plot_sum_perc <-
+    del_sub_ins_df_data_to_plot_sum_perc %>%
+    mutate(alt_long_names = ifelse(alt == "ins", "Insertions", 
+                                   ifelse(alt == "del", "Deletions", 
+                                          ifelse(alt == "sub", "Substitutions",
+                                                 ifelse(alt == "wt", "No Edits")))))
+      
+  #alt_names <- c("sub"="Substitutions", "ins" = "Insertions", "del" = "Deletions", "wt" = "No Edits")
+  
   # annotating rectangles for target sites = 26 bp -> 20x bp (target site) + 3x bp (PAM) + 3x bp (spacer)
   alt_count_annot_rect <-
     ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt, group=sample))
@@ -106,11 +114,13 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   }
   # plot rest of histogram
     alt_count_bc <-
-      alt_count_annot_rect + # add rectangles to graph
+      alt_count_annot_rect + # add earlier prepared rectangles to graph
     # geom bar
     geom_bar(stat="identity", width=1.5) + #, size=1
     scale_fill_manual(values=c("sub"="#329932", "ins" = "#FF0033", "del" = "#3366FF", "wt" = "#f2f2f2"), 
-                        breaks=c("wt", "del", "sub", "ins")) +
+                      breaks=c("wt", "del", "sub", "ins"),
+                      labels=alt_names) +
+      
     scale_x_continuous(labels=scales::comma, 
                        breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), 
                        limits=c(-4, bc_len + 5), 
@@ -122,21 +132,23 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
                        expand = c(0, 0)) +
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
-    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE)
+    lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt), repeat.tick.labels = TRUE) +
+    labs(y = "Editing Frequency", x = "Position of Nucleotides", fill = "Type of Editing")
+    
   # add theme
   alt_count_bc <- 
     alt_count_bc + 
     #theme_bw() +
-    theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
+    theme(plot.margin = unit(c(1, 1, 1, 1), "mm"),
           axis.ticks = element_blank(), # disable ticks lines
           axis.line.y = element_line(colour="black", size=0.3), # axis y line only
           axis.line.x = element_line(colour="black", size=0.3), # axis x line only
-          axis.title = element_blank(), # disable panel border,
+          #axis.title = element_blank(), # disable panel border,
           panel.border = element_blank(), # disable panel border
           panel.grid.major = element_blank(), # disable lines in grid on X-axis
           panel.grid.minor = element_blank(), # disable lines in grid on X-axis
-          axis.text.y = element_text(size=6, angle=0, hjust=1, vjust=0.5),
-          axis.text.x = element_text(size=6, angle=0, hjust=0.5, vjust=0.5),
+          axis.text.y = element_text(size=8, angle=0, hjust=1, vjust=0.5),
+          axis.text.x = element_text(size=8, angle=0, hjust=0.5, vjust=0.5),
           axis.ticks.x = element_line(colour="black", size=0.3),
           axis.ticks.y = element_line(colour="black", size=0.3),
           legend.position="bottom", legend.box = "horizontal",
