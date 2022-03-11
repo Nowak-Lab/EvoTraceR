@@ -67,7 +67,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     arrange(match(sample, sample_columns))
   
   
-### Plot CNA Frequency based on "del_sub_ins_df" ------------------------------------------------------
+# Plot CNA Frequency based on "del_sub_ins_df"
   # summarize stat for "del" and "sub" -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
   del_sub_df_data_to_plot_sum_perc <-
     del_sub_ins_df %>% ungroup() %>%
@@ -92,17 +92,15 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     mutate(alt_long_names = ifelse(alt == "ins", "Insertions", 
                                    ifelse(alt == "del", "Deletions", 
                                           ifelse(alt == "sub", "Substitutions", "No Edits"))))
-  
   # save file
   utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_files, "mutations_frequency.csv"), row.names = FALSE)
   
+# Histogram Graph ------------------------------------------------------
+# auxiliary data for plotting histogram graph   
   # position of PAM in guides
   pam_pos <- REvoBC_object$reference$ref_cut_sites
-  
   # length of barcode
   bc_len <- nchar(REvoBC_object$reference$ref_seq)
-
-### histogram graph ###  
   # annotating rectangles for target sites = 26 bp -> 20x bp (target site) + 3x bp (PAM) + 3x bp (spacer)
   alt_count_annot_rect <-
     ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt_long_names, group=sample))
@@ -111,13 +109,14 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   for (i in seq(1, length(annot_rect), by = 2)) {
     alt_count_annot_rect = alt_count_annot_rect + annotate("rect", xmin=annot_rect[i], xmax=annot_rect[i+1], ymin=-Inf, max=Inf, fill="black", alpha=0.1) 
   }
-  # plot rest of histogram
+
+# plot rest of histogram
     alt_count_bc <-
       alt_count_annot_rect + # add earlier prepared rectangles to graph
     # geom bar
     geom_bar(stat="identity", width=1.5) + #, size=1
     scale_fill_manual(values=c("Substitutions"="#329932", "Insertions" = "#FF0033", "Deletions" = "#3366FF"), 
-                      breaks=c("Deletions", "Substitutions", "Insertions")) +
+                      breaks=c("Deletions", "Insertions", "Substitutions")) +
     scale_x_continuous(labels=scales::comma, 
                        breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), 
                        limits=c(-4, bc_len + 5), 
@@ -135,12 +134,10 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   # add theme
   alt_count_bc <- 
     alt_count_bc + 
-    #theme_bw() +
     theme(plot.margin = unit(c(1, 1, 1, 1), "mm"),
           axis.ticks = element_blank(), # disable ticks lines
           axis.line.y = element_line(colour="black", size=0.3), # axis y line only
           axis.line.x = element_line(colour="black", size=0.3), # axis x line only
-          #axis.title = element_blank(), # disable panel border,
           panel.border = element_blank(), # disable panel border
           panel.grid.major = element_blank(), # disable lines in grid on X-axis
           panel.grid.minor = element_blank(), # disable lines in grid on X-axis
@@ -149,14 +146,16 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
           axis.ticks.x = element_line(colour="black", size=0.3),
           axis.ticks.y = element_line(colour="black", size=0.3),
           legend.position="bottom", legend.box = "horizontal",
-          strip.background=element_blank(),
+          strip.background=element_blank(), 
+          strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-7.5,-5,-5,-5),
           panel.background = element_rect(fill="white")) 
   
   # Save PDF
   #ggsave(filename=file.path(output_dir_figures, "hist_del_sub_ins_perc.pdf"), plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm")
   # temp
   ggsave(filename="~/Desktop/hist_del_sub_ins_perc.pdf", plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
-
   # write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), row.names = FALSE, quote = FALSE)
 
   REvoBC_object$alignment$mutations_df = del_sub_ins_df
