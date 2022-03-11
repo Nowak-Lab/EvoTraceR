@@ -89,7 +89,6 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
             file.path(output_dir_files, "mutations_frequency.csv"),
             row.names = FALSE)
   
-  
   # Position of PAM in guides
   pam_pos <- REvoBC_object$reference$ref_cut_sites
   bc_len = nchar(REvoBC_object$reference$ref_seq)
