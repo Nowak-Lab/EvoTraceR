@@ -2,8 +2,6 @@
 # Output 1: "alignment_tidy_ref_alt_final.csv" -> "del_sub_ins_df.csv" ------------------------------------------------------
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
 
-# temp
-REvoBC_object <- EvoTraceR_object 
 
 count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figures) {
   
