@@ -153,7 +153,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   # Save PDF
   #ggsave(filename=file.path(output_dir_figures, "hist_del_sub_ins_perc.pdf"), plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm")
   # temp
-  ggsave(filename=file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
+  ggsave(filename=file.path(output_dir_figures, "/hist_del_sub_ins_data.pdf"), 
+         plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
   # write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), row.names = FALSE, quote = FALSE)
 
   REvoBC_object$alignment$mutations_df = del_sub_ins_df
