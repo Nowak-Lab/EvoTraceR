@@ -390,7 +390,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
          #device=grDevices::cairo_pdf, 
          width=4*ncol(mut_df_wide), 
          height=5*nrow(mut_df_wide), 
-         units = 'mm')
+         units = 'mm', limitsize = F)
   
   p = pheatmap::pheatmap(smoothed_df_wide, color = c("#042e61", "#e29892"), fontsize = 6)
   ggsave(filename=file.path(output_dir_figures, "smoothed_deletions_insertions_heatmap.pdf"), 
@@ -398,7 +398,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
          #device=grDevices::cairo_pdf, 
          width=4*ncol(smoothed_df_wide), 
          height=5*nrow(smoothed_df_wide), 
-         units = 'mm')
+         units = 'mm', limitsize = F)
 
   # assign BC10 variant (for plotting purposes)
   
