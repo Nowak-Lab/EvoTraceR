@@ -851,6 +851,10 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
+  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
+  REvoBC_object$plot_summary$df_to_plot_final = df_to_plot_final
+  
   # tip_colors <-
   #   df_to_plot_perf_match %>%
   #   dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
@@ -895,10 +899,11 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   #msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
   
   # Save PDF
-  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  # output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
          plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
-  return(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid)
+  REvoBC_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
+  return(REvoBC_object)
 }
