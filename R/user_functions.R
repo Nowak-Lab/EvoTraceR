@@ -675,8 +675,8 @@ analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
 #' @import lemon
 infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'smooth_del') {
   
-  if (! (mutations_use %in% c('smooth_del', 'smooth_del_ins', 'sub_smooth_del_ins', 'sub_del_ins'))) {
-    cli::cli_alert_danger("Error, muations use must be one of 'smooth_del', 'smooth_del_ins', 'sub_smooth_del_ins', 'sub_del_ins'")
+  if (! (mutations_use %in% c('smooth_del', 'smooth_del_ins', 'del_ins', 'del'))) {
+    cli::cli_alert_danger("Error, muations use must be one of 'smooth_del', 'smooth_del_ins', 'del_ins', 'del'")
     stop('Exiting')
   }
   REvoBC_object$phylogeny$mutations_in_phylogeny = mutations_use
@@ -684,7 +684,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
-  if (mutations_use == 'smooth_del') {
+  if (mutations_use == 'smooth_del') { 
     asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
       dplyr::select(starts_with('del_')) %>%
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
@@ -694,10 +694,15 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
       dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
-  } else if (mutations_use == 'sub_smooth_del_ins') {
-    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix
+  } else if (mutations_use == 'del_ins') { #del- del_ins - smooth_del - smooth_del_ins
+    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix %>%
+      dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
+      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
+    
   } else {
-    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix 
+    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix %>% 
+      dplyr::select(starts_with('del_')) %>%
+      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
   }
   
   # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
@@ -852,6 +857,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  
   write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
   REvoBC_object$plot_summary$df_to_plot_final = df_to_plot_final
   
