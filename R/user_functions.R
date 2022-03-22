@@ -377,22 +377,22 @@ asv_analysis = function(REvoBC_object,
   if (flanking_filtering == 'both') {
     seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10) & stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-
+    
   } else if (flanking_filtering == 'right') {
     seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-
+    
   } else if(flanking_filtering == 'left') {
     seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10)) # the same for different barcodes: 1.0 - site less affected
-
+    
   } else if (flanking_filtering == 'either'){
     seqtab_df <- dplyr::filter(seqtab_df,
                                stringr::str_detect(string = seq, pattern = !!RD1_10) | stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less a
   } else {
     stop('Flanking filtering must be one of "left", "right", "both" or "either". Exiting.')
   }
-
+  
   seqtab_df_original$condition = 'removed'
   seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
   seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample_columns])
@@ -457,12 +457,12 @@ asv_analysis = function(REvoBC_object,
   # save csv with final ASvs
   utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
-
+  
   REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                           REvoBC_object$dada2$track[sample_columns,'input'], '/') 
+                                                    REvoBC_object$dada2$track[sample_columns,'input'], '/') 
   
   norm_seqtab_df_clean_asv[sample_columns] <- norm_seqtab_df_clean_asv[sample_columns]
   
@@ -708,7 +708,8 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
   # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
   dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
-  asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j) == (ncol(dist_j) - 1)], REvoBC_object$reference$ref_name)
+  asv_toRemove_new = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
+                             REvoBC_object$reference$ref_name)
   
   asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
   asv_bin_var = asv_bin_var[,colSums(asv_bin_var) > 0]
@@ -773,51 +774,51 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
   
   tree_mp_df = REvoBC_object$phylogeny$tree
-  if (is_smoothed) {
-    wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
-    wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
-    if (length(wt_asv) > 0) {
-      # Need to re-insert the ASVs without any smoothed mutation for the visualization
-      barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
-      first_tip = tree_mp_df %>% filter(y == 1)
-      root_node = tree_mp_df %>% filter(x == 0) %>% pull(node)
-      
-      # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
-      # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
-      if (nrow(barcode_tip) > 0){
-        if (barcode_tip$y != 1) {
-          current_barcode_y = barcode_tip$y
-          tree_mp_df = tree_mp_df %>% 
-            dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
-            dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-          #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
-          #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-          # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
-          # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
-          
-        }
+  #if (is_smoothed) {
+  wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
+  wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
+  if (length(wt_asv) > 0) {
+    # Need to re-insert the ASVs without any mutations in common with the others, which are not used during phylogeny reconstruction
+    barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+    first_tip = tree_mp_df %>% filter(y == 1)
+    root_node = tree_mp_df %>% filter(x == 0) %>% pull(node)
+    
+    # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
+    # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
+    if (nrow(barcode_tip) > 0){
+      if (barcode_tip$y != 1) {
+        current_barcode_y = barcode_tip$y
+        tree_mp_df = tree_mp_df %>% 
+          dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
+          dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
+        #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+        #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
+        # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+        # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
         
-      } 
-      barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
-      vary = 'y'
-      if (REvoBC_object$reference$ref_name %in% wt_asv) {
-        new_y = c(1:(length(wt_asv)))
-      } else {
-        new_y = c(2:(1+length(wt_asv)))
       }
-      tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$reference$ref_name | is.na(label)) %>%  
-        dplyr::mutate(y = y + length(wt_asv)) %>%
-        add_row(parent = root_node, 
-                node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
-                label = wt_asv,
-                isTip = TRUE, 
-                x = 3, #first_tip$x, 
-                #branch.length = 2,
-                y = new_y,
-                branch = first_tip$branch, angle = first_tip$angle) %>% 
-        add_row(barcode_tip)
+      
+    } 
+    barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+    vary = 'y'
+    if (REvoBC_object$reference$ref_name %in% wt_asv) {
+      new_y = c(1:(length(wt_asv)))
+    } else {
+      new_y = c(2:(1+length(wt_asv)))
     }
+    tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$reference$ref_name | is.na(label)) %>%  
+      dplyr::mutate(y = y + length(wt_asv)) %>%
+      add_row(parent = root_node, 
+              node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
+              label = wt_asv,
+              isTip = TRUE, 
+              x = 3, #first_tip$x, 
+              #branch.length = 2,
+              y = new_y,
+              branch = first_tip$branch, angle = first_tip$angle) %>% 
+      add_row(barcode_tip)
   }
+  #}
   
   
   # merge with df_to_plot_perf_match
@@ -826,7 +827,6 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     if (sample_order != 'alphabetical') {
       stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
     }
-    #df_to_plot_perf_match = dplyr::arrange(df_to_plot_perf_match, sample, asv_names)
     sample_order = sort(unique(df_to_plot_perf_match$sample))
     if ('PRL' %in% sample_order)
       sample_order = c('PRL', setdiff(sample_order, 'PRL'))
@@ -839,7 +839,6 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     }
     
     df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
-    #= dplyr::arrange(df_to_plot_perf_match, match(sample, sample_order), asv_names)
   }
   
   df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
@@ -892,6 +891,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   if (is_smoothed) {
     smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
     msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
+  } else {
+    msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
   }
   
   msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
