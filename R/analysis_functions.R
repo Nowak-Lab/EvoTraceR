@@ -8,7 +8,7 @@
 # asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
 asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figure_dir, nmbc, output_dir) {
-  seqtab_df_clean_asv = REvoBC_object$clean_asv_dataframe
+  seqtab_df_clean_asv = REvoBC_object$clean_asv_dataframe_countnorm
   
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
@@ -152,7 +152,7 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   REvoBC_object$statistics$asv_persample_detection = mx_freq_bin
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
-                                             y=dplyr::select(REvoBC_object$clean_asv_dataframe, seq, asv_names), 
+                                             y=dplyr::select(REvoBC_object$clean_asv_dataframe_countnorm, seq, asv_names), 
                                              by="asv_names") %>%
     add_row(data.frame(asv_names = REvoBC_object$reference$ref_name, 
                        seq = REvoBC_object$reference$ref_seq, 
