@@ -854,9 +854,14 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
+  df_to_plot_final = tibble(merge(df_to_plot_final, 
+                                  REvoBC_object$cleaned_deletions_insertions$coordinate_matrix,
+                                  by.x="asv_names", by.y="asv_names")) %>% select(-c(spanned_cutSites))
+  
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
   if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}
+  
   
   write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
   REvoBC_object$plot_summary$df_to_plot_final = df_to_plot_final
