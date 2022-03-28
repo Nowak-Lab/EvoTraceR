@@ -19,19 +19,16 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   
   ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
   set.seed(1980)
-  # if (class(tree_mp_all_rmix) != 'phylo') {
-  #   tree_mp <- phytools::mrp.supertree(trees=tree_mp_all_rmix, 
-  #                                      start="NJ", 
-  #                                      method = "optim.parsimony", 
-  #                                      root=TRUE)
-  # } else {
-  #   tree_mp = tree_mp_all_rmix
-  # }
+  if (class(tree_mp_all_rmix) != 'phylo') {
+    tree_mp <- tree_mp_all_rmix[[1]]
+  } else {
+    tree_mp = tree_mp_all_rmix
+  }
 
   # Option 2: Choose What Tree Number to Plot (Arbitrary Choice) -> need to argue why this one, the best score as 1?
   #tree_mp <- tree_mp_all[100] # plot single tree -> #1 chosen arbitrarily
   
-  tree_mp = tree_mp_all_rmix[[1]]
+  #tree_mp = tree_mp_all_rmix[[1]]
   ### Fortify tree to data frame
   tree_mp_df <- ggtree::fortify(tree_mp)
 

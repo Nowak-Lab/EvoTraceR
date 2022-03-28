@@ -4,11 +4,7 @@
 \alias{infer_phylogeny}
 \title{infer_phylogeny}
 \usage{
-infer_phylogeny(
-  REvoBC_object,
-  phylip_package_path,
-  mutations_use = "smooth_del"
-)
+infer_phylogeny(REvoBC_object, phylip_package_path, mutations_use = "del_ins")
 }
 \arguments{
 \item{REvoBC_object}{(Required)}

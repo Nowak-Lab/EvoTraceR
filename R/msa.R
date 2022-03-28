@@ -286,7 +286,7 @@ align_asv = function(REvoBC_object,
   
 }
 # Create the binary mutations matrix
-binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, cleaning_window = 5) {
+binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, cleaning_window = c(3,3)) {
   
   
   # Start from the dataframe that contains a line for each position in each ASV.

@@ -609,7 +609,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-analyse_mutations = function(REvoBC_object, cleaning_window = 5) {
+analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
   
   output_dir_files = file.path(REvoBC_object$output_directory, "alignment_files")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
@@ -674,7 +674,7 @@ analyse_mutations = function(REvoBC_object, cleaning_window = 5) {
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
-infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'smooth_del') {
+infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'del_ins') {
   
   if (! (mutations_use %in% c('del', 'del_ins'))) {
     cli::cli_alert_danger("Error, muations use must be one of 'del_ins', 'del'")

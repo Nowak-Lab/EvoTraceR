@@ -4,7 +4,7 @@
 \alias{analyse_mutations}
 \title{analyse_mutations}
 \usage{
-analyse_mutations(REvoBC_object, cleaning_window = 5)
+analyse_mutations(REvoBC_object, cleaning_window = c(3, 3))
 }
 \arguments{
 \item{REvoBC_object}{REvoBC object on which we want to perform msa.}
