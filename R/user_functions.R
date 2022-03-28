@@ -464,6 +464,9 @@ asv_analysis = function(REvoBC_object,
   norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
                                                     REvoBC_object$dada2$track[sample_columns,'input'], '/') 
   
+  # norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
+  #                                                          REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+  
   norm_seqtab_df_clean_asv[sample_columns] <- norm_seqtab_df_clean_asv[sample_columns]
   
   REvoBC_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
@@ -554,11 +557,10 @@ asv_analysis = function(REvoBC_object,
 #' revo_msa = analyse_mutations(revo_analyzed)
 #' 
 #' @param REvoBC_object REvoBC object on which we want to perform msa.
-#' @param smoothing_window (Optional) Deafult is 5. Number of nucleotides used for
-#' assigning deletions and insertions to the closest orange line (i.e., smoothing). Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
-#' is less distant then \code{smoothing_window} nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
-#' cutting site on its right if that is less than \code{smoothing_window} nucleotides distant, otherwise it is assigned to the cutting site
-#' on its left.
+#' @param cleaning_window (Optional) Default is c(3,3). After identifying all mutations in each sequence, we discard the ones that are not biologically meaningful. 
+#' In order to perform this step, we assume that both the beginning and end of each indel should be close to one of the cut sites. Thus, we perfom the following: for each
+#' indel, we extend its start to the left by cleaning_window[1] positions and its end by cleaning_window[2] positions. If the extended indel doesn't span any of the cut sites, than it is removed.
+#' The result of this cleaning procedure are stored in REvoBC_object$cleaned_deletions_insertions (See output for more details.)
 #' 
 #' @return REvoBC object with the field \code{alignment}, updated with the following fields:
 #' \itemize{
@@ -568,12 +570,12 @@ asv_analysis = function(REvoBC_object,
 #' \item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
 #' This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 #' }. 
-#' It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
-#' all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
-#' The following dataframes are stored in the field \code{smoothed deletions}:
+#' It also creates a new field in the REvoBC object called \code{cleaned_deletions_insertions}, which contains the following information for
+#' all the deletions identified in the ASVs, whose start and end site have been cleaned using the known cutting sites.
+#' The following dataframes are stored in the field \code{cleaned deletions}:
 #' \itemize{
 #' \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
-#' \item coordinate_matrix: matrix which stores all the information regarding the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+#' \item coordinate_matrix: matrix which stores all the information regarding the cleaned deletions. Information include start and end and number of cut sites spanned by the indel.
 #' }
 #' In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
 #' \itemize{
@@ -607,7 +609,7 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
+analyse_mutations = function(REvoBC_object, cleaning_window = 5) {
   
   output_dir_files = file.path(REvoBC_object$output_directory, "alignment_files")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
@@ -627,7 +629,7 @@ analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
   REvoBC_object = binary_mutation_matrix(REvoBC_object, 
                                          output_dir_files, 
                                          output_dir_figures,
-                                         smoothing_window)
+                                         cleaning_window)
   
   return(REvoBC_object)
   
@@ -652,10 +654,9 @@ analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
 #' For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
 #' then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.
 #' @param mutations_use (optional). Default = 'smooth_del' A string indicating what type of mutations to use for phylogeny reconstruction.
-#' Can be one of c('smooth_del', 'smooth_del_ins', sub_smooth_del_ins, sub_del_ins). The first
-#' corresponds to using only smoothed deletions. The second refers to the case where smoothed deletions
-#' and insertios are considered. The third considers the smoothed deletions/insertions and the substitutions. 
-#' Finally the fourth uses all non-smoothed mutations.
+#' Can be one of c('del', 'del_ins'). The first
+#' corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
+#' and insertios are considered.
 #' 
 #' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
 #' 
@@ -675,8 +676,8 @@ analyse_mutations = function(REvoBC_object, smoothing_window = 5) {
 #' @import lemon
 infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'smooth_del') {
   
-  if (! (mutations_use %in% c('smooth_del', 'smooth_del_ins', 'del_ins', 'del'))) {
-    cli::cli_alert_danger("Error, muations use must be one of 'smooth_del', 'smooth_del_ins', 'del_ins', 'del'")
+  if (! (mutations_use %in% c('del', 'del_ins'))) {
+    cli::cli_alert_danger("Error, muations use must be one of 'del_ins', 'del'")
     stop('Exiting')
   }
   REvoBC_object$phylogeny$mutations_in_phylogeny = mutations_use
@@ -685,12 +686,12 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
   if (mutations_use == 'smooth_del') { 
-    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>% 
+    asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix %>% 
       dplyr::select(starts_with('del_')) %>%
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
   } else if (mutations_use == 'smooth_del_ins'){
-    asv_bin_var = REvoBC_object$smoothed_deletions_insertions$binary_matrix %>%
+    asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix %>%
       dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
@@ -708,7 +709,7 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
   # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
   dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
-  asv_toRemove_new = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
+  asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
                              REvoBC_object$reference$ref_name)
   
   asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
@@ -768,13 +769,11 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
 #' @importFrom aplot insert_right insert_left
 plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   mut_in_phyl = REvoBC_object$phylogeny$mutations_in_phylogeny
-  is_smoothed = grepl(pattern = 'smooth', x = mut_in_phyl)
-  
   
   df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
   
   tree_mp_df = REvoBC_object$phylogeny$tree
-  #if (is_smoothed) {
+
   wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
   wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
   if (length(wt_asv) > 0) {
@@ -857,26 +856,18 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
+  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}
+  
   write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
   REvoBC_object$plot_summary$df_to_plot_final = df_to_plot_final
-  
-  # tip_colors <-
-  #   df_to_plot_perf_match %>%
-  #   dplyr::filter(perc_fold_to_max == 100, !str_detect(asv_names, "NMBC")) %>% # find max in organ/day
-  #   dplyr::select(asv_names, sample) %>%
-  #   add_row(data.frame(asv_names=REvoBC_object$reference$ref_name, sample="PRL"))
-  # colnames(tip_colors) <- c("asv_names", "sample_max_perc")
-  
-  # tip_colors = merge(tip_colors, REvoBC_object$phylogeny$phylogeny_clustered, by = 'asv_names') %>%
-  #   mutate(cluster = factor(cluster))
   
   sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
   
   ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns)
   
-  if (is_smoothed)
-    msa_cna_bc_smoothed = plot_msa(REvoBC_object, smoothed_deletions = mut_in_phyl)
-  msa_cna_bc = plot_msa(REvoBC_object, smoothed_deletions = F)
+  # if (is_smoothed)
+  msa_cna_bc_smoothed = plot_msa(REvoBC_object, cleaned_deletions = mut_in_phyl)
+  msa_cna_bc = plot_msa(REvoBC_object, cleaned_deletions = FALSE)
   
   bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
   
@@ -888,12 +879,12 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
-  if (is_smoothed) {
-    smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
-    msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
-  } else {
-    msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
-  }
+ # if (is_smoothed) {
+  smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
+  msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
+  # } else {
+  #   msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
+  # }
   
   msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
   # add ggtree_mp

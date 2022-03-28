@@ -23,44 +23,47 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
   return(ggtree_mp)
 }
 
-plot_msa = function(REvoBC_object, smoothed_deletions = FALSE) {
+plot_msa = function(REvoBC_object, cleaned_deletions = FALSE) {
   
-  if (smoothed_deletions == 'smooth_del') {
-    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
+  if (cleaned_deletions == 'del') {
+    to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt == 'del', alt, 'wt'))
-  } else if (smoothed_deletions == 'smooth_del_ins'){
-    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment %>% 
+  } else if (cleaned_deletions == 'del_ins') {
+    to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'wt'))
-  } else if (smoothed_deletions == 'sub_smooth_del_ins') {
-    to_plot_df = REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment
   } else {
-    to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+     to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
   }
+  # else if (smoothed_deletions == 'sub_smooth_del_ins') {
+  #   to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment
+  # } else {
+  #   to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+  # }
   
-  if (smoothed_deletions != FALSE) {
-    # expand deletions of 1nt in a window +-5nts (for visualization purpouses)
-    del_to_expand = to_plot_df %>% dplyr::group_by(asv_names) %>% 
-      mutate(next_alt = lead(alt), previous_alt = lag(alt)) 
-    del_to_expand_left = del_to_expand %>%
-      filter(alt == 'del' & alt != previous_alt) #& alt != next_alt)
+  # if (smoothed_deletions != FALSE) {
+  #   # expand deletions of 1nt in a window +-5nts (for visualization purpouses)
+  #   del_to_expand = to_plot_df %>% dplyr::group_by(asv_names) %>% 
+  #     mutate(next_alt = lead(alt), previous_alt = lag(alt)) 
+  #   del_to_expand_left = del_to_expand %>%
+  #     filter(alt == 'del' & alt != previous_alt) #& alt != next_alt)
     
-    del_to_expand_right = del_to_expand %>%
-      filter(alt == 'del' & alt != next_alt)
+  #   del_to_expand_right = del_to_expand %>%
+  #     filter(alt == 'del' & alt != next_alt)
     
-    asvs_with_del = unique(c(as.character(del_to_expand_left$asv_names), as.character(del_to_expand_right$asv_names)))
+  #   asvs_with_del = unique(c(as.character(del_to_expand_left$asv_names), as.character(del_to_expand_right$asv_names)))
     
-    for (asv in asvs_with_del) {
-      to_plot_sub = to_plot_df %>% filter(asv_names == asv)
-      to_plot_df = to_plot_df %>% filter(asv_names != asv)
+  #   for (asv in asvs_with_del) {
+  #     to_plot_sub = to_plot_df %>% filter(asv_names == asv)
+  #     to_plot_df = to_plot_df %>% filter(asv_names != asv)
       
-      to_plot_sub$alt <- ifelse(sapply(to_plot_sub$position_bc260, function(p) 
-        any((del_to_expand_left$position_bc260 - 5 <= p & p <= del_to_expand_left$position_bc260 & del_to_expand_left$asv_names == asv)|
-            (del_to_expand_right$position_bc260 + 5 >= p & p >= del_to_expand_left$position_bc260 & del_to_expand_right$asv_names == asv))),
-        "del",to_plot_sub$alt)
+  #     to_plot_sub$alt <- ifelse(sapply(to_plot_sub$position_bc260, function(p) 
+  #       any((del_to_expand_left$position_bc260 - 5 <= p & p <= del_to_expand_left$position_bc260 & del_to_expand_left$asv_names == asv)|
+  #           (del_to_expand_right$position_bc260 + 5 >= p & p >= del_to_expand_left$position_bc260 & del_to_expand_right$asv_names == asv))),
+  #       "del",to_plot_sub$alt)
       
-      to_plot_df = to_plot_df %>% bind_rows(to_plot_sub)
-    }
-  }
+  #     to_plot_df = to_plot_df %>% bind_rows(to_plot_sub)
+  #   }
+  # }
   # Put insertions after wt for visualization
   to_plot_df = to_plot_df %>% dplyr::arrange(asv_names, position_bc260, desc(alt))
   

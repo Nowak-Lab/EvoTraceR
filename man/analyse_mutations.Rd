@@ -4,16 +4,15 @@
 \alias{analyse_mutations}
 \title{analyse_mutations}
 \usage{
-analyse_mutations(REvoBC_object, smoothing_window = 5)
+analyse_mutations(REvoBC_object, cleaning_window = 5)
 }
 \arguments{
 \item{REvoBC_object}{REvoBC object on which we want to perform msa.}
 
-\item{smoothing_window}{(Optional) Deafult is 5. Number of nucleotides used for
-assigning deletions and insertions to the closest orange line (i.e., smoothing). Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that
-is less distant then \code{smoothing_window} nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the 
-cutting site on its right if that is less than \code{smoothing_window} nucleotides distant, otherwise it is assigned to the cutting site
-on its left.}
+\item{cleaning_window}{(Optional) Default is c(3,3). After identifying all mutations in each sequence, we discard the ones that are not biologically meaningful. 
+In order to perform this step, we assume that both the beginning and end of each indel should be close to one of the cut sites. Thus, we perfom the following: for each
+indel, we extend its start to the left by cleaning_window[1] positions and its end by cleaning_window[2] positions. If the extended indel doesn't span any of the cut sites, than it is removed.
+The result of this cleaning procedure are stored in REvoBC_object$cleaned_deletions_insertions (See output for more details.)}
 }
 \value{
 REvoBC object with the field \code{alignment}, updated with the following fields:
@@ -24,12 +23,12 @@ REvoBC object with the field \code{alignment}, updated with the following fields
 \item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
 This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 }. 
-It also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for
-all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
-The following dataframes are stored in the field \code{smoothed deletions}:
+It also creates a new field in the REvoBC object called \code{cleaned_deletions_insertions}, which contains the following information for
+all the deletions identified in the ASVs, whose start and end site have been cleaned using the known cutting sites.
+The following dataframes are stored in the field \code{cleaned deletions}:
 \itemize{
 \item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
-\item coordinate_matrix: matrix which stores all the information regarding the smoothed deletions. Information include start and end before smoothing and the deleted sequence.
+\item coordinate_matrix: matrix which stores all the information regarding the cleaned deletions. Information include start and end and number of cut sites spanned by the indel.
 }
 In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
 \itemize{

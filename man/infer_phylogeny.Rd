@@ -19,10 +19,9 @@ For example, if in Windows a user stores the folder of phylip in path \code{D:/P
 then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.}
 
 \item{mutations_use}{(optional). Default = 'smooth_del' A string indicating what type of mutations to use for phylogeny reconstruction.
-Can be one of c('smooth_del', 'smooth_del_ins', sub_smooth_del_ins, sub_del_ins). The first
-corresponds to using only smoothed deletions. The second refers to the case where smoothed deletions
-and insertios are considered. The third considers the smoothed deletions/insertions and the substitutions. 
-Finally the fourth uses all non-smoothed mutations.}
+Can be one of c('del', 'del_ins'). The first
+corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
+and insertios are considered.}
 }
 \value{
 REvoBC object with a new filed called phylogeny, that stores the inferred tree.

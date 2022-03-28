@@ -13,8 +13,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   
   # Join with the sequences df to have the frequency of each ASV in each sample
   alignment_tidy_ref_alt_mrg_final <- inner_join(alignment_tidy_ref_alt, 
-                                       percentages, 
-                                       by="asv_names") %>%
+                                                 percentages, 
+                                                 by="asv_names") %>%
     dplyr::select(c(asv_names, sample, perc_in_sample, position_bc260, ref_asv, read_asv, alt))
   
   
@@ -27,8 +27,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     rename_at(vars(!matches("asv_names")), ~ paste0("width_total_", .))
   
   utils::write.csv(alignment_tidy_ref_alt_mrg_final_width_summ, 
-            file.path(output_dir_files, "asv_alterations_width.csv"), 
-            row.names = FALSE)
+                   file.path(output_dir_files, "asv_alterations_width.csv"), 
+                   row.names = FALSE)
   
   REvoBC_object$alignment$ASV_alterations_width = alignment_tidy_ref_alt_mrg_final_width_summ
   
@@ -46,11 +46,11 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     mutate(cons_bin = c(0, abs(diff(position_bc260)) == 1)) %>% # find if number is consecutive = 0, if not = 1
     #filter(cons_bin == 0) %>%
     dplyr::select(asv_names, sample, position_bc260, alt, perc_in_sample)
-
+  
   # Plotting All Alterations with Insertions as one coordinate (i.e. 17 means insertion is here but no length info)
   del_sub_ins_df <- 
     rbind(del_sub_df, ins_df) #%>%
-    
+  
   sample_columns = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
   
   sample_order = sort(sample_columns)
@@ -65,14 +65,14 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     arrange(match(sample, sample_columns))
   
   
-# Plot CNA Frequency based on "del_sub_ins_df"
+  # Plot CNA Frequency based on "del_sub_ins_df"
   # summarize stat for "del" and "sub" -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
   del_sub_df_data_to_plot_sum_perc <-
     del_sub_ins_df %>% ungroup() %>%
     group_by(sample, alt, position_bc260) %>% #
     dplyr::summarise(sum_perc = sum(perc_in_sample), .groups = 'drop') %>%
     dplyr::filter(alt != "wt" & alt != "ins") # don't plot "wt" and "ins
-    
+  
   # "ins" only -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
   ins_df_data_to_plot_sum_perc <-
     del_sub_ins_df %>%
@@ -93,8 +93,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   # save file
   utils::write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_files, "mutations_frequency.csv"), row.names = FALSE)
   
-# Histogram Graph ------------------------------------------------------
-# auxiliary data for plotting histogram graph   
+  # Histogram Graph ------------------------------------------------------
+  # auxiliary data for plotting histogram graph   
   # position of PAM in guides
   pam_pos <- REvoBC_object$reference$ref_cut_sites
   # length of barcode
@@ -103,14 +103,14 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   alt_count_annot_rect <-
     ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt_long_names, group=sample))
   # add rectangles
-    annot_rect <- REvoBC_object$reference$ref_border_sites
+  annot_rect <- REvoBC_object$reference$ref_border_sites
   for (i in seq(1, length(annot_rect), by = 2)) {
     alt_count_annot_rect = alt_count_annot_rect + annotate("rect", xmin=annot_rect[i], xmax=annot_rect[i+1], ymin=-Inf, max=Inf, fill="black", alpha=0.1) 
   }
-
-# plot rest of histogram
-    alt_count_bc <-
-      alt_count_annot_rect + # add earlier prepared rectangles to graph
+  
+  # plot rest of histogram
+  alt_count_bc <-
+    alt_count_annot_rect + # add earlier prepared rectangles to graph
     # geom bar
     geom_bar(stat="identity", width=1.5) + #, size=1
     scale_fill_manual(values=c("Substitutions"="#329932", "Insertions" = "#FF0033", "Deletions" = "#3366FF"), 
@@ -119,7 +119,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
                        breaks=c(1, seq(ceiling(bc_len/10), bc_len, ceiling(bc_len/10))), 
                        limits=c(-4, bc_len + 5), 
                        expand = c(0.001, 0.001)) +
-     scale_y_continuous(labels=function(x) paste0(x, "%"),
+    scale_y_continuous(labels=function(x) paste0(x, "%"),
                        limits=c(0, plyr::round_any(max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc), 10, f = ceiling)), # automatic
                        breaks=seq(from=0, to=plyr::round_any(max(del_sub_ins_df_data_to_plot_sum_perc$sum_perc), 10, f = ceiling), by=10),
                        #breaks=c(0, 25, 50, 75, 100), # manual 
@@ -128,7 +128,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
     lemon::coord_capped_cart(left="both", bottom="both") +
     lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt_long_names), repeat.tick.labels = TRUE) +
     labs(y = "Editing Frequency", x = "Position of Nucleotides", fill = "Type of Editing")
-    
+  
   # add theme
   alt_count_bc <- 
     alt_count_bc + 
@@ -156,7 +156,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   ggsave(filename=file.path(output_dir_figures, "/hist_del_sub_ins_data.pdf"), 
          plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
   # write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), row.names = FALSE, quote = FALSE)
-
+  
   REvoBC_object$alignment$mutations_df = del_sub_ins_df
   return(REvoBC_object)
   
@@ -202,7 +202,7 @@ align_asv = function(REvoBC_object,
     # # Store MSA result
     msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
     REvoBC_object$alignment$msa_stringset = msa
-
+    
     # Transform Alignment to "Tidy Data"
     alignment_tidy <- ggmsa::tidy_msa(msa=msa,
                                       start = 1,
@@ -213,7 +213,7 @@ align_asv = function(REvoBC_object,
     alignment_tidy_ref_alt <-
       merge(alignment_tidy, filter(alignment_tidy, !stringr::str_detect(name, "ASV")), by="position") %>%
       dplyr::select(1, 2, 5, 3)
-
+    
     # Adjust Column Names
     colnames(alignment_tidy_ref_alt) <- c("position", "asv_names", "ref_asv", "read_asv")
     
@@ -231,7 +231,7 @@ align_asv = function(REvoBC_object,
     #                                      subject = REvoBC_object$reference$ref_seq)
     aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
     aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
-
+    
     
     alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, length(mpwa)), .combine=rbind) %do% {
       data.frame("asv_names" = rownames(aligned_sequences)[i],
@@ -286,7 +286,7 @@ align_asv = function(REvoBC_object,
   
 }
 # Create the binary mutations matrix
-binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, smoothing_window = 5) {
+binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, cleaning_window = 5) {
   
   
   # Start from the dataframe that contains a line for each position in each ASV.
@@ -322,9 +322,9 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # For insertions, the position refers to the nucleotide on the left on the insertion
   # For example, if the insertion is assigned to position 20, this means that after 20 nts 
   # of the original barcode, a new sequence is inserted (so, it starts from the position 21).
-
+  
   mut_df = dplyr::filter(mut_df, mutation_type!= 'sub') 
-
+  
   # Now we group alterations first based on the ASV, and then based on the new column contig_alt
   # in this way we can count the rows in the group to obtain the length of the insertion
   # We finally insert back the substitutions.
@@ -340,33 +340,40 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   mut_df$mut_id = paste0(mut_df$mutation_type, "_", mut_df$start, "_", mut_df$n_nucleotides, "nts")
   
   
-  # Now smooth deletions and insertions (assign start and end to the closest cutting site)
-  smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), 
-                                      REvoBC_object$reference$ref_cut_sites,
-                                      smoothing_window)
   
-  # After smoothing, we insert back substitutions, but we need to remove those that
-  # fall within a smoothed deletion
-  sub_df = mut_df %>% ungroup %>% filter(mutation_type == 'sub')
-
-  for (asv in unique(as.character(sub_df$asv_names))) {
-    tmp_sub = sub_df %>% filter(asv_names == asv)
-    sub_df = sub_df %>% filter(asv_names != asv)
-    tmp_smoothed = smoothed_del_ins  %>% filter(asv_names == asv)
-    tmp_sub = tmp_sub[!sapply(tmp_sub$start, function(x) 
-      return(any(tmp_smoothed$start_smoothed <= x & tmp_smoothed$end_smoothed >=x))),]
-    
-    sub_df = dplyr::bind_rows(sub_df, tmp_sub)
-  }
-
-  smoothed_mutations = sub_df %>%
-    mutate(start_smoothed = start, end_smoothed = end, smoothed_id = mut_id) %>%
-    bind_rows(smoothed_del_ins)
+  # THE FOLLOWING LINES HAVE BEEN COMMENTED BECAUSE WE DON'T PERFORM SMOOTHING ANYMORE, BUT INSTEAD WE ONLY 
+  # CONSIDER INSERTIONS AND DELETIONS AND WE CLEAN THEM, REMOVING THE ONES THAT ARE TOO FAR AWAY FROM ANY ORANGE LINE
+  # Now smooth deletions and insertions (assign start and end to the closest cutting site)
+  # smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), 
+  #                                     REvoBC_object$reference$ref_cut_sites,
+  #                                     smoothing_window)
+  # 
+  # # After smoothing, we insert back substitutions, but we need to remove those that
+  # # fall within a smoothed deletion
+  # sub_df = mut_df %>% ungroup %>% filter(mutation_type == 'sub')
+  # 
+  # for (asv in unique(as.character(sub_df$asv_names))) {
+  #   tmp_sub = sub_df %>% filter(asv_names == asv)
+  #   sub_df = sub_df %>% filter(asv_names != asv)
+  #   tmp_smoothed = smoothed_del_ins  %>% filter(asv_names == asv)
+  #   tmp_sub = tmp_sub[!sapply(tmp_sub$start, function(x) 
+  #     return(any(tmp_smoothed$start_smoothed <= x & tmp_smoothed$end_smoothed >=x))),]
+  #   
+  #   sub_df = dplyr::bind_rows(sub_df, tmp_sub)
+  # }
+  # 
+  # smoothed_mutations = sub_df %>%
+  #   mutate(start_smoothed = start, end_smoothed = end, smoothed_id = mut_id) %>%
+  #   bind_rows(smoothed_del_ins)
+  
+  clean_del_ins = clean_mutations(mut_df %>% filter(mutation_type != 'sub'), 
+                                  REvoBC_object$reference$ref_cut_sites,
+                                  cleaning_window)
   
   # Now that we have mutations smoothed, compute the tidy alignment tibble.
-  alignment_smoothed_tidy = tidy_alignment_smoothed(REvoBC_object, smoothed_mutations)
+  alignment_cleaned_tidy = tidy_alignment_cleaned(REvoBC_object, clean_del_ins)
   
-  REvoBC_object$smoothed_deletions_insertions$asv_barcode_alignment = alignment_smoothed_tidy
+  REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment = alignment_cleaned_tidy
   # convert to binary mutation matrix. Compute the count of each mutation of each ASV.
   # and then convert the tibble from long (one row is ASV mutation count) to wide, in order 
   # to have a column for each mutation
@@ -377,11 +384,11 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   mut_df_wide[mut_df_wide >= 1] = 1
   
   # Binarize smoothed deletions
-  smoothed_df_wide = plyr::count(smoothed_mutations, vars = c("asv_names", "smoothed_id")) %>% 
-    pivot_wider(names_from = smoothed_id, values_from = freq) %>% column_to_rownames("asv_names")
+  cleaned_df_wide = plyr::count(clean_del_ins, vars = c("asv_names", "mut_id")) %>% 
+    pivot_wider(names_from = mut_id, values_from = freq) %>% column_to_rownames("asv_names")
   
-  smoothed_df_wide[is.na(smoothed_df_wide)] <- 0
-  smoothed_df_wide[smoothed_df_wide >= 1] = 1
+  cleaned_df_wide[is.na(cleaned_df_wide)] <- 0
+  cleaned_df_wide[cleaned_df_wide >= 1] = 1
   
   # Show heatmap
   
@@ -393,14 +400,14 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
          height=5*nrow(mut_df_wide), 
          units = 'mm', limitsize = F)
   
-  p = pheatmap::pheatmap(smoothed_df_wide, color = c("#042e61", "#e29892"), fontsize = 6)
-  ggsave(filename=file.path(output_dir_figures, "smoothed_deletions_insertions_heatmap.pdf"), 
+  p = pheatmap::pheatmap(cleaned_df_wide, color = c("#042e61", "#e29892"), fontsize = 6)
+  ggsave(filename=file.path(output_dir_figures, "cleaned_deletions_insertions_heatmap.pdf"), 
          plot=p, 
          #device=grDevices::cairo_pdf, 
-         width=4*ncol(smoothed_df_wide), 
-         height=5*nrow(smoothed_df_wide), 
+         width=4*ncol(cleaned_df_wide), 
+         height=5*nrow(cleaned_df_wide), 
          units = 'mm', limitsize = F)
-
+  
   # assign BC10 variant (for plotting purposes)
   
   mut_df <- tibble::tibble(mut_df) %>%
@@ -409,7 +416,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # In case some ASVs are not affected by any mutation, add a row to the binary mutation matrix 
   # which contains all zeros
   #wt_asv = c(setdiff(mut_df$asv_names, smoothed_del$asv_names))
-  smoothed_mutations <- tibble::tibble(smoothed_mutations) %>%
+  clean_del_ins <- tibble::tibble(clean_del_ins) %>%
     dplyr::add_row(asv_names  = REvoBC_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
@@ -419,122 +426,122 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
                                  mut_df_wide)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
-  bc_mut = as.list(rep(0, ncol(smoothed_df_wide)))
-  names(bc_mut) = colnames(smoothed_df_wide)
-
-  smoothed_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
-                                      data.frame(smoothed_df_wide))
+  bc_mut = as.list(rep(0, ncol(cleaned_df_wide)))
+  names(bc_mut) = colnames(cleaned_df_wide)
+  
+  cleaned_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
+                                      data.frame(cleaned_df_wide))
   
   write.csv(mut_df_wide, file.path(output_dir_files, "/binary_mutation_matrix.csv"))
-  write.csv(smoothed_df_wide, file.path(output_dir_files, "/smoothed_binary_mutation_matrix.csv"))
+  write.csv(cleaned_df_wide, file.path(output_dir_files, "/cleaned_binary_mutation_matrix.csv"))
   
   utils::write.csv(mut_df, 
                    file.path(output_dir_files, "mutations_coordinates.csv"), 
                    row.names = FALSE)
   
-  utils::write.csv(smoothed_mutations, 
-                   file.path(output_dir_files, "smoothed_mutations_coordinates.csv"), 
+  utils::write.csv(clean_del_ins %>% select(-c(spanned_cutSites)), 
+                   file.path(output_dir_files, "cleaned_mutations_coordinates.csv"), 
                    row.names = FALSE)
   
   REvoBC_object$alignment$binary_mutation_matrix = mut_df_wide
   REvoBC_object$alignment$mutations_coordinates = mut_df
   
-  REvoBC_object$smoothed_deletions_insertions$binary_matrix = smoothed_df_wide
-  REvoBC_object$smoothed_deletions_insertions$coordinate_matrix = smoothed_mutations
+  REvoBC_object$cleaned_deletions_insertions$binary_matrix = cleaned_df_wide
+  REvoBC_object$cleaned_deletions_insertions$coordinate_matrix = clean_del_ins
   
-
+  
   
   return(REvoBC_object)
 }
 
-# mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
-smooth_deletions = function(mut_df, orange_lines, smoothing_window = 5) {
+# # mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
+# smooth_deletions = function(mut_df, orange_lines, smoothing_window = 5) {
   
-  deletions_insertions = mut_df #%>% filter(mutation_type != 'ins')
-  orange_lines = data.frame(site = orange_lines,
-                            index_cut = c(1:10))
-  data.table::setDT(orange_lines)
-  data.table::setDT(deletions_insertions)    
+#   deletions_insertions = mut_df #%>% filter(mutation_type != 'ins')
+#   orange_lines = data.frame(site = orange_lines,
+#                             index_cut = c(1:10))
+#   data.table::setDT(orange_lines)
+#   data.table::setDT(deletions_insertions)    
   
-  # Create time column by which to do a rolling join
-  orange_lines[, start_site := site]
-  deletions_insertions[, start_site := start]
+#   # Create time column by which to do a rolling join
+#   orange_lines[, start_site := site]
+#   deletions_insertions[, start_site := start]
   
-  deletions_insertions = orange_lines[deletions_insertions, on = "start_site", roll = "nearest"] %>%
-    mutate(index_cut = ifelse(start - site > smoothing_window, pmin(index_cut + 1, nrow(orange_lines)), index_cut)) %>%
-    mutate(start_smoothed = orange_lines$site[index_cut]) %>%
-    #dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
-    dplyr::select(-c(site, index_cut, start_site))
+#   deletions_insertions = orange_lines[deletions_insertions, on = "start_site", roll = "nearest"] %>%
+#     mutate(index_cut = ifelse(start - site > smoothing_window, pmin(index_cut + 1, nrow(orange_lines)), index_cut)) %>%
+#     mutate(start_smoothed = orange_lines$site[index_cut]) %>%
+#     #dplyr::mutate(start_smoothed = ifelse(start - site > 5, orange_lines$site[index_cut +1], site)) %>%
+#     dplyr::select(-c(site, index_cut, start_site))
   
-  orange_lines = dplyr::rename(orange_lines, end_site = start_site)
-  deletions_insertions[, end_site := end]
-  deletions_insertions = orange_lines[deletions_insertions, on = "end_site", roll = "nearest"] %>%
-    mutate(index_cut = dplyr::if_else(condition = site - end > smoothing_window, 
-                                      true = pmax(1, index_cut - 1), 
-                                      false = as.double(index_cut))) %>%
-    mutate(end_smoothed = orange_lines$site[index_cut]) %>%
-    #dplyr::mutate(end_smoothed = if_else(site - end > 5, orange_lines$site[index_cut - 1], site))
-    dplyr::select(-c(site, index_cut, end_site))
+#   orange_lines = dplyr::rename(orange_lines, end_site = start_site)
+#   deletions_insertions[, end_site := end]
+#   deletions_insertions = orange_lines[deletions_insertions, on = "end_site", roll = "nearest"] %>%
+#     mutate(index_cut = dplyr::if_else(condition = site - end > smoothing_window, 
+#                                       true = pmax(1, index_cut - 1), 
+#                                       false = as.double(index_cut))) %>%
+#     mutate(end_smoothed = orange_lines$site[index_cut]) %>%
+#     #dplyr::mutate(end_smoothed = if_else(site - end > 5, orange_lines$site[index_cut - 1], site))
+#     dplyr::select(-c(site, index_cut, end_site))
   
-  # Before, the insiertions were assigned both to the beginning point BUT this is not correct
-  # Because, if an insertion has the beginning and end swapped, it means that the position is either to
-  # the right of an orange line (and more than 5 nts distant) or it is to the left of the closest orange
-  # line but again more than 5 nts distant (so it needs not to be considered).
-  # deletions_insertions = deletions_insertions %>% dplyr::mutate(end_smoothed = 
-  #                                                                 ifelse(mutation_type == 'ins', start_smoothed, end_smoothed))
+#   # Before, the insiertions were assigned both to the beginning point BUT this is not correct
+#   # Because, if an insertion has the beginning and end swapped, it means that the position is either to
+#   # the right of an orange line (and more than 5 nts distant) or it is to the left of the closest orange
+#   # line but again more than 5 nts distant (so it needs not to be considered).
+#   # deletions_insertions = deletions_insertions %>% dplyr::mutate(end_smoothed = 
+#   #                                                                 ifelse(mutation_type == 'ins', start_smoothed, end_smoothed))
   
-  # We need to remove those mutations that get assigned swapped start and end (the smoothed end is before the smoothed start)
-  # This happens when a mutation is in between two orange lines and it its start is more distant than 5 nts to the
-  # smoothed orange line on the left and also its end is more than 5 nts away from the orange line on its right.
-  # In this case these mutations cannot be assigned to any orange line, because they don't span any line and are too
-  # far to having being caused by Cas9.
-  deletions_insertions = deletions_insertions %>% dplyr::filter(end_smoothed >= start_smoothed)
+#   # We need to remove those mutations that get assigned swapped start and end (the smoothed end is before the smoothed start)
+#   # This happens when a mutation is in between two orange lines and it its start is more distant than 5 nts to the
+#   # smoothed orange line on the left and also its end is more than 5 nts away from the orange line on its right.
+#   # In this case these mutations cannot be assigned to any orange line, because they don't span any line and are too
+#   # far to having being caused by Cas9.
+#   deletions_insertions = deletions_insertions %>% dplyr::filter(end_smoothed >= start_smoothed)
   
   
-  deletions_insertions = mutate(deletions_insertions, 
-                                smoothed_id = ifelse(mutation_type == 'del', 
-                                                     paste0("del_", start_smoothed, "-", end_smoothed),
-                                                     paste0("ins_", start_smoothed, "-", n_nucleotides, "nts")))
+#   deletions_insertions = mutate(deletions_insertions, 
+#                                 smoothed_id = ifelse(mutation_type == 'del', 
+#                                                      paste0("del_", start_smoothed, "-", end_smoothed),
+#                                                      paste0("ins_", start_smoothed, "-", n_nucleotides, "nts")))
   
-  return(deletions_insertions)
-}
+#   return(deletions_insertions)
+# }
 
-tidy_alignment_smoothed = function(REvoBC_object, smoothed_df) {
+tidy_alignment_cleaned = function(REvoBC_object, cleaned_df) {
   del_sub_ins_df = REvoBC_object$alignment$asv_barcode_alignment
-  # In case of smoothed deletions, we need to re-create a tibble where each row corresponds
-  # to a position in each ASV. This tibble already exists for non-smoothed mutations
+  # In case of cleaned deletions, we need to re-create a tibble where each row corresponds
+  # to a position in each ASV. This tibble already exists for non-cleaned mutations
   # and now we want to replace its column "alt" with the status of each nucleotide 
-  # in case we consider smoothed deletions and/or insertions.
+  # in case we consider cleaned deletions and/or insertions.
   # Insertions and substitutions are characterized by only one position, so in order to create the tidy 
-  # alignment tibble we start by removing them from the smoothed dataframe, and then we re-insert them. 
- 
-  smoothed_sub = filter(smoothed_df, mutation_type =='sub')
-  smoothed_ins = filter(smoothed_df, mutation_type =='ins')
-  smoothed_del = filter(smoothed_df, mutation_type == 'del')
+  # alignment tibble we start by removing them from the cleaned dataframe, and then we re-insert them. 
+  
+  # cleaned_sub = filter(cleaned_df, mutation_type =='sub')
+  cleaned_ins = filter(cleaned_df, mutation_type =='ins')
+  cleaned_del = filter(cleaned_df, mutation_type == 'del')
   # Non dovrebbe servire, io assegno la mutazione smooothed prima in base a se trovo una
-  # delezione smoothed. Poi, a tutti gli altri nucleotidi, se compaiono tra inserzioni o
-  # sotituzioni smoothed allora gli assegno il tipo
+  # delezione cleaned. Poi, a tutti gli altri nucleotidi, se compaiono tra inserzioni o
+  # sotituzioni cleaned allora gli assegno il tipo
   #del_sub_ins_df = filter(del_sub_ins_df, alt == 'del') 
   
   to_plot_df = list()
-  for (asv in unique(as.character(smoothed_df$asv_names))) {
-    tmp_smoothed_del = dplyr::filter(smoothed_del, asv_names == asv)
+  for (asv in unique(as.character(cleaned_df$asv_names))) {
+    tmp_cleaned_del = dplyr::filter(cleaned_del, asv_names == asv)
     # Remove insertinons from tidy alignment, as they are a duplicated position
-    # of a wildtype. We remove them and then add to the tidy dataframe the smoothed insertions positions.
+    # of a wildtype. We remove them and then add to the tidy dataframe the cleaned insertions positions.
     tmp_tidy = dplyr::filter(del_sub_ins_df, asv_names == asv & alt != 'ins')
-    tmp_smoothed_ins = dplyr::filter(smoothed_ins, asv_names == asv) 
-    tmp_smoothed_sub = dplyr::filter(smoothed_sub, asv_names == asv) 
+    tmp_cleaned_ins = dplyr::filter(cleaned_ins, asv_names == asv) 
+    #tmp_cleaned_sub = dplyr::filter(cleaned_sub, asv_names == asv) 
     
     tmp_tidy$alt <- ifelse(sapply(tmp_tidy$position_bc260, function(p) 
-      any(tmp_smoothed_del$start_smoothed <= p & tmp_smoothed_del$end_smoothed >= p)),
-      "del", 'smoothed_wt')
+      any(tmp_cleaned_del$start <= p & tmp_cleaned_del$end >= p)),
+      "del", 'cleaned_wt')
     
-    tmp_tidy = ungroup(tmp_tidy) %>% 
-      mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt))
+    # tmp_tidy = ungroup(tmp_tidy) %>% 
+    #   mutate(alt = ifelse(position_bc260 %in% tmp_cleaned_sub$start, 'sub', alt))
     
-    tmp_tidy = tmp_smoothed_ins %>% 
-      dplyr::rename(position_bc260 = start_smoothed,
-             read_asv = alt_seq, alt = mutation_type) %>%
+    tmp_tidy = tmp_cleaned_ins %>% 
+      dplyr::rename(position_bc260 = start,
+                    read_asv = alt_seq, alt = mutation_type) %>%
       dplyr::mutate(ref_asv = '-') %>% dplyr::select(colnames(tmp_tidy)) %>%
       dplyr::bind_rows(tmp_tidy) %>%
       dplyr::arrange(position_bc260)
@@ -542,18 +549,34 @@ tidy_alignment_smoothed = function(REvoBC_object, smoothed_df) {
     # tmp_tidy = ungroup(tmp_tidy) %>% 
     #   mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_ins$start, 'ins', 
     #                                ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt)))
-
+    
     to_plot_df[[asv]] = tmp_tidy
   }
   for (asv in setdiff(del_sub_ins_df$asv_names, names(to_plot_df))) {
     tmp_tidy = dplyr::filter(del_sub_ins_df, asv_names == asv)
-    tmp_tidy$alt = 'non_smoothed_del'
+    tmp_tidy$alt = 'non_cleaned_del'
     to_plot_df[[asv]] = tmp_tidy
   }
   to_plot_df = dplyr::bind_rows(to_plot_df)
   return(to_plot_df)
 }
 
-
+# mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
+# This function removes the small events that happen too far from any cut site and counts the number of 
+# target sites spanned by the deletion
+# For each indel, we expand it to the left and to the right by left_right_window[1] and left_right_window[2] positions
+# respectively, and then we check if the extended event spans any of the cut sites.
+clean_mutations = function(mut_df, orange_lines, left_right_window = c(3,3)) {
+  
+  deletions_insertions = mut_df %>% 
+    mutate(extended_start = start - left_right_window[1], 
+           extended_end = end + left_right_window[2]) %>%
+    rowwise() %>%
+    mutate(spanned_cutSites = list(intersect(seq(extended_start, extended_end), orange_lines))) %>%
+    mutate(n_sites = length(spanned_cutSites)) %>%
+    filter(n_sites > 0)
+  
+  return(deletions_insertions)
+}
 
 
