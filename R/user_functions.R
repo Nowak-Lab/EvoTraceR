@@ -858,6 +858,10 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
                                   REvoBC_object$cleaned_deletions_insertions$coordinate_matrix,
                                   by.x="asv_names", by.y="asv_names")) %>% select(-c(spanned_cutSites))
   
+  df_to_plot_final = tibble(merge(df_to_plot_final,
+                                  REvoBC_object$phylogeny$tree %>% select(label, group),
+                            by.x="asv_names", by.y="label"))
+  
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
   if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}
