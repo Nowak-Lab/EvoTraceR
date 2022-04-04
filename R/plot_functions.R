@@ -17,7 +17,7 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
     xlab("Phylogenetic Tree \n Maximum Parsimony Camin-Sokal") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon +
-    scale_fill_manual(values=rainbow(n = length(unique(tree_mp_df$group))))
+    scale_fill_manual(values=sample(rainbow(n = length(unique(tree_mp_df$group)))))
   
   
   ggtree_mp <-

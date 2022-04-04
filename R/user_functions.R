@@ -773,31 +773,51 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
   
   tree_mp_df = REvoBC_object$phylogeny$tree
+  
+  barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+  
+  # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
+  # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
+  if (nrow(barcode_tip) > 0){
+    first_tip = tree_mp_df %>% filter(y == 1)
+    if (barcode_tip$y != 1) {
+      current_barcode_y = barcode_tip$y
+      tree_mp_df = tree_mp_df %>% 
+        dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
+        dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
+      #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+      #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
+      # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+      # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
+      
+    }
+    
+  } 
 
   wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
   wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
   if (length(wt_asv) > 0) {
     # Need to re-insert the ASVs without any mutations in common with the others, which are not used during phylogeny reconstruction
-    barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+    # barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
     first_tip = tree_mp_df %>% filter(y == 1)
     root_node = tree_mp_df %>% filter(x == 0) %>% pull(node)
     
-    # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
-    # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
-    if (nrow(barcode_tip) > 0){
-      if (barcode_tip$y != 1) {
-        current_barcode_y = barcode_tip$y
-        tree_mp_df = tree_mp_df %>% 
-          dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
-          dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-        #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
-        #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-        # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
-        # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
-        
-      }
-      
-    } 
+    # # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
+    # # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
+    # if (nrow(barcode_tip) > 0){
+    #   if (barcode_tip$y != 1) {
+    #     current_barcode_y = barcode_tip$y
+    #     tree_mp_df = tree_mp_df %>% 
+    #       dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
+    #       dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
+    #     #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+    #     #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
+    #     # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+    #     # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
+    #     
+    #   }
+    #   
+    # } 
     barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
     vary = 'y'
     if (REvoBC_object$reference$ref_name %in% wt_asv) {
@@ -897,7 +917,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
   # add ggtree_mp
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- aplot::insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 0.75)
+  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- aplot::insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 1)#0.75)
   # add bar_seq_n
   msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp, bar_seq_n, width = 0.2)
   # add bar_pid
