@@ -794,7 +794,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     
   } 
 
-  wt_asv = setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
+  wt_asv = c()#setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
   wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
   if (length(wt_asv) > 0) {
     # Need to re-insert the ASVs without any mutations in common with the others, which are not used during phylogeny reconstruction
@@ -876,10 +876,10 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   df_to_plot_final = tibble(merge(df_to_plot_final, 
                                   REvoBC_object$cleaned_deletions_insertions$coordinate_matrix,
-                                  by.x="asv_names", by.y="asv_names")) %>% select(-c(spanned_cutSites))
+                                  by.x="asv_names", by.y="asv_names")) %>% dplyr::select(-c(spanned_cutSites))
   
   df_to_plot_final = tibble(merge(df_to_plot_final,
-                                  REvoBC_object$phylogeny$tree %>% select(label, group),
+                                  REvoBC_object$phylogeny$tree %>% dplyr::select(label, group),
                             by.x="asv_names", by.y="label"))
   
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
