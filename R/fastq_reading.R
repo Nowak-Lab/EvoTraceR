@@ -51,7 +51,7 @@ alignment_pipeline = function(fnFs,
                           "_R2_unpaired.fastq LEADING:10 TRAILING:10 MINLEN:20 SLIDINGWINDOW:5:10 ILLUMINACLIP:", 
                           trimmomatic_maindir, "/adapters/TruSeq3-PE.fa:2:30:12")
     
-    track_reads[map_file_sample[sample, 'sample'], 'trimmed'] = length(Biostrings::readDNAStringSet(paste0(trimmed_dir, sample.names[i], "_R1_paired.fastq"), format = 'fastq'))
+    
     
     bashCallFlash = paste0(flash_path, 
                            " --min-overlap 30 --max-overlap 250 --max-mismatch-density 0.05 --output-directory=", 
@@ -60,6 +60,7 @@ alignment_pipeline = function(fnFs,
                            "_R1_paired.fastq ", trimmed_dir, sample.names[i], "_R2_paired.fastq")
     
     system(bashCallTrim, wait = TRUE)
+    track_reads[map_file_sample[sample, 'sample'], 'trimmed'] = length(Biostrings::readDNAStringSet(paste0(trimmed_dir, sample.names[i], "_R1_paired.fastq"), format = 'fastq'))
     system(bashCallFlash, wait = TRUE)
   }
   
