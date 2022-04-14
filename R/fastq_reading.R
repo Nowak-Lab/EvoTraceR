@@ -7,6 +7,8 @@ alignment_pipeline = function(fnFs,
                               trimmomatic_path,
                               flash_path,
                               ...) {
+  fnFs <- gsub(" ", "\ ", fnFs)
+  fnRs <- gsub(" ", "\ ", fnRs)
   dots = list(...)
   # Make directories for the filtered fastqs and (optionally) for figures
   
