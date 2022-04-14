@@ -31,7 +31,7 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
   return(ggtree_mp)
 }
 
-plot_msa = function(REvoBC_object, cleaned_deletions = FALSE) {
+plot_msa = function(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = NULL) {
   
   if (cleaned_deletions == 'del') {
     to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
@@ -41,6 +41,13 @@ plot_msa = function(REvoBC_object, cleaned_deletions = FALSE) {
       mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'wt'))
   } else {
      to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+  }
+  
+  if (! is.null(subset_asvs)) {
+    to_plot_df = to_plot_df %>% filter(asv_names %in% subset_asvs)
+    if (nrow(to_plot_df) == 0) {
+      stop('None of the asv names provided in subset_asvs matches any of the ASVs in the EvoTraceR object.\nPlease select valid ASV names.')
+    }
   }
   # else if (smoothed_deletions == 'sub_smooth_del_ins') {
   #   to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment
@@ -92,7 +99,7 @@ plot_msa = function(REvoBC_object, cleaned_deletions = FALSE) {
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
     scale_fill_manual(values=c("del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "wt"="#f2f2f2"), breaks=c("ins", "wt", "del", "sub")) +
-    geom_vline(xintercept=REvoBC_object$reference$ref_cut_sites, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
+    geom_vline(xintercept=pam_pos, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
     geom_rect(data=msa_frame, mapping=aes_string(xmin="xmin", xmax="xmax", ymin="ymin", ymax="ymax"), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +
@@ -208,7 +215,7 @@ plot_similarity = function(df_to_plot_final) {
 # input must be a tibble with this columns: asv_names, perc_in_sample, perc_fold_to_max
 plot_percentage_asv_sample = function(df_to_plot_final) {
   ### "Bubble Plot" - ASV % of colony  ------------------------------------------------------ 
-  # bubble graph size coresponds to percentage of colony in i.e. Days or Organ
+  # bubble graph size corresponds to percentage of colony in i.e. Days or Organ
   scale_bubble <- ceiling(max(df_to_plot_final %>% 
                                 dplyr::pull(perc_in_sample), na.rm = T))
   
@@ -216,8 +223,8 @@ plot_percentage_asv_sample = function(df_to_plot_final) {
                         filter(str_detect(asv_names, "ASV")) %>% 
                         dplyr::pull(perc_in_sample), na.rm = T))
   
-  df_to_plot_final = df_to_plot_final %>% filter(str_detect(asv_names, "ASV") | str_detect(asv_names, '.NMBC'))
-  df_to_plot_final$asv_names = stringr::str_replace_all(string = df_to_plot_final$asv_names, pattern = '.NMBC', '')
+  # df_to_plot_final = df_to_plot_final %>% filter(str_detect(asv_names, "ASV") | str_detect(asv_names, '.NMBC'))
+  # df_to_plot_final$asv_names = stringr::str_replace_all(string = df_to_plot_final$asv_names, pattern = '.NMBC', '')
   # plot
   bubble <- 
     ggplot(data=df_to_plot_final, #%>% 

@@ -53,37 +53,76 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
 }
 
 
-# compute_tree_cassiopeia = function(asv_bin_var, barcode) {
-#   # Compute phylogeny
-#   cas = reticulate::import('cassiopeia')
-#   pd = reticulate::import('pandas')
-#   np = reticulate::import('numpy')
-#   
-#   df = reticulate::py_to_r(asv_bin_var)
-#   
-#   cas_tree = cas$data$CassiopeiaTree(character_matrix=df)
-#   
-#   vanilla_greedy = cas$solver$VanillaGreedySolver()
-#   
-#   vanilla_greedy$solve(cas_tree, collapse_mutationless_edges=F)
-#   
-#   cas_tree$get_newick(record_branch_lengths = T)
-#   
-#   tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
-#   
-#   cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
-#   
-#   tree_collapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
-#   
-#   ### Fortify tree to data frame
-#   tree_mp_df <- ggtree::fortify(tree_collapsed)
-#   
-#   return(list(tree_uncollapsed = tree_uncollapsed, 
-#               #tree_collapsed = tree_collapsed, 
-#               tree_collapsed_df = tree_mp_df))
-# }
-# 
-# 
-# 
-# 
-# 
+compute_tree_cassiopeia = function(asv_bin_var, barcode) {
+  # Compute phylogeny
+  cas = reticulate::import('cassiopeia')
+  pd = reticulate::import('pandas')
+  
+  np = reticulate::import('numpy')
+  
+  df = reticulate::r_to_py(asv_bin_var)
+  
+  cas_tree = cas$data$CassiopeiaTree(character_matrix=df)#, root_sample_name='BC10v0')
+  
+  vanilla_greedy = cas$solver$VanillaGreedySolver()
+  
+  vanilla_greedy$solve(cas_tree, collapse_mutationless_edges=F)
+  
+  return_list = list(tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T)))
+  
+  cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
+  
+  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = F))
+  
+  tree_df = ggtree::fortify(tree)
+  # Find node to root in the original sequence in "bc10_org"
+  tree_root_mp <-
+    tree_df %>%
+    filter(label == 'BC10v0') %>%
+    pull(node)
+  
+  
+  ### Re-root in the Original Sequence ------------------------------------------------------ 
+  tree <- TreeTools::RootTree(tree, tree_root_mp)
+  
+  tree = ggtree::fortify(tree)
+  # Take the parent node with the minimum label, which should be the the one to which all subtrees corresponding to clusters
+  # are attached to.
+  mock_root = min(tree$parent) + 1
+  clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
+  tree_df = ggtree::groupClade(tree, .node=clusters_roots)
+  #table(tree_df %>% filter(!is.na(label)) %>% pull(group))
+  
+  tree_df = tree_df %>% mutate(group = as.numeric(group))
+  
+  small_groups = tree_df %>% plyr::count('group') %>% filter(freq == 1) %>% pull(group)
+  
+  # Riassegno lo 0 ai gruppi singoli
+  tree_df$group[tree_df$group %in% small_groups] = 0
+  
+  # Re-compute te phylo object so that tips can be easily removed with ape::drop.tip
+  
+  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = F))
+  
+  # Find node to root in the original sequence in "bc10_org"
+  tree_root_mp <-
+    ggtree::fortify(tree) %>%
+    filter(label == 'BC10v0') %>%
+    pull(node)
+  
+  
+  ### Re-root in the Original Sequence ------------------------------------------------------ 
+  tree <- TreeTools::RootTree(tree, tree_root_mp)
+  
+  tree_df$group = as.factor(tree_df$group)
+  
+  return_list$tree_collapsed_df = tree_df
+  return_list$tree_collapsed_phylo = tree
+
+  return(return_list)
+}
+
+
+
+
+

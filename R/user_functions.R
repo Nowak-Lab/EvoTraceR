@@ -85,106 +85,88 @@
 # @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
 initialize_REvoBC = function(output_dir,
+                             trimmomatic_path,
+                             flash_path,
                              input_dir = NULL,
-                             dada2_output_sequences = NULL,
-                             output_dir_dada2 = NULL,
-                             random_seed = NULL,
-                             output_figures = TRUE,
-                             multithread = TRUE,
                              map_file_sample = NULL,
-                             dada2_pooled_analysis = FALSE,
-                             dada2_chimeras_minFoldParentOverAbundance = 8,
-                             verbose = TRUE,
-                             dada2_errorRate_estimation = 'default', 
                              ...) {
   # Check that the user inserted the correct parameters
-  if (is.null(input_dir) & is.null(dada2_output_sequences)) {
-    stop('Please provide either a directory containing fastqs for dada2 or the path to dada2 output')
+  if (is.null(input_dir) ) {
+    stop('Please provide a directory containing fastqs')
   }
   if (is.null(output_dir)) {
     stop('Please provide a path where output files will be stored.')
   }
-  
-  if (! dada2_errorRate_estimation %in% c('default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4')) {
-    stop("Parameter dada2_errorRate_estimation must be one of 'default', 'loessErrfun_mod1', 'loessErrfun_mod2', 'loessErrfun_mod3', 'loessErrfun_mod4'")
+  if (is.null(trimmomatic_path)) {
+    stop('Please provide a valid path to the jar for trimmomatic')
+  } else if (!file.exists(file.path(trimmomatic_path))) {
+    stop('Please provide a valid path to the jar for trimmomatic, file not found')
   }
   
-  set.seed(random_seed)
+  if (is.null(flash_path)) {
+    stop('Please provide a valid path to flash')
+  } else if (!file.exists(file.path(trimmomatic_path))) {
+    stop('Please provide a valid path to flash, file not found')
+  }
+  
   REvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
   
   class(REvoBC_object) = 'REvoBC'
   REvoBC_object$dada2 = list()
   
-  output_dir_files = file.path(output_dir, "dada2_files")
-  if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = TRUE)
+  #output_dir_files = file.path(output_dir, "initialization_files")
+  #if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = TRUE)
   
-  if (is.null(dada2_output_sequences)) {
-    # Fastq were provided as input -> perform alignment with dada2
-    # Check if input files are compressed
-    zip_files = list.files(input_dir, pattern = '.zip$', full.names = TRUE)
-    tar_files = list.files(input_dir, pattern = '.tar$', full.names = TRUE)
-    
-    if (length(zip_files) > 0) {
-      cli::cli_alert_info("Found zipped fastq files, extracting")
-      for (zf in zip_files) {
-        utils::unzip(zf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
-      }
-      cli::cli_alert_info("Done extracting")
-    } else if (length(tar_files) > 0) {
-      cli::cli_alert_info("Found tar fastq files, extracting")
-      for (tf in tar_files) {
-        utils::untar(tf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
-      }
-      cli::cli_alert_info("Done extracting")
+  # Fastq were provided as input -> perform alignment with dada2
+  # Check if input files are compressed
+  zip_files = list.files(input_dir, pattern = '.zip$', full.names = TRUE)
+  tar_files = list.files(input_dir, pattern = '.tar$', full.names = TRUE)
+  
+  if (length(zip_files) > 0) {
+    cli::cli_alert_info("Found zipped fastq files, extracting")
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
     }
-    fastqs = list.files(input_dir, pattern = '.fastq$')
-    if (length(fastqs) == 0) {
-      stop('No fastq files found in the input directory provided, stopping.')
-    } else {
-      cat("Found", length(fastqs), "fastq files")
+    cli::cli_alert_info("Done extracting")
+  } else if (length(tar_files) > 0) {
+    cli::cli_alert_info("Found tar fastq files, extracting")
+    for (tf in tar_files) {
+      utils::untar(tf, exdir = stringr::str_replace(input_dir, pattern = "/$", replacement=''))
     }
-    fastqs = sort(fastqs) 
-    fnFs = fastqs[grepl("_R1", fastqs)] 
-    fnRs = fastqs[grepl("_R2", fastqs)] 
-    # Get sample names, assuming files named as so: SAMPLENAME_XXX.fastq
-    sample.names = stringr::str_remove_all(fnFs, "_R1.fastq")
-    map_file_sample = check_input(sample.names = sample.names, 
-                                  map_file_sample = map_file_sample)
-    # Specify the full path to the fnFs and fnRs
-    fnFs = file.path(input_dir, fnFs)
-    fnRs = file.path(input_dir, fnRs)
-    
-    align_output = dada2_alignment(fnFs = fnFs,
-                                   fnRs = fnRs,
-                                   map_file_sample = map_file_sample,
-                                   sample.names = sample.names,
-                                   output_dir = output_dir,
-                                   output_dir_files = output_dir_files,
-                                   output_dir_dada2 = output_dir_dada2,
-                                   output_figures = output_figures,
-                                   multithread = multithread,
-                                   dada2_pooled_analysis = dada2_pooled_analysis,
-                                   verbose =  T,
-                                   dada2_minFoldParentOverAbundance = dada2_chimeras_minFoldParentOverAbundance,
-                                   dada2_errorRate_estimation = dada2_errorRate_estimation,
-                                   ...)
-    
-    seqtab.nochim = align_output$seqtab.nochim
-    REvoBC_object$dada2$track = align_output$track
-    REvoBC_object$dada2$bimera_percentage = align_output$bimera_perc
-    REvoBC_object$dada2$original_sequences = align_output$nSequences_with_chimeras
-    
-  } else {
-    seqtab.nochim = utils::read.csv(dada2_output_sequences, 
-                                    stringsAsFactors = FALSE,
-                                    row.names = 1)
-    map_file_sample = check_input(sample.names = rownames(seqtab.nochim), 
-                                  map_file_sample = map_file_sample)
+    cli::cli_alert_info("Done extracting")
   }
+  fastqs = list.files(input_dir, pattern = '.fastq$')
+  if (length(fastqs) == 0) {
+    stop('No fastq files found in the input directory provided, stopping.')
+  } else {
+    cat("Found", length(fastqs), "fastq files\n")
+  }
+  fastqs = sort(fastqs) 
+  fnFs = fastqs[grepl("_R1", fastqs)] 
+  fnRs = fastqs[grepl("_R2", fastqs)] 
+  # Get sample names, assuming files named as so: SAMPLENAME_XXX.fastq
+  sample.names = stringr::str_remove_all(fnFs, "_R1.fastq")
+  map_file_sample = check_input(sample.names = sample.names, 
+                                map_file_sample = map_file_sample)
+  # Specify the full path to the fnFs and fnRs
+  fnFs = file.path(input_dir, fnFs)
+  fnRs = file.path(input_dir, fnRs)
+  
+  align_output = alignment_pipeline(fnFs = fnFs,
+                                    fnRs = fnRs,
+                                    map_file_sample = map_file_sample,
+                                    sample.names = sample.names,
+                                    output_dir = output_dir,
+                                    trimmomatic_path = trimmomatic_path,
+                                    flash_path = flash_path,
+                                    ...)
+  
+  #seqtab.nochim = align_output$seqtab.nochim
+  REvoBC_object$dada2$track = align_output$track
+  
+  
   REvoBC_object$map_file_sample = map_file_sample
-  REvoBC_object$dada2_asv_prefilter = adjust_seqtab(seqtab.nochim = seqtab.nochim,
-                                                    map_file_sample = map_file_sample,
-                                                    output_dir_files = output_dir_files)
+  REvoBC_object$asv_prefilter = align_output$seqtab
   return(REvoBC_object)
   
 }
@@ -345,14 +327,35 @@ asv_analysis = function(REvoBC_object,
     ref_border_sites = ref_border_sites,
     stringsAsFactors = FALSE)
   
-  seqtab_df = REvoBC_object$dada2_asv_prefilter
+  seqtab_df = REvoBC_object$asv_prefilter
   
   REvoBC_object$reference = barcodes_info
   
-  # Store the original number of sequences and that after chimeras removal
-  orgseq <- REvoBC_object$dada2$original_sequences
-  chimseq_filter <- nrow(seqtab_df)
+  # Store the original number of sequences
+  orgseq <- nrow(seqtab_df)
+  seqtab_df_original = seqtab_df
+  
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
+  
+  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  seqtab_df = seqtab_df %>% filter(totalCounts > asv_count_cutoff)
+  
+  counts_filtering = nrow(seqtab_df)
+  
+  mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
+  ###### COLLAPSING
+  seqtab_df = asv_collapsing(seqtab_df, 
+                             barcodes_info$ref_seq,
+                             pwa_match,
+                             pwa_mismatch,
+                             pwa_gapOpening,
+                             pwa_gapExtension, sample_columns)
+  
+  endseq_filter <- nrow(seqtab_df)
+  
+  seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
+  
+  flanking_filtering = nrow(seqtab_df)
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   # In case no original barcode is found then insert it with 0 counts
@@ -366,72 +369,11 @@ asv_analysis = function(REvoBC_object,
     seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
   }
   
-  
-  seqtab_df_original = seqtab_df
-  # Removal of contamination: keep only those ASV that start (5 nucleotides) and end (10 nuceotides) like the original barcode.
-  # The first 5 nts are the same for all barcodes, while the end is barcode-specific
-  RD1_10 <- barcodes_info$ref_flank_left
-  RD2_10 <- barcodes_info$ref_flank_right
-  nmbc <- paste0(ref_name, ".NMBC")#gsub(pattern = 'ORG', replacement = 'NMBC', x=barcode)
-  # filter based on 5' and 3' 10x nts of
-  if (flanking_filtering == 'both') {
-    seqtab_df <- dplyr::filter(seqtab_df,
-                               stringr::str_detect(string = seq, pattern = !!RD1_10) & stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-    
-  } else if (flanking_filtering == 'right') {
-    seqtab_df <- dplyr::filter(seqtab_df,
-                               stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less affected
-    
-  } else if(flanking_filtering == 'left') {
-    seqtab_df <- dplyr::filter(seqtab_df,
-                               stringr::str_detect(string = seq, pattern = !!RD1_10)) # the same for different barcodes: 1.0 - site less affected
-    
-  } else if (flanking_filtering == 'either'){
-    seqtab_df <- dplyr::filter(seqtab_df,
-                               stringr::str_detect(string = seq, pattern = !!RD1_10) | stringr::str_detect(string = seq, pattern = !!RD2_10)) # the same for different barcodes: 1.0 - site less a
-  } else {
-    stop('Flanking filtering must be one of "left", "right", "both" or "either". Exiting.')
-  }
-  
-  seqtab_df_original$condition = 'removed'
-  seqtab_df_original[rownames(seqtab_df_original) %in% rownames(seqtab_df),]$condition = 'kept'
-  seqtab_df_original$total_counts = rowSums(seqtab_df_original[,sample_columns])
-  
-  seqtab_df_original$condition = as.factor(seqtab_df_original$condition)
-  
-  # ggplot(seqtab_df_original[seqtab_df_original$seq_names != "BC10v0.NMBC",], 
-  #        aes(x = total_counts, fill = condition)) +                       # Draw overlaying histogram
-  #   geom_histogram(position = "identity", bins = 20, alpha=0.5) + scale_x_log10()
-  
-  
-  endseq_filter <- nrow(seqtab_df)
-  
-  mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
-  
-  pwa <- Biostrings::pairwiseAlignment(subject = barcodes_info$ref_seq, 
-                                       pattern = seqtab_df$seq, 
-                                       substitutionMatrix = mx_crispr,
-                                       gapOpening = pwa_gapOpening,
-                                       gapExtension = pwa_gapExtension,
-                                       type = pwa_type)
-  # Compute the percent sequence identity
-  seqtab_df$pid <- Biostrings::pid(pwa)
-  
-  # Assign to each ASV with pid >= cutoff the original barcode and then pool the sequences
-  # (the counts of each ASV with pid >= cutoff will be summed to the ones of the NMBC)
-  pidseq_filter = seqtab_df %>% 
-    mutate(seq_names = ifelse(pid >= pid_cutoff_nmbc, nmbc, seq_names)) %>%
-    dplyr::select(seq_names, all_of(sample_columns), pid) %>%
-    group_by(seq_names) %>%
-    dplyr::summarise_at(sample_columns, sum) %>%
-    merge(dplyr:: select(seqtab_df, seq_names, seq), by = "seq_names")
-  pidseq_filter_dim = nrow(pidseq_filter)
+  #pidseq_filter_dim = nrow(pidseq_filter)
   
   # Now sort ASV by total frequency and assign an ASV ID
   seqtab_df_clean_asv <-
-    tibble(pidseq_filter) %>%
-    mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>%
-    arrange(-asv_total_freq)  %>%
+    tibble(seqtab_df) %>% mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>% arrange(-asv_total_freq) %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
   seqtab_df_clean_nmbc <- seqtab_df_clean_asv[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, pattern = "NMBC"),]
@@ -467,7 +409,7 @@ asv_analysis = function(REvoBC_object,
   # norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
   #                                                          REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
   
-  norm_seqtab_df_clean_asv[sample_columns] <- norm_seqtab_df_clean_asv[sample_columns]
+  norm_seqtab_df_clean_asv[sample_columns] = norm_seqtab_df_clean_asv[sample_columns]
   
   REvoBC_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
   
@@ -479,15 +421,16 @@ asv_analysis = function(REvoBC_object,
                                  sample_columns, 
                                  asv_count_cutoff,
                                  figure_dir,
-                                 nmbc,
+                                 nmbc = paste0( barcodes_info$ref_name, ".NMBC"),
                                  output_dir = output_dir)
   
   
   if(output_figures) {
     # assemble data  with all number for each step of filtering
-    track_data <- data.frame(name=as.factor(c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")), num=c(orgseq, chimseq_filter, endseq_filter, pidseq_filter_dim, clean_asv))
+    track_data <- data.frame(name=as.factor(c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter", "Final ASVs")), 
+                             num=c(orgseq, counts_filtering, endseq_filter, flanking_filtering, clean_asv))
     # set order of columns DGN
-    track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Chimeric Seq. Filter", "Flanking Seq. Filter", "Similarity Seq. Filter", "Final ASVs")))
+    track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter",  "Final ASVs")))
     track_data$num_names <- paste0(track_data$num, " x ASVs") # numbers of ASV included on the top of bar  
     
     # calculate percent change from previous filter
@@ -661,7 +604,7 @@ analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
 #' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
 #' 
 #' @export infer_phylogeny
-# @import reticulate
+#' @import reticulate
 #' @importFrom Rphylip Rmix
 #' @importFrom scales comma
 #' @importFrom phytools mrp.supertree
@@ -674,7 +617,7 @@ analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
-infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = 'del_ins') {
+infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
   
   if (! (mutations_use %in% c('del', 'del_ins'))) {
     cli::cli_alert_danger("Error, muations use must be one of 'del_ins', 'del'")
@@ -685,52 +628,47 @@ infer_phylogeny = function(REvoBC_object, phylip_package_path, mutations_use = '
   
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
-  if (mutations_use == 'smooth_del') { 
-    asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix %>% 
-      dplyr::select(starts_with('del_')) %>%
-      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
+  asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix
+  barcode_var = asv_bin_var[REvoBC_object$reference$ref_name,]  
+  if (mutations_use == 'del_ins') { #del- del_ins - smooth_del - smooth_del_ins
     
-  } else if (mutations_use == 'smooth_del_ins'){
-    asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix %>%
-      dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
-      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
-    
-  } else if (mutations_use == 'del_ins') { #del- del_ins - smooth_del - smooth_del_ins
-    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix %>%
+    asv_bin_var = asv_bin_var %>%
       dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
   } else {
-    asv_bin_var = REvoBC_object$alignment$binary_mutation_matrix %>% 
+    asv_bin_var = asv_bin_var %>% 
       dplyr::select(starts_with('del_')) %>%
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
   }
   
-  # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
-  # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
-  dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
-  asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
-                             REvoBC_object$reference$ref_name)
+  asv_bin_var = dplyr::bind_rows(barcode_var, asv_bin_var)
   
-  asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
-  asv_bin_var = asv_bin_var[,colSums(asv_bin_var) > 0]
+  # # Don't use for the phylogeny reconstruction those sequences having nothing in common with the 
+  # # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
+  # dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
+  # asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
+  #                        REvoBC_object$reference$ref_name)
+  # 
+  # asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
+  # asv_bin_var = asv_bin_var[,colSums(asv_bin_var) > 0]
+  # 
+  # write.csv(asv_bin_var, file.path(output_dir, "/used_binary_mutation_matrix.csv"))
   
-  write.csv(asv_bin_var, file.path(output_dir, "/used_binary_mutation_matrix.csv"))
+  #phyl_result = compute_phylogenetic_tree(asv_bin_var,
+  # phylip_package_path, 
+  # REvoBC_object$reference$ref_name)
   
-  phyl_result = compute_phylogenetic_tree(asv_bin_var,
-                                          phylip_package_path, 
-                                          REvoBC_object$reference$ref_name)
+  phyl_result = compute_tree_cassiopeia(asv_bin_var, REvoBC_object$reference$ref_name)
   
-  #phyl_result = compute_tree_cassiopeia(asv_bin_var)
-  
-  ape::write.tree(phyl_result$tree_mp, #phyl_result$tree_uncollapsed, 
-                  file = paste0(output_dir, "/phyl_uncollapsed.newick"),
+  ape::write.tree(phyl_result$tree_collapsed_phylo, #phyl_result$tree_uncollapsed, 
+                  file = paste0(output_dir, "/phyl_collapsed.newick"),
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
   
-  REvoBC_object$phylogeny$tree = phyl_result$tree_mp_df#phyl_result$tree_collapsed_df
+  REvoBC_object$phylogeny$tree = phyl_result$tree_collapsed_df#phyl_result$tree_collapsed_df
   
-  write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny.csv"))
+  write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny_collapsed_df.csv"))
   
   return(REvoBC_object)
   
@@ -793,7 +731,9 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     }
     
   } 
-
+  
+  # TODO: remove this, because Cassiopeia automatically puts in singlet clusters those sequences that
+  # have nothing in common with the others.
   wt_asv = c()#setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
   wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
   if (length(wt_asv) > 0) {
@@ -862,25 +802,27 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
                                    REvoBC_object$alignment$ASV_alterations_width, 
-                                   by.x="asv_names", by.y="asv_names"))
+                                   by.x ="asv_names", by.y="asv_names"))
   
   
   width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), 
                               all_of(starts_with('width_')))
-  final_nmbc <- filter(df_to_plot_perf_match, str_detect(asv_names, "NMBC"))
+  final_nmbc <- filter(df_to_plot_perf_match, str_detect(asv_names, "NMBC")) %>% 
+    mutate(asv_names = stringr::str_replace_all(string = asv_names, pattern = '.NMBC', ''))
   nmbc_mrg <- cbind(final_nmbc, width_nmbc)
   
   # add back NMBC
-  df_to_plot_final <- rbind(df_to_plot_final, nmbc_mrg)
+  df_to_plot_final <- rbind(df_to_plot_final %>% filter(str_detect(asv_names, "ASV")), 
+                            nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
   df_to_plot_final = tibble(merge(df_to_plot_final, 
                                   REvoBC_object$cleaned_deletions_insertions$coordinate_matrix,
                                   by.x="asv_names", by.y="asv_names")) %>% dplyr::select(-c(spanned_cutSites))
   
-  df_to_plot_final = tibble(merge(df_to_plot_final,
-                                  REvoBC_object$phylogeny$tree %>% dplyr::select(label, group),
-                            by.x="asv_names", by.y="label"))
+  df_to_plot_final = tibble(dplyr::right_join(df_to_plot_final,
+                                              REvoBC_object$phylogeny$tree %>% filter(isTip) %>% dplyr::select(label, group),
+                                              by=c("asv_names" = "label")))
   
   output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
@@ -895,8 +837,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns)
   
   # if (is_smoothed)
-  msa_cna_bc_smoothed = plot_msa(REvoBC_object, cleaned_deletions = mut_in_phyl)
-  msa_cna_bc = plot_msa(REvoBC_object, cleaned_deletions = FALSE)
+  msa_cna_bc_smoothed = plot_msa(REvoBC_object, cleaned_deletions = mut_in_phyl, subset_asvs = unique(df_to_plot_final$asv_names))
+  msa_cna_bc = plot_msa(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = unique(df_to_plot_final$asv_names))
   
   bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
   
@@ -908,7 +850,7 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
- # if (is_smoothed) {
+  # if (is_smoothed) {
   smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
   msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
   # } else {
@@ -931,6 +873,6 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
          plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
-  REvoBC_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
+  #REvoBC_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
   return(REvoBC_object)
 }

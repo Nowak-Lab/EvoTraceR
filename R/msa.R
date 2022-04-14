@@ -51,7 +51,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   del_sub_ins_df <- 
     rbind(del_sub_df, ins_df) #%>%
   
-  sample_columns = setdiff(colnames(REvoBC_object$dada2_asv_prefilter), c("seq_names", "seq"))
+  sample_columns = setdiff(colnames(REvoBC_object$asv_prefilter), c("seq_names", "seq"))
   
   sample_order = sort(sample_columns)
   prostate_samples = sample_order[stringr::str_detect(string = sample_order, pattern = 'PRL')]
@@ -174,7 +174,7 @@ align_asv = function(REvoBC_object,
                      ...) {
   dots = list(...)
   df_to_plot_org_tree <- 
-    dplyr::select(REvoBC_object$statistics$asv_toBarcode_similarity, asv_names, seq) %>%
+    dplyr::select(REvoBC_object$statistics$all_asv_statistics, asv_names, seq) %>%
     filter(!str_detect(asv_names, "NMBC")) %>%
     distinct() %>%
     arrange(asv_names)
