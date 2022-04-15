@@ -89,6 +89,7 @@ initialize_REvoBC = function(output_dir,
                              flash_path,
                              input_dir = NULL,
                              map_file_sample = NULL,
+                             sample_order = 'alphabetical',
                              ...) {
   # Check that the user inserted the correct parameters
   if (is.null(input_dir) ) {
@@ -167,6 +168,22 @@ initialize_REvoBC = function(output_dir,
   
   REvoBC_object$map_file_sample = map_file_sample
   REvoBC_object$asv_prefilter = align_output$seqtab
+  
+  if (is.character(sample_order) & length(sample_order) == 1) {
+    if (sample_order != 'alphabetical') {
+      stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
+    }
+    sample_order = sort(unique(map_file_sample$sample))
+    if ('PRL' %in% sample_order)
+      sample_order = c('PRL', setdiff(sample_order, 'PRL'))
+  } else {
+    if (length(intersect(sample_order, REvoBC_object$map_file_sample$sample)) != length(sample_order)) {
+      cli::cli_alert_danger('The samples found in variable sample_order do not match the samples contained in the dataset.')
+      cat("The following samples need to be provided: ", unique(REvoBC_object$map_file_sample$sample))
+      stop("Exiting")
+    }
+  }
+  REvoBC_object$sample_order = sample_order
   return(REvoBC_object)
   
 }
@@ -781,24 +798,8 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   
   # merge with df_to_plot_perf_match
-  
-  if (is.character(sample_order) & length(sample_order) == 1) {
-    if (sample_order != 'alphabetical') {
-      stop('The ordering provided is not valid. Either use the default alphabetical or give a list of sample names.')
-    }
-    sample_order = sort(unique(df_to_plot_perf_match$sample))
-    if ('PRL' %in% sample_order)
-      sample_order = c('PRL', setdiff(sample_order, 'PRL'))
-    df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
-  } else {
-    if (length(intersect(sample_order, df_to_plot_perf_match$sample)) != length(sample_order)) {
-      cli::cli_alert_danger('The samples found in variable sample_order do not match the samples contained in the dataset.')
-      cat("The following samples need to be provided: ", unique(df_to_plot_perf_match$sample))
-      stop("Exiting")
-    }
-    
-    df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
-  }
+  sample_order = REvoBC_object$sample_order
+  df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
   
   df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
                                    REvoBC_object$alignment$ASV_alterations_width, 

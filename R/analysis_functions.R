@@ -160,11 +160,8 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
     as.character()
   
   # prepare levels and orders for days or organs
-  sample_order = sort(sample_columns)
-  prostate_samples = sample_order[stringr::str_detect(string = sample_order, pattern = 'PRL')]
-  if (length(prostate_samples) > 0)
-    sample_order = c(prostate_samples, setdiff(sample_order, prostate_samples))
-  
+  sample_order = REvoBC_object$sample_order
+    
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
     dplyr::mutate(sample = forcats::fct_relevel(sample, sample_order)) %>%

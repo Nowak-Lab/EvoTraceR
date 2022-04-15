@@ -53,11 +53,8 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   
   sample_columns = setdiff(colnames(REvoBC_object$asv_prefilter), c("seq_names", "seq"))
   
-  sample_order = sort(sample_columns)
-  prostate_samples = sample_order[stringr::str_detect(string = sample_order, pattern = 'PRL')]
-  if (length(prostate_samples) > 0)
-    sample_order = c(prostate_samples, setdiff(sample_order, prostate_samples))
-  
+  sample_order = REvoBC_object$sample_order
+    
   # prepare levels and orders
   del_sub_ins_df <- 
     del_sub_ins_df %>%
