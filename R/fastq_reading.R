@@ -44,20 +44,20 @@ alignment_pipeline = function(fnFs,
     
     track_reads[map_file_sample[sample, 'sample'], 'input'] = length(Biostrings::readDNAStringSet(fnFs[i], format = 'fastq'))
     
-    bashCallTrim = paste0("java -jar ", trimmomatic_path, " PE ",
+    bashCallTrim = paste0("java -jar '", trimmomatic_path, "' PE '",
                           fnFs[i], 
-                          " ", fnRs[i], " ", trimmed_dir, sample.names[i], "_R1_paired.fastq ", 
-                          trimmed_dir, sample.names[i], "_R1_unpaired.fastq  ", trimmed_dir, sample.names[i], "_R2_paired.fastq ", trimmed_dir, sample.names[i], 
-                          "_R2_unpaired.fastq LEADING:10 TRAILING:10 MINLEN:20 SLIDINGWINDOW:5:10 ILLUMINACLIP:", 
-                          trimmomatic_maindir, "/adapters/TruSeq3-PE.fa:2:30:12")
+                          "' '", fnRs[i], "' '", trimmed_dir, sample.names[i], "_R1_paired.fastq' '", 
+                          trimmed_dir, sample.names[i], "_R1_unpaired.fastq' '", trimmed_dir, sample.names[i], "_R2_paired.fastq' '", trimmed_dir, sample.names[i], 
+                          "_R2_unpaired.fastq' LEADING:10 TRAILING:10 MINLEN:20 SLIDINGWINDOW:5:10 ILLUMINACLIP:'", 
+                          trimmomatic_maindir, "/adapters/TruSeq3-PE.fa':2:30:12")
     
     track_reads[map_file_sample[sample, 'sample'], 'trimmed'] = length(Biostrings::readDNAStringSet(paste0(trimmed_dir, sample.names[i], "_R1_paired.fastq"), format = 'fastq'))
     
-    bashCallFlash = paste0(flash_path, 
+    bashCallFlash = paste0("'", flash_path, "'", 
                            " --min-overlap 30 --max-overlap 250 --max-mismatch-density 0.05 --output-directory=", 
-                           flash_input_dir, sample,
-                           " ", trimmed_dir, sample.names[i],
-                           "_R1_paired.fastq ", trimmed_dir, sample.names[i], "_R2_paired.fastq")
+                           "'", flash_input_dir, sample,
+                           "' '", trimmed_dir, sample.names[i],
+                           "_R1_paired.fastq' '", trimmed_dir, sample.names[i], "_R2_paired.fastq'")
     
     system(bashCallTrim, wait = TRUE)
     system(bashCallFlash, wait = TRUE)
