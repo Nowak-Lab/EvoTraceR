@@ -1,7 +1,7 @@
-Package: REvoBC
-Version: 0.99.20
+Package: EvoTraceR
+Version: 0.99.21
 Date: 2022-01-04
-Title: REvoBC
+Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
             person("Dawid","Nowak",role=c("aut")))
@@ -44,14 +44,14 @@ Suggests:
     testthat,
     knitr
 Name:
-    REvoBC
+    EvoTraceR
 Description:
     Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EVoBC kit.
 Encoding: UTF-8
 LazyData: TRUE
 License: file LICENSE
-URL: https://github.com/Nowak-Lab/REvoBC
-BugReports: https://github.com/Nowak-Lab/REvoBC
+URL: https://github.com/Nowak-Lab/EvoTraceR
+BugReports: https://github.com/Nowak-Lab/EvoTraceR
 biocViews: 
     BiomedicalInformatics,
     SingleCell,

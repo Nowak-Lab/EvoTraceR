@@ -4,18 +4,18 @@
 \alias{analyse_mutations}
 \title{analyse_mutations}
 \usage{
-analyse_mutations(REvoBC_object, cleaning_window = c(3, 3))
+analyse_mutations(EvoTraceR_object, cleaning_window = c(3, 3))
 }
 \arguments{
-\item{REvoBC_object}{REvoBC object on which we want to perform msa.}
+\item{EvoTraceR_object}{EvoTraceR object on which we want to perform msa.}
 
 \item{cleaning_window}{(Optional) Default is c(3,3). After identifying all mutations in each sequence, we discard the ones that are not biologically meaningful. 
 In order to perform this step, we assume that both the beginning and end of each indel should be close to one of the cut sites. Thus, we perfom the following: for each
 indel, we extend its start to the left by cleaning_window[1] positions and its end by cleaning_window[2] positions. If the extended indel doesn't span any of the cut sites, than it is removed.
-The result of this cleaning procedure are stored in REvoBC_object$cleaned_deletions_insertions (See output for more details.)}
+The result of this cleaning procedure are stored in EvoTraceR_object$cleaned_deletions_insertions (See output for more details.)}
 }
 \value{
-REvoBC object with the field \code{alignment}, updated with the following fields:
+EvoTraceR object with the field \code{alignment}, updated with the following fields:
 \itemize{
 \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
@@ -23,7 +23,7 @@ REvoBC object with the field \code{alignment}, updated with the following fields
 \item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
 This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 }. 
-It also creates a new field in the REvoBC object called \code{cleaned_deletions_insertions}, which contains the following information for
+It also creates a new field in the EvoTraceR object called \code{cleaned_deletions_insertions}, which contains the following information for
 all the deletions identified in the ASVs, whose start and end site have been cleaned using the known cutting sites.
 The following dataframes are stored in the field \code{cleaned deletions}:
 \itemize{
@@ -52,7 +52,7 @@ which indicates the start, end and type of mutation.
 }
 \examples{
 data(revo_analyzed)
-output_dir = system.file("extdata", "output", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
 revo_analyzed$output_directory = output_dir
 revo_msa = analyse_mutations(revo_analyzed)
 

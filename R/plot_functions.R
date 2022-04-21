@@ -31,16 +31,16 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
   return(ggtree_mp)
 }
 
-plot_msa = function(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = NULL) {
+plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = NULL) {
   
   if (cleaned_deletions == 'del') {
-    to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
+    to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt == 'del', alt, 'wt'))
   } else if (cleaned_deletions == 'del_ins') {
-    to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
+    to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'wt'))
   } else {
-     to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+     to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment
   }
   
   if (! is.null(subset_asvs)) {
@@ -50,9 +50,9 @@ plot_msa = function(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = NULL
     }
   }
   # else if (smoothed_deletions == 'sub_smooth_del_ins') {
-  #   to_plot_df = REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment
+  #   to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment
   # } else {
-  #   to_plot_df = REvoBC_object$alignment$asv_barcode_alignment
+  #   to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment
   # }
   
   # if (smoothed_deletions != FALSE) {
@@ -83,8 +83,8 @@ plot_msa = function(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = NULL
   to_plot_df = to_plot_df %>% dplyr::arrange(asv_names, position_bc260, desc(alt))
   
   # Position of PAM in guides
-  pam_pos <- REvoBC_object$reference$ref_cut_sites
-  bc_len = nchar(REvoBC_object$reference$ref_seq)
+  pam_pos <- EvoTraceR_object$reference$ref_cut_sites
+  bc_len = nchar(EvoTraceR_object$reference$ref_seq)
   # Adjust for height of tiles -> "sub" smaller
   
   to_plot_df$tile_height <- ifelse(to_plot_df$alt == "sub", 0.3, 0.75)
@@ -119,7 +119,7 @@ plot_msa = function(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = NULL
   return(msa_cna_bc)
 }
 # The input must be a tibble with the following columns: asv_names, width_total_del, width_total_ins, width_total_sub
-# This tibble is found in REvoBC_object$alignment$asv_alterations_width
+# This tibble is found in EvoTraceR_object$alignment$asv_alterations_width
 plot_mutations_width = function(df_to_plot_final) {
   bar_ins_del_sub_width <- 
     ggplot(data=dplyr::select(df_to_plot_final, asv_names, width_total_del, width_total_ins, width_total_sub) %>% 

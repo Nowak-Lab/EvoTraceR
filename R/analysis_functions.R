@@ -120,16 +120,16 @@ asv_collapsing = function(seqtab,
 
 
 # Compute the frequency of the different ASV in each organ/day and the frequency of counts in each organ for every ASV.
-# Compute also, for each ASV the sample in which the frequency is maximum (store this information in a column \code{perc_fold_to_max} of tibble seqtab_df_clean_asv_long in the REvoBC object)
+# Compute also, for each ASV the sample in which the frequency is maximum (store this information in a column \code{perc_fold_to_max} of tibble seqtab_df_clean_asv_long in the EvoTraceR object)
 # Then, compute for each sample, indices of diversity of ASVs in each samples (Shannon Entropy, Simpson Index).
-# It stores all results in the field \code{statistics} of the REvoBC object.
+# It stores all results in the field \code{statistics} of the EvoTraceR object.
 # 
-# REvoBC_object where the statistics on ASV will be computed. 
+# EvoTraceR_object where the statistics on ASV will be computed. 
 # sample. List of the column names containing the organs/days.
 # asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
-asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figure_dir, nmbc, output_dir) {
-  seqtab_df_clean_asv = REvoBC_object$clean_asv_dataframe
+asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, figure_dir, nmbc, output_dir) {
+  seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe
   
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
@@ -160,7 +160,7 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
     as.character()
   
   # prepare levels and orders for days or organs
-  sample_order = REvoBC_object$sample_order
+  sample_order = EvoTraceR_object$sample_order
     
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
@@ -183,7 +183,7 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
     group_by(asv_names) %>%
     mutate(perc_fold_to_max = 100 * (count/max(count))) %>%
     arrange(-count)
-  REvoBC_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
+  EvoTraceR_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
   
   # save as Data csv
   write.csv(seqtab_df_clean_asv_long, 
@@ -206,8 +206,8 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
       abundance_asv_persample = sum(count), 
       richness_asv_persample = sum(count > 0, na.rm = TRUE))
   # Store in object and in csv file
-  REvoBC_object$statistics$asv_totalCounts = asv_names_stat
-  REvoBC_object$statistics$sample_totalcounts = sample_stat
+  EvoTraceR_object$statistics$asv_totalCounts = asv_names_stat
+  EvoTraceR_object$statistics$sample_totalcounts = sample_stat
   
   write.csv(asv_names_stat, 
             file.path(output_dir, "asv_totalCounts.csv"),
@@ -236,7 +236,7 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
     ) %>%
     mutate(pielous_evenness_persample = shannons_index_persample / log(richness_asv_persample) )
   
-  REvoBC_object$statistics$asv_diversity_persample = diversity
+  EvoTraceR_object$statistics$asv_diversity_persample = diversity
   write.csv(diversity, 
             file.path(output_dir, "asv_diversity_persample.csv"))
   
@@ -256,21 +256,21 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   # Save as Data csv
   write.csv(mx_freq_bin, file.path(output_dir, "asv_persample_detection.csv"))
   
-  REvoBC_object$statistics$asv_persample_frequency = mx_freq
-  REvoBC_object$statistics$asv_persample_detection = mx_freq_bin
+  EvoTraceR_object$statistics$asv_persample_frequency = mx_freq
+  EvoTraceR_object$statistics$asv_persample_detection = mx_freq_bin
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
-                                             y=dplyr::select(REvoBC_object$clean_asv_dataframe, seq, asv_names), 
+                                             y=dplyr::select(EvoTraceR_object$clean_asv_dataframe, seq, asv_names), 
                                              by="asv_names") %>%
-    add_row(data.frame(asv_names = REvoBC_object$reference$ref_name, 
-                       seq = REvoBC_object$reference$ref_seq, 
+    add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
+                       seq = EvoTraceR_object$reference$ref_seq, 
                        stringsAsFactors = F))
   
 
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
 
-  pwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
+  pwa <- Biostrings::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
                                        pattern = df_to_plot_perf_match$seq,
                                        type="global", gapOpening = 20, gapExtension = 1)
   # TOLTO PERCHE FORSE NON SERVE
@@ -286,9 +286,9 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
   write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')],
             file.path(output_dir, "asv_toBarcode_similarity.csv"))
 
-  REvoBC_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
+  EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
-  REvoBC_object$statistics$all_asv_statistics = df_to_plot_perf_match
+  EvoTraceR_object$statistics$all_asv_statistics = df_to_plot_perf_match
   # Histogram of Length    
   # skip nmbc
   data_for_hist = df_to_plot_perf_match %>% filter(stringr::str_detect(asv_names, "ASV"))
@@ -297,17 +297,17 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
       ggplot(data=data_for_hist, 
              aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
       geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(REvoBC_object$reference$ref_seq)*2/10), 
-                                                               nchar(REvoBC_object$reference$ref_seq)*2, 
-                                                               floor(nchar(REvoBC_object$reference$ref_seq)*2/10))), 
-                         limits=c(0, nchar(REvoBC_object$reference$ref_seq)*2), 
+      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10), 
+                                                               nchar(EvoTraceR_object$reference$ref_seq)*2, 
+                                                               floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10))), 
+                         limits=c(0, nchar(EvoTraceR_object$reference$ref_seq)*2), 
                          expand = c(0.01, 0.01)) +
       scale_y_continuous(labels=function(x) paste0(x, "%"),
                          limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
                          expand = c(0.01, 0.01)) +
       xlab("ASV Length") +
       ylab("ASV Frequency") +
-      geom_vline(xintercept=nchar(REvoBC_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
+      geom_vline(xintercept=nchar(EvoTraceR_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
       lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
       lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
       # add theme
@@ -329,5 +329,5 @@ asv_statistics <- function(REvoBC_object, sample_columns, asv_count_cutoff, figu
               row.names = FALSE, quote = FALSE)
   }
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
 }

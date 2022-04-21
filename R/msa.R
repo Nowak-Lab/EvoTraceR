@@ -3,12 +3,12 @@
 # Output 2: "del_sub_ins_df.csv" -> "alt_count_bc.pdf   ------------------------------------------------------
 
 
-count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figures) {
+count_alterations <- function(EvoTraceR_object, output_dir_files, output_dir_figures) {
   
-  alignment_tidy_ref_alt = REvoBC_object$alignment$asv_barcode_alignment
+  alignment_tidy_ref_alt = EvoTraceR_object$alignment$asv_barcode_alignment
   
-  percentages = REvoBC_object$statistics$asv_df_percentages %>%
-    ungroup() %>% add_row(data.frame(asv_names = REvoBC_object$reference$ref_name,
+  percentages = EvoTraceR_object$statistics$asv_df_percentages %>%
+    ungroup() %>% add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name,
                                      stringsAsFactors = F))
   
   # Join with the sequences df to have the frequency of each ASV in each sample
@@ -30,7 +30,7 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
                    file.path(output_dir_files, "asv_alterations_width.csv"), 
                    row.names = FALSE)
   
-  REvoBC_object$alignment$ASV_alterations_width = alignment_tidy_ref_alt_mrg_final_width_summ
+  EvoTraceR_object$alignment$ASV_alterations_width = alignment_tidy_ref_alt_mrg_final_width_summ
   
   # Select only deletions and substitutions
   del_sub_df <- 
@@ -51,9 +51,9 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   del_sub_ins_df <- 
     rbind(del_sub_df, ins_df) #%>%
   
-  sample_columns = setdiff(colnames(REvoBC_object$asv_prefilter), c("seq_names", "seq"))
+  sample_columns = setdiff(colnames(EvoTraceR_object$asv_prefilter), c("seq_names", "seq"))
   
-  sample_order = REvoBC_object$sample_order
+  sample_order = EvoTraceR_object$sample_order
     
   # prepare levels and orders
   del_sub_ins_df <- 
@@ -93,14 +93,14 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
   # Histogram Graph ------------------------------------------------------
   # auxiliary data for plotting histogram graph   
   # position of PAM in guides
-  pam_pos <- REvoBC_object$reference$ref_cut_sites
+  pam_pos <- EvoTraceR_object$reference$ref_cut_sites
   # length of barcode
-  bc_len <- nchar(REvoBC_object$reference$ref_seq)
+  bc_len <- nchar(EvoTraceR_object$reference$ref_seq)
   # annotating rectangles for target sites = 26 bp -> 20x bp (target site) + 3x bp (PAM) + 3x bp (spacer)
   alt_count_annot_rect <-
     ggplot(data = del_sub_ins_df_data_to_plot_sum_perc, aes(x=position_bc260, y=sum_perc, fill=alt_long_names, group=sample))
   # add rectangles
-  annot_rect <- REvoBC_object$reference$ref_border_sites
+  annot_rect <- EvoTraceR_object$reference$ref_border_sites
   for (i in seq(1, length(annot_rect), by = 2)) {
     alt_count_annot_rect = alt_count_annot_rect + annotate("rect", xmin=annot_rect[i], xmax=annot_rect[i+1], ymin=-Inf, max=Inf, fill="black", alpha=0.1) 
   }
@@ -154,12 +154,12 @@ count_alterations <- function(REvoBC_object, output_dir_files, output_dir_figure
          plot=alt_count_bc, width=25, height=5*length(sample_columns), units = "cm") 
   # write.csv(del_sub_ins_df_data_to_plot_sum_perc, file.path(output_dir_figures, "/hist_del_sub_ins_data.csv"), row.names = FALSE, quote = FALSE)
   
-  REvoBC_object$alignment$mutations_df = del_sub_ins_df
-  return(REvoBC_object)
+  EvoTraceR_object$alignment$mutations_df = del_sub_ins_df
+  return(EvoTraceR_object)
   
 }
 
-align_asv = function(REvoBC_object, 
+align_asv = function(EvoTraceR_object, 
                      output_dir_files, 
                      output_dir_figures,  
                      pwa_match= 15,
@@ -171,7 +171,7 @@ align_asv = function(REvoBC_object,
                      ...) {
   dots = list(...)
   df_to_plot_org_tree <- 
-    dplyr::select(REvoBC_object$statistics$all_asv_statistics, asv_names, seq) %>%
+    dplyr::select(EvoTraceR_object$statistics$all_asv_statistics, asv_names, seq) %>%
     filter(!str_detect(asv_names, "NMBC")) %>%
     distinct() %>%
     arrange(asv_names)
@@ -198,7 +198,7 @@ align_asv = function(REvoBC_object,
     
     # # Store MSA result
     msa = Biostrings::DNAMultipleAlignment(dnastringset_msa)
-    REvoBC_object$alignment$msa_stringset = msa
+    EvoTraceR_object$alignment$msa_stringset = msa
     
     # Transform Alignment to "Tidy Data"
     alignment_tidy <- ggmsa::tidy_msa(msa=msa,
@@ -217,7 +217,7 @@ align_asv = function(REvoBC_object,
   } else {
     
     
-    mpwa <- Biostrings::pairwiseAlignment(subject = REvoBC_object$reference$ref_seq, 
+    mpwa <- Biostrings::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, 
                                           pattern = dnastringset, 
                                           substitutionMatrix = mx_crispr,
                                           gapOpening = pwa_gapOpening,
@@ -225,7 +225,7 @@ align_asv = function(REvoBC_object,
                                           type = pwa_type)
     
     # mpwa = Biostrings::pairwiseAlignment(pattern = dnastringset, 
-    #                                      subject = REvoBC_object$reference$ref_seq)
+    #                                      subject = EvoTraceR_object$reference$ref_seq)
     aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
     aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
     
@@ -272,18 +272,18 @@ align_asv = function(REvoBC_object,
   # 
   alignment_tidy_ref_alt = dplyr::filter(alignment_tidy_ref_alt, alt != 'ins_smwr')
   
-  REvoBC_object$alignment$asv_barcode_alignment = alignment_tidy_ref_alt %>% 
+  EvoTraceR_object$alignment$asv_barcode_alignment = alignment_tidy_ref_alt %>% 
     dplyr::select(-c('alt_bin', 'position'))
   
-  utils::write.csv(REvoBC_object$alignment$asv_barcode_alignment, 
+  utils::write.csv(EvoTraceR_object$alignment$asv_barcode_alignment, 
                    file.path(output_dir_files, "asv_barcode_alignment.csv"), 
                    quote=F,
                    row.names = FALSE)
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 # Create the binary mutations matrix
-binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_figures, cleaning_window = c(3,3)) {
+binary_mutation_matrix = function(EvoTraceR_object, output_dir_files, output_dir_figures, cleaning_window = c(3,3)) {
   
   
   # Start from the dataframe that contains a line for each position in each ASV.
@@ -303,7 +303,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # We need this so we can group consecutive deletions and inertions and consider them
   # as one whole event.
   
-  mut_df = REvoBC_object$alignment$asv_barcode_alignment %>% ungroup() %>% 
+  mut_df = EvoTraceR_object$alignment$asv_barcode_alignment %>% ungroup() %>% 
     arrange(asv_names, position_bc260) %>%
     group_by(asv_names) %>% 
     mutate(contig_alt = cumsum(c(1, head(alt, -1) != tail(alt, -1)))) %>%
@@ -342,7 +342,7 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # CONSIDER INSERTIONS AND DELETIONS AND WE CLEAN THEM, REMOVING THE ONES THAT ARE TOO FAR AWAY FROM ANY ORANGE LINE
   # Now smooth deletions and insertions (assign start and end to the closest cutting site)
   # smoothed_del_ins = smooth_deletions(mut_df %>% filter(mutation_type != 'sub'), 
-  #                                     REvoBC_object$reference$ref_cut_sites,
+  #                                     EvoTraceR_object$reference$ref_cut_sites,
   #                                     smoothing_window)
   # 
   # # After smoothing, we insert back substitutions, but we need to remove those that
@@ -364,13 +364,13 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   #   bind_rows(smoothed_del_ins)
   
   clean_del_ins = clean_mutations(mut_df %>% filter(mutation_type != 'sub'), 
-                                  REvoBC_object$reference$ref_cut_sites,
+                                  EvoTraceR_object$reference$ref_cut_sites,
                                   cleaning_window)
   
   # Now that we have mutations smoothed, compute the tidy alignment tibble.
-  alignment_cleaned_tidy = tidy_alignment_cleaned(REvoBC_object, clean_del_ins)
+  alignment_cleaned_tidy = tidy_alignment_cleaned(EvoTraceR_object, clean_del_ins)
   
-  REvoBC_object$cleaned_deletions_insertions$asv_barcode_alignment = alignment_cleaned_tidy
+  EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment = alignment_cleaned_tidy
   # convert to binary mutation matrix. Compute the count of each mutation of each ASV.
   # and then convert the tibble from long (one row is ASV mutation count) to wide, in order 
   # to have a column for each mutation
@@ -408,25 +408,25 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
   # assign BC10 variant (for plotting purposes)
   
   mut_df <- tibble::tibble(mut_df) %>%
-    dplyr::add_row(asv_names  = REvoBC_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
+    dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
   
   # In case some ASVs are not affected by any mutation, add a row to the binary mutation matrix 
   # which contains all zeros
   #wt_asv = c(setdiff(mut_df$asv_names, smoothed_del$asv_names))
   clean_del_ins <- tibble::tibble(clean_del_ins) %>%
-    dplyr::add_row(asv_names  = REvoBC_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
+    dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'wt', n_nucleotides = 0)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
   bc_mut = as.list(rep(0, ncol(mut_df_wide)))
   names(bc_mut) = colnames(mut_df_wide)
-  mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
+  mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = EvoTraceR_object$reference$ref_name),
                                  mut_df_wide)
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
   bc_mut = as.list(rep(0, ncol(cleaned_df_wide)))
   names(bc_mut) = colnames(cleaned_df_wide)
   
-  cleaned_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = REvoBC_object$reference$ref_name),
+  cleaned_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = EvoTraceR_object$reference$ref_name),
                                       data.frame(cleaned_df_wide))
   
   write.csv(mut_df_wide, file.path(output_dir_files, "/binary_mutation_matrix.csv"))
@@ -440,15 +440,15 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
                    file.path(output_dir_files, "cleaned_mutations_coordinates.csv"), 
                    row.names = FALSE)
   
-  REvoBC_object$alignment$binary_mutation_matrix = mut_df_wide
-  REvoBC_object$alignment$mutations_coordinates = mut_df
+  EvoTraceR_object$alignment$binary_mutation_matrix = mut_df_wide
+  EvoTraceR_object$alignment$mutations_coordinates = mut_df
   
-  REvoBC_object$cleaned_deletions_insertions$binary_matrix = cleaned_df_wide
-  REvoBC_object$cleaned_deletions_insertions$coordinate_matrix = clean_del_ins
+  EvoTraceR_object$cleaned_deletions_insertions$binary_matrix = cleaned_df_wide
+  EvoTraceR_object$cleaned_deletions_insertions$coordinate_matrix = clean_del_ins
   
   
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
 }
 
 # # mut_df is a dataframe with start and end of insertions and deletions in each ASV (no substitutions)
@@ -503,8 +503,8 @@ binary_mutation_matrix = function(REvoBC_object, output_dir_files, output_dir_fi
 #   return(deletions_insertions)
 # }
 
-tidy_alignment_cleaned = function(REvoBC_object, cleaned_df) {
-  del_sub_ins_df = REvoBC_object$alignment$asv_barcode_alignment
+tidy_alignment_cleaned = function(EvoTraceR_object, cleaned_df) {
+  del_sub_ins_df = EvoTraceR_object$alignment$asv_barcode_alignment
   # In case of cleaned deletions, we need to re-create a tibble where each row corresponds
   # to a position in each ASV. This tibble already exists for non-cleaned mutations
   # and now we want to replace its column "alt" with the status of each nucleotide 

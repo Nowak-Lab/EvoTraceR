@@ -3,7 +3,7 @@
 export(analyse_mutations)
 export(asv_analysis)
 export(infer_phylogeny)
-export(initialize_REvoBC)
+export(initialize_EvoTraceR)
 export(plot_summary)
 import(dada2)
 import(data.table, except = c(last, first, between))

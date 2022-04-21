@@ -5,7 +5,7 @@
 \title{ASV_analysis}
 \usage{
 asv_analysis(
-  REvoBC_object,
+  EvoTraceR_object,
   ref_name = "BC10v0",
  
     ref_seq = "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
@@ -27,7 +27,7 @@ asv_analysis(
 )
 }
 \arguments{
-\item{REvoBC_object}{(Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}}
+\item{EvoTraceR_object}{(Required). Object of class EvoTraceR, result of the function \code{initialize_EvoTraceR}}
 
 \item{ref_name}{String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',}
 
@@ -69,7 +69,7 @@ For more details see \href{https://www.rdocumentation.org/packages/Biostrings/ve
 \item{...}{(Optional). Additional parameter passed to muscle.}
 }
 \value{
-The REvoBC object passed as a parameter with the following new fields:
+The EvoTraceR object passed as a parameter with the following new fields:
 \itemize{
 \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
 sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
@@ -141,8 +141,8 @@ using the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}
 }
 \examples{
 data(revo_initialized)
-output_dir = system.file("extdata", "output", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
 revo_initialized$output_directory = output_dir
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, )
+revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized, )
 
 }

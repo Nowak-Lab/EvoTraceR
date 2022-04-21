@@ -1,18 +1,18 @@
 ---
-title: Running REvoBC
+title: Running EvoTraceR
 output: html_document
 ---
 
 ## Setup the environement
 
-*REvoBC* is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants. 
+*EvoTraceR* is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants. 
 It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence alignment to identify mutations and finally performs the phylogeny reconstruction.
 In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. 
-The first step initializes the REvoBC object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis. 
+The first step initializes the EvoTraceR object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis. 
 
 
 ```{r}
-library("REvoBC")
+library("EvoTraceR")
 ```
 
 The initialization function computes the set of Amplicon Sequence Variants, by wrapping all the steps performed by dada2, that are the following: 
@@ -26,28 +26,28 @@ The initialization function computes the set of Amplicon Sequence Variants, by w
 (8) Production of a summary which tracks changes in the number of reads at every step of the pipeline. 
 
 The main parameters for the initialization are the directory where the output will be stored and one of the following: 
-input directory: in this case users have the fastq files and want to perform the whole analysis using REvoBC. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. 
+input directory: in this case users have the fastq files and want to perform the whole analysis using EvoTraceR. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. 
 dada2_output_sequences: in case users wish to manually run dada2 steps up to the removal of bimeras, they should provide the path to the csv file containing the output. The output should contain samples on rows and sequences on columns. 
 
 Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided. 
-In order for REvoBC to associate each fastq pair to its sample users have two options: 
-one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case REvoBC will consider as sample ID the second field separated by the underscore. 
+In order for EvoTraceR to associate each fastq pair to its sample users have two options: 
+one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case EvoTraceR will consider as sample ID the second field separated by the underscore. 
 The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")). 
 
 ```{r}
-input_dir = system.file("extdata", "input", package = "REvoBC")
-output_dir = system.file("extdata", "output", package = "REvoBC")
+input_dir = system.file("extdata", "input", package = "EvoTraceR")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
 ```
 
 We can now perform the initialization. 
 
 ```{r}
-revo_initialized = initialize_REvoBC(input_dir = input_dir, 
+revo_initialized = initialize_EvoTraceR(input_dir = input_dir, 
                                      output_dir = output_dir)
 names(revo_initialized)
 ```
 
-During the above computation, dada2 was run and all ASVs are detected. The result is an object of class REvoBC, which is populated by 5 fields: dada2 is a list which contains the percentage of chimeras found by dada2 and a dataframe that tracks the number of sequences during all dada2 steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated. 
+During the above computation, dada2 was run and all ASVs are detected. The result is an object of class EvoTraceR, which is populated by 5 fields: dada2 is a list which contains the percentage of chimeras found by dada2 and a dataframe that tracks the number of sequences during all dada2 steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated. 
 dada2_asv_prefilter: dataframe that stores all sequences detected by dada2. 
 
 ## Analysis and pairwise alignment of ASVs
@@ -65,7 +65,7 @@ using the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}
 PWA is performed by default, in order to perform msa users need to set the parameter comput_msa to TRUE in the following function. In this case users can provide any optional parameter for the algorithm through this function.
 
 ```{r}
-revo_analyzed = asv_analysis(REvoBC_object = revo_initialized)
+revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized)
 names(revo_analyzed)
 ```
 
@@ -79,12 +79,12 @@ where each line corresponds to a nucleotide in each ASV with the corresponding s
 revo_msa = analyse_mutations(revo_analyzed)
 ```
 
-After alignment, REvoBC identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+After alignment, EvoTraceR identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
 This computation stores the field called alignment, 3 new fields: asv_alteration_width is another tibble
 which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation);
 binary_mutations_matrix is finally a binary tibble, where each line corresponds to an ASV, and each column corresponds to a mutation. 1 and 0 indicate respectively the presence or absence of the mutation in the ASV.
 
-This function also creates a new field in the REvoBC object called \code{smoothed deletions}, which contains the following information for all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
+This function also creates a new field in the EvoTraceR object called \code{smoothed deletions}, which contains the following information for all the deletions identified in the ASVs, whose start and end site have been smoothed using the known cutting sites.
 Smoothing is performed in the following way: the start site of each deletion is assigned to the cutting site on their left if that is less distant then 5 nucleotides, otherwise they are assigned to the cutting site on their right. The end site is assigned to the cutting site on its right if that is less than 5 nucleotides distant, otherwise it is assigned to the cutting site
 on its left.
 
@@ -96,13 +96,13 @@ revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program 
 
 This step computes the phylogeny, using the binary mutation matrix computed in the previous step. Phylogeny is computed using camin-sokal method, using the implementation found in the package Rphylip.
 Note that prior to running this function, users should install PHYLIP and then provide the path to the folder containing the binary of mix using the parameter phylip_package_path.
-This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the REvoBC objetc.
+This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the EvoTraceR objetc.
 
 ```{r eval=FALSE}
 summary_figre = plot_summary(revo_phyl)
 ```
 
-Finally, a summary plot is prodced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
+Finally, a summary plot is prodced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
 representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
 next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original reference; finally, there is a dot plot
 where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.

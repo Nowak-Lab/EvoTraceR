@@ -5,7 +5,7 @@
 \alias{revo_msa}
 \title{example data obtained from running function \code{compute_msa}, where alterations are identified in all the ASvs.}
 \format{
-REvoBC object with a new field named \code{alignment}, which is a list with the following fields:
+EvoTraceR object with a new field named \code{alignment}, which is a list with the following fields:
 \describe{
 \item{msa_stringset}{output of MSA performed with MUSCLE}
 \item{mutations_df}{tibble where each line corresponds to a position in a ASV, and the columns encode the name of the ASV, the sample

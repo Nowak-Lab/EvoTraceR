@@ -4,16 +4,16 @@
 \alias{plot_summary}
 \title{plot_summary}
 \usage{
-plot_summary(REvoBC_object, sample_order = "alphabetical")
+plot_summary(EvoTraceR_object, sample_order = "alphabetical")
 }
 \arguments{
-\item{REvoBC_object}{(Required).}
+\item{EvoTraceR_object}{(Required).}
 
 \item{sample_order}{(Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
 This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples.}
 }
 \value{
-A summary plot is produced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
+A summary plot is produced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
 representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
 next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
 where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
@@ -24,7 +24,7 @@ This function plots all the data that have been computed for the phylogenetic an
 \examples{
 \dontrun{
 data(revo_phyl)
-output_dir = system.file("extdata", "output", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
 revo_phyl$output_directory = output_dir
 summary_plot = plot_summary(revo_phyl)
 }

@@ -1,4 +1,4 @@
-#' This function initializes the REvoBC object, by computing the set of Amplicon Sequence Variants.
+#' This function initializes the EvoTraceR object, by computing the set of Amplicon Sequence Variants.
 #' It wraps all the steps performed by dada2, that are the following:
 #' (1) Filter and trimming reads.
 #' (2) Learning the error rates.
@@ -13,12 +13,12 @@
 #' If users wish to manually run each step of dada2 computation they should execute all steps reported
 #' in the vignette, up to the Removal of chimeras and save the output of \code{removeBimeraDenovo} in a csv file and provide the path to that file as parameter \code{dada2_output_sequences}.
 #' 
-#' @title initialize_REvoBC
+#' @title initialize_EvoTraceR
 #' 
 #' @examples
-#' input_dir = system.file("extdata", "input", package = "REvoBC")
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
-#' initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+#' input_dir = system.file("extdata", "input", package = "EvoTraceR")
+#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
+#' initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir)
 #' 
 #' @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 #' \itemize{
@@ -29,7 +29,7 @@
 #' @param input_dir Path to the directory containing \code{.fastq} files for forward and reverse reads.
 #' This folder should contain the fastq files (2 for each sample) with the following name pattern:
 #' FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
-#' or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+#' or timepoint (if longitudinal data are provided). Note that EvoTraceR does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
 #' Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).
 
 #' @param dada2_output_sequences (Optional). In case users have already run dada2 up to the removal of bimeras, they should provide the path to the csv file containing the output (See description).
@@ -59,7 +59,7 @@
 #' where the quality scores in the fastq files are binned to only 4 different values. See \href{https://github.com/ErnakovichLab/dada2_ernakovichlab#learn-the-error-rates}{here} for more details.
 #' @param ... (Optional) Any additional parameters passed to \code{dada2} functions.
 #' 
-#' @return An object of type REvoBC, which is a list that will contain the following fields: 
+#' @return An object of type EvoTraceR, which is a list that will contain the following fields: 
 #' \itemize{
 #' \item \code{fastq_directory}: directory where the input fastq files are located.
 #' \item \code{output_directory}: directory where all the output files are being stored.
@@ -75,7 +75,7 @@
 #' \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
 #' }
 #' 
-#' @export initialize_REvoBC
+#' @export initialize_EvoTraceR
 #' 
 #' @import dada2
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
@@ -84,7 +84,7 @@
 #' @importFrom utils write.csv read.csv unzip untar
 # @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
-initialize_REvoBC = function(output_dir,
+initialize_EvoTraceR = function(output_dir,
                              trimmomatic_path,
                              flash_path,
                              input_dir = NULL,
@@ -110,10 +110,10 @@ initialize_REvoBC = function(output_dir,
     stop('Please provide a valid path to flash, file not found')
   }
   
-  REvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
+  EvoTraceR_object = list(fastq_directory = input_dir, output_directory = output_dir)
   
-  class(REvoBC_object) = 'REvoBC'
-  REvoBC_object$dada2 = list()
+  class(EvoTraceR_object) = 'EvoTraceR'
+  EvoTraceR_object$dada2 = list()
   
   #output_dir_files = file.path(output_dir, "initialization_files")
   #if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = TRUE)
@@ -163,11 +163,11 @@ initialize_REvoBC = function(output_dir,
                                     ...)
   
   #seqtab.nochim = align_output$seqtab.nochim
-  REvoBC_object$dada2$track = align_output$track
+  EvoTraceR_object$dada2$track = align_output$track
   
   
-  REvoBC_object$map_file_sample = map_file_sample
-  REvoBC_object$asv_prefilter = align_output$seqtab
+  EvoTraceR_object$map_file_sample = map_file_sample
+  EvoTraceR_object$asv_prefilter = align_output$seqtab
   
   if (is.character(sample_order) & length(sample_order) == 1) {
     if (sample_order != 'alphabetical') {
@@ -177,14 +177,14 @@ initialize_REvoBC = function(output_dir,
     if ('PRL' %in% sample_order)
       sample_order = c('PRL', setdiff(sample_order, 'PRL'))
   } else {
-    if (length(intersect(sample_order, REvoBC_object$map_file_sample$sample)) != length(sample_order)) {
+    if (length(intersect(sample_order, EvoTraceR_object$map_file_sample$sample)) != length(sample_order)) {
       cli::cli_alert_danger('The samples found in variable sample_order do not match the samples contained in the dataset.')
-      cat("The following samples need to be provided: ", unique(REvoBC_object$map_file_sample$sample))
+      cat("The following samples need to be provided: ", unique(EvoTraceR_object$map_file_sample$sample))
       stop("Exiting")
     }
   }
-  REvoBC_object$sample_order = sample_order
-  return(REvoBC_object)
+  EvoTraceR_object$sample_order = sample_order
+  return(EvoTraceR_object)
   
 }
 
@@ -208,11 +208,11 @@ initialize_REvoBC = function(output_dir,
 #' 
 #' @examples
 #' data(revo_initialized)
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
 #' revo_initialized$output_directory = output_dir
-#' revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, )
+#' revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized, )
 #' 
-#' @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
+#' @param EvoTraceR_object (Required). Object of class EvoTraceR, result of the function \code{initialize_EvoTraceR}
 #' @param ref_name String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',
 #' @param ref_seq String indicating the reference sequence used in the experimenti. Default is 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
 #' @param ref_flank_left String indicating the first nucleotides of the reference sequence that never mutate over the
@@ -237,7 +237,7 @@ initialize_REvoBC = function(output_dir,
 #' @param ... (Optional). Additional parameter passed to muscle.
 #' 
 #'
-#' @return  The REvoBC object passed as a parameter with the following new fields:
+#' @return  The EvoTraceR object passed as a parameter with the following new fields:
 #' \itemize{
 #' \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
 #' sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
@@ -306,7 +306,7 @@ initialize_REvoBC = function(output_dir,
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 #' @import foreach
-asv_analysis = function(REvoBC_object,
+asv_analysis = function(EvoTraceR_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
                         ref_seq = 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
@@ -327,12 +327,12 @@ asv_analysis = function(REvoBC_object,
                         ...) {
   
   if (output_figures) {
-    figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
+    figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
   } else {
     figure_dir = NULL
   }
-  output_dir = file.path(REvoBC_object$output_directory, "asv_analysis_files")
+  output_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_files")
   if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = list(
@@ -344,9 +344,9 @@ asv_analysis = function(REvoBC_object,
     ref_border_sites = ref_border_sites,
     stringsAsFactors = FALSE)
   
-  seqtab_df = REvoBC_object$asv_prefilter
+  seqtab_df = EvoTraceR_object$asv_prefilter
   
-  REvoBC_object$reference = barcodes_info
+  EvoTraceR_object$reference = barcodes_info
   
   # Store the original number of sequences
   orgseq <- nrow(seqtab_df)
@@ -417,24 +417,24 @@ asv_analysis = function(REvoBC_object,
   utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
   
-  REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
+  EvoTraceR_object$clean_asv_dataframe = seqtab_df_clean_asv
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                    REvoBC_object$dada2$track[sample_columns,'input'], '/') 
+                                                    EvoTraceR_object$dada2$track[sample_columns,'input'], '/') 
   
   # norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-  #                                                          REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+  #                                                          EvoTraceR_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
   
   norm_seqtab_df_clean_asv[sample_columns] = norm_seqtab_df_clean_asv[sample_columns]
   
-  REvoBC_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
+  EvoTraceR_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
   
   utils::write.csv(norm_seqtab_df_clean_asv, 
                    file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
                    row.names = F)
   
-  REvoBC_object = asv_statistics(REvoBC_object, 
+  EvoTraceR_object = asv_statistics(EvoTraceR_object, 
                                  sample_columns, 
                                  asv_count_cutoff,
                                  figure_dir,
@@ -482,14 +482,14 @@ asv_analysis = function(REvoBC_object,
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
-  output_dir_files_alignment = file.path(REvoBC_object$output_directory, "alignment")
+  output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
   if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
   
-  output_dir_figures_alignment = file.path(REvoBC_object$output_directory, "alignment_figures")
+  output_dir_figures_alignment = file.path(EvoTraceR_object$output_directory, "alignment_figures")
   if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
   
   
-  REvoBC_object = align_asv(REvoBC_object, 
+  EvoTraceR_object = align_asv(EvoTraceR_object, 
                             pwa_match= pwa_match,
                             pwa_mismatch = pwa_mismatch,
                             pwa_gapOpening = pwa_gapOpening,
@@ -500,7 +500,7 @@ asv_analysis = function(REvoBC_object,
                             compute_msa = compute_msa,
                             ...)
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 
@@ -512,17 +512,17 @@ asv_analysis = function(REvoBC_object,
 #' 
 #' @examples 
 #' data(revo_analyzed)
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
 #' revo_analyzed$output_directory = output_dir
 #' revo_msa = analyse_mutations(revo_analyzed)
 #' 
-#' @param REvoBC_object REvoBC object on which we want to perform msa.
+#' @param EvoTraceR_object EvoTraceR object on which we want to perform msa.
 #' @param cleaning_window (Optional) Default is c(3,3). After identifying all mutations in each sequence, we discard the ones that are not biologically meaningful. 
 #' In order to perform this step, we assume that both the beginning and end of each indel should be close to one of the cut sites. Thus, we perfom the following: for each
 #' indel, we extend its start to the left by cleaning_window[1] positions and its end by cleaning_window[2] positions. If the extended indel doesn't span any of the cut sites, than it is removed.
-#' The result of this cleaning procedure are stored in REvoBC_object$cleaned_deletions_insertions (See output for more details.)
+#' The result of this cleaning procedure are stored in EvoTraceR_object$cleaned_deletions_insertions (See output for more details.)
 #' 
-#' @return REvoBC object with the field \code{alignment}, updated with the following fields:
+#' @return EvoTraceR object with the field \code{alignment}, updated with the following fields:
 #' \itemize{
 #' \item \code{ASV_alterations_width}: number of alterations for each type in each ASV
 #' \item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
@@ -530,7 +530,7 @@ asv_analysis = function(REvoBC_object,
 #' \item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
 #' This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
 #' }. 
-#' It also creates a new field in the REvoBC object called \code{cleaned_deletions_insertions}, which contains the following information for
+#' It also creates a new field in the EvoTraceR object called \code{cleaned_deletions_insertions}, which contains the following information for
 #' all the deletions identified in the ASVs, whose start and end site have been cleaned using the known cutting sites.
 #' The following dataframes are stored in the field \code{cleaned deletions}:
 #' \itemize{
@@ -569,29 +569,29 @@ asv_analysis = function(REvoBC_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
+analyse_mutations = function(EvoTraceR_object, cleaning_window = c(3,3)) {
   
-  output_dir_files = file.path(REvoBC_object$output_directory, "alignment_files")
+  output_dir_files = file.path(EvoTraceR_object$output_directory, "alignment_files")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
   
-  output_dir_figures = file.path(REvoBC_object$output_directory, "alignment_figures")
+  output_dir_figures = file.path(EvoTraceR_object$output_directory, "alignment_figures")
   if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
   
-  # Store in the field REvoBC_object$alignment$asv_barcode_alignment the tidy alignment
+  # Store in the field EvoTraceR_object$alignment$asv_barcode_alignment the tidy alignment
   # data, which is a tibble where each line corresponds to a nucleotide in a ASV
   # and there is the information about reference and alternative nucleotides.
-  #REvoBC_object = align_asv(REvoBC_object, output_dir_files, output_dir_figures)
+  #EvoTraceR_object = align_asv(EvoTraceR_object, output_dir_files, output_dir_figures)
   
-  REvoBC_object = count_alterations(REvoBC_object, 
+  EvoTraceR_object = count_alterations(EvoTraceR_object, 
                                     output_dir_files,
                                     output_dir_figures)
   
-  REvoBC_object = binary_mutation_matrix(REvoBC_object, 
+  EvoTraceR_object = binary_mutation_matrix(EvoTraceR_object, 
                                          output_dir_files, 
                                          output_dir_figures,
                                          cleaning_window)
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 
@@ -603,12 +603,12 @@ analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
 #' @examples 
 #' \dontrun{
 #' data(revo_msa)
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
 #' revo_msa$output_directory = output_dir
 #' revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
 #' }
 #' 
-#' @param REvoBC_object (Required)
+#' @param EvoTraceR_object (Required)
 #' @param phylip_package_path (Required). Prior to running this function, users should install 
 #' \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
 #' For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
@@ -618,7 +618,7 @@ analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
 #' corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
 #' and insertios are considered.
 #' 
-#' @return REvoBC object with a new filed called phylogeny, that stores the inferred tree.
+#' @return EvoTraceR object with a new filed called phylogeny, that stores the inferred tree.
 #' 
 #' @export infer_phylogeny
 #' @import reticulate
@@ -634,19 +634,19 @@ analyse_mutations = function(REvoBC_object, cleaning_window = c(3,3)) {
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
-infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
+infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   
   if (! (mutations_use %in% c('del', 'del_ins'))) {
     cli::cli_alert_danger("Error, muations use must be one of 'del_ins', 'del'")
     stop('Exiting')
   }
-  REvoBC_object$phylogeny$mutations_in_phylogeny = mutations_use
-  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mutations_use))
+  EvoTraceR_object$phylogeny$mutations_in_phylogeny = mutations_use
+  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mutations_use))
   
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
-  asv_bin_var = REvoBC_object$cleaned_deletions_insertions$binary_matrix
-  barcode_var = asv_bin_var[REvoBC_object$reference$ref_name,]  
+  asv_bin_var = EvoTraceR_object$cleaned_deletions_insertions$binary_matrix
+  barcode_var = asv_bin_var[EvoTraceR_object$reference$ref_name,]  
   if (mutations_use == 'del_ins') { #del- del_ins - smooth_del - smooth_del_ins
     
     asv_bin_var = asv_bin_var %>%
@@ -665,7 +665,7 @@ infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
   # # any other. The barcode doesn't have anything in common with the other sequences but still doesn't have to be removed.
   # dist_j = as.matrix(ade4::dist.binary(as.matrix(asv_bin_var), method=1, diag=F, upper=F))
   # asv_toRemove = setdiff(rownames(dist_j)[rowSums(dist_j == 1) == (ncol(dist_j) - 1)], 
-  #                        REvoBC_object$reference$ref_name)
+  #                        EvoTraceR_object$reference$ref_name)
   # 
   # asv_bin_var = asv_bin_var[!(rownames(asv_bin_var) %in% asv_toRemove),]
   # asv_bin_var = asv_bin_var[,colSums(asv_bin_var) > 0]
@@ -674,20 +674,20 @@ infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
   
   #phyl_result = compute_phylogenetic_tree(asv_bin_var,
   # phylip_package_path, 
-  # REvoBC_object$reference$ref_name)
+  # EvoTraceR_object$reference$ref_name)
   
-  phyl_result = compute_tree_cassiopeia(asv_bin_var, REvoBC_object$reference$ref_name)
+  phyl_result = compute_tree_cassiopeia(asv_bin_var, EvoTraceR_object$reference$ref_name)
   
   ape::write.tree(phyl_result$tree_collapsed_phylo, #phyl_result$tree_uncollapsed, 
                   file = paste0(output_dir, "/phyl_collapsed.newick"),
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
   
-  REvoBC_object$phylogeny$tree = phyl_result$tree_collapsed_df#phyl_result$tree_collapsed_df
+  EvoTraceR_object$phylogeny$tree = phyl_result$tree_collapsed_df#phyl_result$tree_collapsed_df
   
-  write.csv(REvoBC_object$phylogeny$tree, file.path(output_dir, "phylogeny_collapsed_df.csv"))
+  write.csv(EvoTraceR_object$phylogeny$tree, file.path(output_dir, "phylogeny_collapsed_df.csv"))
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 
@@ -699,16 +699,16 @@ infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
 #' @examples
 #' \dontrun{
 #' data(revo_phyl)
-#' output_dir = system.file("extdata", "output", package = "REvoBC")
+#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
 #' revo_phyl$output_directory = output_dir
 #' summary_plot = plot_summary(revo_phyl)
 #' }
 #' 
-#' @param REvoBC_object (Required).
+#' @param EvoTraceR_object (Required).
 #' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
 #' This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples. 
 #' 
-#' @return A summary plot is produced and stored in the output directory associated to the REvoBC object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
+#' @return A summary plot is produced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
 #' representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
 #' next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
 #' where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
@@ -722,14 +722,14 @@ infer_phylogeny = function(REvoBC_object, mutations_use = 'del_ins') {
 #' @importFrom scales comma
 #' @importFrom colorspace scale_fill_continuous_sequential
 #' @importFrom aplot insert_right insert_left
-plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
-  mut_in_phyl = REvoBC_object$phylogeny$mutations_in_phylogeny
+plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
+  mut_in_phyl = EvoTraceR_object$phylogeny$mutations_in_phylogeny
   
-  df_to_plot_perf_match = REvoBC_object$statistics$all_asv_statistics
+  df_to_plot_perf_match = EvoTraceR_object$statistics$all_asv_statistics
   
-  tree_mp_df = REvoBC_object$phylogeny$tree
+  tree_mp_df = EvoTraceR_object$phylogeny$tree
   
-  barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+  barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
   
   # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
   # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
@@ -740,9 +740,9 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
       tree_mp_df = tree_mp_df %>% 
         dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
         dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-      #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+      #dplyr::mutate(branch.length = ifelse(label == EvoTraceR_object$reference$ref_name, 1, branch.length)) %>%
       #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-      # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+      # dplyr::mutate(x = ifelse(label == EvoTraceR_object$reference$ref_name, 1, x)) %>%
       # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
       
     }
@@ -751,11 +751,11 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   # TODO: remove this, because Cassiopeia automatically puts in singlet clusters those sequences that
   # have nothing in common with the others.
-  wt_asv = c()#setdiff(REvoBC_object$alignment$mutations_df$asv_names, tree_mp_df$label)
+  wt_asv = c()#setdiff(EvoTraceR_object$alignment$mutations_df$asv_names, tree_mp_df$label)
   wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
   if (length(wt_asv) > 0) {
     # Need to re-insert the ASVs without any mutations in common with the others, which are not used during phylogeny reconstruction
-    # barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+    # barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
     first_tip = tree_mp_df %>% filter(y == 1)
     root_node = tree_mp_df %>% filter(x == 0) %>% pull(node)
     
@@ -767,22 +767,22 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
     #     tree_mp_df = tree_mp_df %>% 
     #       dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
     #       dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-    #     #dplyr::mutate(branch.length = ifelse(label == REvoBC_object$reference$ref_name, 1, branch.length)) %>%
+    #     #dplyr::mutate(branch.length = ifelse(label == EvoTraceR_object$reference$ref_name, 1, branch.length)) %>%
     #     #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-    #     # dplyr::mutate(x = ifelse(label == REvoBC_object$reference$ref_name, 1, x)) %>%
+    #     # dplyr::mutate(x = ifelse(label == EvoTraceR_object$reference$ref_name, 1, x)) %>%
     #     # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
     #     
     #   }
     #   
     # } 
-    barcode_tip = tree_mp_df %>% filter(label == REvoBC_object$reference$ref_name)
+    barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
     vary = 'y'
-    if (REvoBC_object$reference$ref_name %in% wt_asv) {
+    if (EvoTraceR_object$reference$ref_name %in% wt_asv) {
       new_y = c(1:(length(wt_asv)))
     } else {
       new_y = c(2:(1+length(wt_asv)))
     }
-    tree_mp_df = tree_mp_df %>% filter(label != REvoBC_object$reference$ref_name | is.na(label)) %>%  
+    tree_mp_df = tree_mp_df %>% filter(label != EvoTraceR_object$reference$ref_name | is.na(label)) %>%  
       dplyr::mutate(y = y + length(wt_asv)) %>%
       add_row(parent = root_node, 
               node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
@@ -798,11 +798,11 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   
   
   # merge with df_to_plot_perf_match
-  sample_order = REvoBC_object$sample_order
+  sample_order = EvoTraceR_object$sample_order
   df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
   
   df_to_plot_final <- tibble(merge(df_to_plot_perf_match, 
-                                   REvoBC_object$alignment$ASV_alterations_width, 
+                                   EvoTraceR_object$alignment$ASV_alterations_width, 
                                    by.x ="asv_names", by.y="asv_names"))
   
   
@@ -818,28 +818,28 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
   df_to_plot_final = tibble(merge(df_to_plot_final, 
-                                  REvoBC_object$cleaned_deletions_insertions$coordinate_matrix,
+                                  EvoTraceR_object$cleaned_deletions_insertions$coordinate_matrix,
                                   by.x="asv_names", by.y="asv_names")) %>% dplyr::select(-c(spanned_cutSites))
   
   df_to_plot_final = tibble(dplyr::right_join(df_to_plot_final,
-                                              REvoBC_object$phylogeny$tree %>% filter(isTip) %>% dplyr::select(label, group),
+                                              EvoTraceR_object$phylogeny$tree %>% filter(isTip) %>% dplyr::select(label, group),
                                               by=c("asv_names" = "label")))
   
-  output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
   if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}
   
   
   write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
-  REvoBC_object$plot_summary$df_to_plot_final = df_to_plot_final
+  EvoTraceR_object$plot_summary$df_to_plot_final = df_to_plot_final
   
-  sample_columns = sort(setdiff(colnames(REvoBC_object$clean_asv_dataframe), c("asv_names", "seq")))
+  sample_columns = sort(setdiff(colnames(EvoTraceR_object$clean_asv_dataframe), c("asv_names", "seq")))
   
   ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns)
   
   # if (is_smoothed)
-  msa_cna_bc_smoothed = plot_msa(REvoBC_object, cleaned_deletions = mut_in_phyl, subset_asvs = unique(df_to_plot_final$asv_names))
-  msa_cna_bc = plot_msa(REvoBC_object, cleaned_deletions = FALSE, subset_asvs = unique(df_to_plot_final$asv_names))
+  msa_cna_bc_smoothed = plot_msa(EvoTraceR_object, cleaned_deletions = mut_in_phyl, subset_asvs = unique(df_to_plot_final$asv_names))
+  msa_cna_bc = plot_msa(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = unique(df_to_plot_final$asv_names))
   
   bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
   
@@ -869,11 +869,11 @@ plot_summary = function(REvoBC_object, sample_order = 'alphabetical') {
   #msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
   
   # Save PDF
-  # output_dir = file.path(REvoBC_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  # output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
          plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=80,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
-  #REvoBC_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
-  return(REvoBC_object)
+  #EvoTraceR_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
+  return(EvoTraceR_object)
 }

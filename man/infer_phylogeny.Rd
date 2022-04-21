@@ -4,10 +4,10 @@
 \alias{infer_phylogeny}
 \title{infer_phylogeny}
 \usage{
-infer_phylogeny(REvoBC_object, phylip_package_path, mutations_use = "del_ins")
+infer_phylogeny(EvoTraceR_object, phylip_package_path, mutations_use = "del_ins")
 }
 \arguments{
-\item{REvoBC_object}{(Required)}
+\item{EvoTraceR_object}{(Required)}
 
 \item{phylip_package_path}{(Required). Prior to running this function, users should install 
 \href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
@@ -20,7 +20,7 @@ corresponds to using only cleaned deletions. The second refers to the case where
 and insertios are considered.}
 }
 \value{
-REvoBC object with a new filed called phylogeny, that stores the inferred tree.
+EvoTraceR object with a new filed called phylogeny, that stores the inferred tree.
 }
 \description{
 This function calls Rmix from package Rphylip to perform the inference of the phylogeny
@@ -29,7 +29,7 @@ with Camin-Sokal.
 \examples{
 \dontrun{
 data(revo_msa)
-output_dir = system.file("extdata", "output", package = "REvoBC")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
 revo_msa$output_directory = output_dir
 revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
 }

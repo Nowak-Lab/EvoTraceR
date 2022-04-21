@@ -1,4 +1,4 @@
-# This function initializes the REvoBC object, by computing the set of Amplicon Sequence Variants.
+# This function initializes the EvoTraceR object, by computing the set of Amplicon Sequence Variants.
 # It wraps all the steps performed by dada2, that are the following:
 # (1) Filter and trimming reads.
 # (2) Learning the error rates.
@@ -13,12 +13,12 @@
 # If users wish to manually run each step of dada2 computation they should execute all steps reported
 # in the vignette, up to the Removal of chimeras and save the output of \code{removeBimeraDenovo} in a csv file and provide the path to that file as parameter \code{dada2_output_sequences}.
 # 
-# @title initialize_REvoBC
+# @title initialize_EvoTraceR
 # 
 # @examples
-# input_dir = system.file("extdata", "input", package = "REvoBC")
-# output_dir = system.file("extdata", "output", package = "REvoBC")
-# initialize_REvoBC(input_dir = input_dir, output_dir = output_dir)
+# input_dir = system.file("extdata", "input", package = "EvoTraceR")
+# output_dir = system.file("extdata", "output", package = "EvoTraceR")
+# initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir)
 # 
 # @param output_dir (Required). Path to the directory where all output files will be stored. The following \code{.csv} files will be created:
 # \itemize{
@@ -29,7 +29,7 @@
 # @param input_dir Path to the directory containing \code{.fastq} files for forward and reverse reads.
 # This folder should contain the fastq files (2 for each sample) with the following name pattern:
 # FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq FILEPREFIX_SAMPLE_BARCODEVERSION_R1.fastq. SAMPLE refers to either an organ (in case multiple organs were sequenced)
-# or timepoint (if longitudinal data are provided). Note that REvoBC does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
+# or timepoint (if longitudinal data are provided). Note that EvoTraceR does not support mixed sample types (i.e. samples must be either all from organs or all from timepoints).
 # Required when \code{dada2_output_sequences} is null (i.e. when the user has not previously run dada2).
 
 # @param dada2_output_sequences (Optional). In case users have already run dada2 up to the removal of bimeras, they should provide the path to the csv file containing the output (See description).
@@ -59,7 +59,7 @@
 # where the quality scores in the fastq files are binned to only 4 different values. See \href{https://github.com/ErnakovichLab/dada2_ernakovichlab#learn-the-error-rates}{here} for more details.
 # @param ... (Optional) Any additional parameters passed to \code{dada2} functions.
 # 
-# @return An object of type REvoBC, which is a list that will contain the following fields: 
+# @return An object of type EvoTraceR, which is a list that will contain the following fields: 
 # \itemize{
 # \item \code{fastq_directory}: directory where the input fastq files are located.
 # \item \code{output_directory}: directory where all the output files are being stored.
@@ -75,7 +75,7 @@
 # \item quality_track_reads.csv: track of the number of sequences during all \code{dada2} steps.
 # }
 # 
-# @export initialize_REvoBC
+# @export initialize_EvoTraceR
 # 
 # @import dada2
 # @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
@@ -84,7 +84,7 @@
 # @importFrom utils write.csv read.csv unzip untar
 # @importFrom grDevices cairo_pdf
 # @importFrom stringr str_remove_all str_replace
-initialize_REvoBC = function(output_dir,
+initialize_EvoTraceR = function(output_dir,
                              input_dir = NULL,
                              dada2_output_sequences = NULL,
                              output_dir_dada2 = NULL,
@@ -110,10 +110,10 @@ initialize_REvoBC = function(output_dir,
   }
   
   set.seed(random_seed)
-  REvoBC_object = list(fastq_directory = input_dir, output_directory = output_dir)
+  EvoTraceR_object = list(fastq_directory = input_dir, output_directory = output_dir)
   
-  class(REvoBC_object) = 'REvoBC'
-  REvoBC_object$dada2 = list()
+  class(EvoTraceR_object) = 'EvoTraceR'
+  EvoTraceR_object$dada2 = list()
   
   output_dir_files = file.path(output_dir, "dada2_files")
   if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = TRUE)
@@ -170,9 +170,9 @@ initialize_REvoBC = function(output_dir,
                                    ...)
     
     seqtab.nochim = align_output$seqtab.nochim
-    REvoBC_object$dada2$track = align_output$track
-    REvoBC_object$dada2$bimera_percentage = align_output$bimera_perc
-    REvoBC_object$dada2$original_sequences = align_output$nSequences_with_chimeras
+    EvoTraceR_object$dada2$track = align_output$track
+    EvoTraceR_object$dada2$bimera_percentage = align_output$bimera_perc
+    EvoTraceR_object$dada2$original_sequences = align_output$nSequences_with_chimeras
     
   } else {
     seqtab.nochim = utils::read.csv(dada2_output_sequences, 
@@ -181,11 +181,11 @@ initialize_REvoBC = function(output_dir,
     map_file_sample = check_input(sample.names = rownames(seqtab.nochim), 
                                   map_file_sample = map_file_sample)
   }
-  REvoBC_object$map_file_sample = map_file_sample
-  REvoBC_object$dada2_asv_prefilter = adjust_seqtab(seqtab.nochim = seqtab.nochim,
+  EvoTraceR_object$map_file_sample = map_file_sample
+  EvoTraceR_object$dada2_asv_prefilter = adjust_seqtab(seqtab.nochim = seqtab.nochim,
                                                     map_file_sample = map_file_sample,
                                                     output_dir_files = output_dir_files)
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 
@@ -211,11 +211,11 @@ initialize_REvoBC = function(output_dir,
 # 
 # @examples
 # data(revo_initialized)
-# output_dir = system.file("extdata", "output", package = "REvoBC")
+# output_dir = system.file("extdata", "output", package = "EvoTraceR")
 # revo_initialized$output_directory = output_dir
-# revo_analyzed = asv_analysis(REvoBC_object = revo_initialized, )
+# revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized, )
 # 
-# @param REvoBC_object (Required). Object of class REvoBC, result of the function \code{initialize_REvoBC}
+# @param EvoTraceR_object (Required). Object of class EvoTraceR, result of the function \code{initialize_EvoTraceR}
 # @param ref_name String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',
 # @param ref_seq String indicating the reference sequence used in the experimenti. Default is 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
 # @param ref_flank_left String indicating the first nucleotides of the reference sequence that never mutate over the
@@ -240,7 +240,7 @@ initialize_REvoBC = function(output_dir,
 # @param ... (Optional). Additional parameter passed to muscle.
 # 
 #
-# @return  The REvoBC object passed as a parameter with the following new fields:
+# @return  The EvoTraceR object passed as a parameter with the following new fields:
 # \itemize{
 # \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
 # sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
@@ -309,7 +309,7 @@ initialize_REvoBC = function(output_dir,
 # @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 # @import tibble
 # @import foreach
-asv_analysis = function(REvoBC_object,
+asv_analysis = function(EvoTraceR_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
                         ref_seq = 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
@@ -330,12 +330,12 @@ asv_analysis = function(REvoBC_object,
                         ...) {
   
   if (output_figures) {
-    figure_dir = file.path(REvoBC_object$output_directory, "asv_analysis_figures")
+    figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
     if (!dir.exists(figure_dir)) dir.create(figure_dir)
   } else {
     figure_dir = NULL
   }
-  output_dir = file.path(REvoBC_object$output_directory, "asv_analysis_files")
+  output_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_files")
   if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = list(
@@ -347,12 +347,12 @@ asv_analysis = function(REvoBC_object,
     ref_border_sites = ref_border_sites,
     stringsAsFactors = FALSE)
   
-  seqtab_df = REvoBC_object$dada2_asv_prefilter
+  seqtab_df = EvoTraceR_object$dada2_asv_prefilter
   
-  REvoBC_object$reference = barcodes_info
+  EvoTraceR_object$reference = barcodes_info
   
   # Store the original number of sequences and that after chimeras removal
-  orgseq <- REvoBC_object$dada2$original_sequences
+  orgseq <- EvoTraceR_object$dada2$original_sequences
   chimseq_filter <- nrow(seqtab_df)
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
@@ -460,24 +460,24 @@ asv_analysis = function(REvoBC_object,
   utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
   
-  REvoBC_object$clean_asv_dataframe = seqtab_df_clean_asv
+  EvoTraceR_object$clean_asv_dataframe = seqtab_df_clean_asv
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                    REvoBC_object$dada2$track[sample_columns,'input'], '/') 
+                                                    EvoTraceR_object$dada2$track[sample_columns,'input'], '/') 
   
   # norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-  #                                                          REvoBC_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+  #                                                          EvoTraceR_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
   
   norm_seqtab_df_clean_asv[sample_columns] <- norm_seqtab_df_clean_asv[sample_columns]
   
-  REvoBC_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
+  EvoTraceR_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
   
   utils::write.csv(norm_seqtab_df_clean_asv, 
                    file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
                    row.names = F)
   
-  REvoBC_object = asv_statistics(REvoBC_object, 
+  EvoTraceR_object = asv_statistics(EvoTraceR_object, 
                                  sample_columns, 
                                  asv_count_cutoff,
                                  figure_dir,
@@ -524,14 +524,14 @@ asv_analysis = function(REvoBC_object,
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
-  output_dir_files_alignment = file.path(REvoBC_object$output_directory, "alignment")
+  output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
   if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
   
-  output_dir_figures_alignment = file.path(REvoBC_object$output_directory, "alignment_figures")
+  output_dir_figures_alignment = file.path(EvoTraceR_object$output_directory, "alignment_figures")
   if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
   
   
-  REvoBC_object = align_asv(REvoBC_object, 
+  EvoTraceR_object = align_asv(EvoTraceR_object, 
                             pwa_match= pwa_match,
                             pwa_mismatch = pwa_mismatch,
                             pwa_gapOpening = pwa_gapOpening,
@@ -542,7 +542,7 @@ asv_analysis = function(REvoBC_object,
                             compute_msa = compute_msa,
                             ...)
   
-  return(REvoBC_object)
+  return(EvoTraceR_object)
   
 }
 

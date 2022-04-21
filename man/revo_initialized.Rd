@@ -3,9 +3,9 @@
 \docType{data}
 \name{revo_initialized}
 \alias{revo_initialized}
-\title{example data obtained from running function \code{initialize_REvoBC}, where dada2 is run on the fastqs provided in input.}
+\title{example data obtained from running function \code{initialize_EvoTraceR}, where dada2 is run on the fastqs provided in input.}
 \format{
-An object of class RevoBC, which is a list with the following fields:
+An object of class EvoTraceR, which is a list with the following fields:
 \describe{
 \item{fastq_directory}{directory where the input fastq files are located.}
 \item{output_directory}{directory where all the output files are being stored.}
@@ -16,11 +16,11 @@ these sequences still need to be filtered.}
 \item{dada2}{list which contains the percentage of chimeras found by \code{dada2} and a dataframe
 that tracks the number of sequences during all \code{dada2} steps.}
 }. 
-An object of class RevoBC
+An object of class EvoTraceR
 }
 \usage{
 data(revo_initialized)
 }
 \description{
-example data obtained from running function \code{initialize_REvoBC}, where dada2 is run on the fastqs provided in input.
+example data obtained from running function \code{initialize_EvoTraceR}, where dada2 is run on the fastqs provided in input.
 }
