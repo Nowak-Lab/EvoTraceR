@@ -87,35 +87,75 @@ asv_collapsing = function(seqtab,
                                ifelse(ref_asv == "-", "i", "n")))) %>%
     mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
   
-  algn = alignment_tidy_ref_alt %>% select(-c(ref_asv, read_asv)) %>%
+  algn = perform_collapsing(alignment_tidy_ref_alt, seqtab, sample.names)
+  
+  alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% filter(seq_names %in% algn$seq_names)
+  # Now translate barcode to barcode 260 nts long.
+  # In case of sites of insertion, the last position not affected by the insertion is propagated
+  # for all the nucleotides affected by that insertion.
+  alignment_tidy_ref_alt <-
+    alignment_tidy_ref_alt %>%
+    mutate(position_bc260 = ifelse(ref_asv == "-", NA, position)) %>% # add "bc260" scale
+    group_by(seq_names) %>%
+    mutate(position_bc260 = data.table::nafill(position_bc260, "locf")) %>% # fill NA with consecutive numbers
+    mutate(position_bc260 = tidyr::replace_na(position_bc260, 0)) %>% #locf doesn't fill NAs that are at the beginning of the sequence
+    dplyr::select(seq_names,  position, position_bc260, ref_asv, read_asv, alt)#,  sample, perc_in_sample,)  
+  
+  alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% group_by(seq_names) %>%
+    mutate(position_bc260 = ifelse(position_bc260 == 0, position_bc260, position_bc260 - min(position_bc260[position_bc260 != 0]))) %>%
+    mutate(position_bc260 = as.numeric(as.character(factor(x = position_bc260, levels = unique(position_bc260),
+                                                           labels = seq_along(unique(position_bc260))))))
+  
+  # algn_to_long = algn %>% tidyr::pivot_longer(all_of(position_columns), names_to = 'position', values_to = 'alt') %>%
+  #   filter(!is.na(alt))
+  # 
+  # algn_to_long = algn_to_long %>% select(c(seq_names, position, alt)) %>%
+  #   mutate(position = as.integer(position)) %>%
+  #   arrange(seq_names, position, alt)
+  # subset_tidy = subset_tidy %>% select(c(seq_names, position, alt)) %>%
+  #   arrange(seq_names, position, alt)
+  
+  alignment_tidy_ref_alt <-
+    alignment_tidy_ref_alt %>%
+    mutate(alt = ifelse(ref_asv == read_asv, "w",
+                        ifelse(read_asv == "-", "d", 
+                               ifelse(ref_asv == "-", "i", "s")))) %>%
+    mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
+  
+  
+  return(list(seqtab_df = algn, tidy_alignment = alignment_tidy_ref_alt))
+}
+
+
+perform_collapsing <- function(alignment_tidy_ref_alt, seqtab, sample.names) {
+  algn = alignment_tidy_ref_alt %>% ungroup() %>% select(c(seq_names, position, alt)) %>%
     tidyr::pivot_wider(names_from = 'position', values_from = 'alt') 
   
   position_columns = setdiff(colnames(algn), "seq_names")
   
   
   algn = algn %>% 
-    inner_join(seqtab, by = "seq_names") %>%
-    tibble::column_to_rownames("seq_names")  %>% mutate(sum_counts = seqtab %>% select(all_of(sample.names)) %>% rowSums(na.rm = TRUE))
+    inner_join(seqtab %>% mutate(seq_names = gsub(pattern='.NMBC', replacement = '', x = seq_names)), by = "seq_names") %>%
+    #tibble::column_to_rownames("seq_names")  %>% 
+    mutate(sum_counts = seqtab %>% select(all_of(sample.names)) %>% rowSums(na.rm = TRUE))
   
-
+  
   algn = algn %>% group_by(across(all_of(position_columns))) %>% 
     summarise(consensus_seq = seq[which.max(sum_counts)], #compute_consensus_sequence(seq, sum_counts), 
+              seq_names = seq_names[which.max(sum_counts)],
               across(sample.names, sum)) %>%
     ungroup() %>% 
     select(-all_of(position_columns))
   
-  algn$seq_names = paste0("SEQ", formatC(c(1:(nrow(algn))), 
-                                         width = nchar(trunc(nrow(algn))), 
-                                         format = "d", flag = "0")) # -1 to start 00 with no changes sequence
+  # algn$seq_names = paste0("SEQ", formatC(c(1:(nrow(algn))), 
+  #                                        width = nchar(trunc(nrow(algn))), 
+  #                                        format = "d", flag = "0")) # -1 to start 00 with no changes sequence
   
-  algn = algn %>% rename(seq = consensus_seq)
-  rownames(algn) = algn$seq
+  algn = algn %>% rename(seq = consensus_seq) %>% tibble::column_to_rownames("seq")
+  algn$seq = rownames(algn)
   
   return(algn)
 }
-
-
-
 
 
 
@@ -261,10 +301,10 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
                                              y=dplyr::select(EvoTraceR_object$clean_asv_dataframe, seq, asv_names), 
-                                             by="asv_names") %>%
-    add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
-                       seq = EvoTraceR_object$reference$ref_seq, 
-                       stringsAsFactors = F))
+                                              by="asv_names") # %>%
+    # add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
+    #                    seq = EvoTraceR_object$reference$ref_seq, 
+    #                    stringsAsFactors = F))
   
 
   # Count length of barcode seq

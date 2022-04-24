@@ -168,3 +168,23 @@ check_input = function(sample.names = NULL,
   return(map_file_sample)
 }
 
+
+
+# Adjust Data Frame
+adjust_seqtab = function(seqtab.nochim, map_file_sample, output_dir_files) {
+  # Transpose to Get Sequences that Are Now Rows with removed chimeras
+  seqtab_df = data.frame(t(seqtab.nochim))
+  colnames(seqtab_df) = map_file_sample[colnames(seqtab_df),'sample']
+  # create a column with seq from renames
+  seqtab_df$seq = rownames(seqtab_df)
+  # create rownames,  sequence variant: SEQ###
+  seqtab_df$seq_names = paste0("SEQ", formatC(c(1:(dim(seqtab_df)[1])), width = nchar(trunc(dim(seqtab_df)[1])), format = "d", flag = "0")) # -1 to start 00 with no changes sequence
+  rownames(seqtab_df) = seqtab_df$seq
+  
+  # save as data csv
+  utils::write.csv(seqtab_df, file.path(output_dir_files, "dada2_asv_prefilter.csv"),
+                   row.names = FALSE)
+  return(tibble::tibble(seqtab_df))
+}
+
+

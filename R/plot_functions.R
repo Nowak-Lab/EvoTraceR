@@ -34,11 +34,11 @@ plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
 plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = NULL) {
   
   if (cleaned_deletions == 'del') {
-    to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
-      mutate(alt = ifelse(alt == 'del', alt, 'wt'))
+    to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment %>% 
+      mutate(alt = ifelse(alt == 'd', alt, 'w'))
   } else if (cleaned_deletions == 'del_ins') {
-    to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment %>% 
-      mutate(alt = ifelse(alt %in% c('del','ins'), alt, 'wt'))
+    to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment %>% 
+      mutate(alt = ifelse(alt %in% c('d','i'), alt, 'w'))
   } else {
      to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment
   }
@@ -94,11 +94,12 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
                           ymax = seq(from = 2.4, to = nlevels(as.factor(to_plot_df$asv_names))+1, by=1))
   
   ### "msa Plot" - Barcode; Scale (1-260)  ------------------------------------------------------
-  to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
+  #to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
+  to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('d', 'w', 'i'))
   msa_cna_bc <- 
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
-    scale_fill_manual(values=c("del"="#3366FF", "sub"="#329932", "ins"="#FF0033", "wt"="#f2f2f2"), breaks=c("ins", "wt", "del", "sub")) +
+    scale_fill_manual(values=c("d"="#3366FF", "i"="#FF0033", "w"="#f2f2f2"), breaks=c("i", "w", "d")) + 
     geom_vline(xintercept=pam_pos, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
@@ -106,7 +107,7 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
     geom_rect(xmin=1, xmax=260, ymin=0.6, ymax=1.4, colour = "#65A7F3", fill=NA, size=0.6) +
     xlab("Barcode Nucleotides \n (1-260)") #+
     #lemon::coord_capped_cart(bottom="both") # axis with lemon
-  
+    #"sub"="#329932",
   # add theme
   msa_cna_bc <- 
     msa_cna_bc +
@@ -122,13 +123,13 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
 # This tibble is found in EvoTraceR_object$alignment$asv_alterations_width
 plot_mutations_width = function(df_to_plot_final) {
   bar_ins_del_sub_width <- 
-    ggplot(data=dplyr::select(df_to_plot_final, asv_names, width_total_del, width_total_ins, width_total_sub) %>% 
+    ggplot(data=dplyr::select(df_to_plot_final, asv_names, width_total_d, width_total_i) %>% #, width_total_s) %>% 
              unique() %>% 
-             gather(key="alt", "width_total_del", "width_total_ins", "width_total_sub", value="width_sum") %>%
+             gather(key="alt", "width_total_d", "width_total_i",  value="width_sum") %>% #"width_total_s",
              filter(!str_detect(asv_names, "NMBC"))) +
     geom_bar(aes(x=width_sum, y=asv_names, fill=alt), position="stack", stat="identity", width=0.8, size=0.2) +
-    scale_fill_manual(values=c("width_total_del" = "#3366FF", "width_total_ins" = "#FF0033", "width_total_sub" = "#329932"), 
-                      breaks=c("width_total_del", "width_total_ins", "width_total_sub")) +
+    scale_fill_manual(values=c("width_total_d" = "#3366FF", "width_total_i" = "#FF0033"), #"width_total_s" = "#329932" 
+                      breaks=c("width_total_d", "width_total_i")) + #, "width_total_s"
     geom_vline(xintercept=0, linetype="solid", size=0.5, col="black") + # no indels
     scale_x_continuous(labels=scales::comma, expand = c(0.01, 0.01), breaks=c(0, 130, 260))+#, limits=c(0, 286)) +
     geom_vline(xintercept=130, linetype="dotted", size=0.5, col="gray50") +
@@ -156,7 +157,7 @@ plot_asv_length = function(df_to_plot_final) {
     ggplot(data=dplyr::select(df_to_plot_final, asv_names, seq_n) %>% 
              unique() %>%
              mutate(seq_n_col=ifelse(seq_n == 260, "260", ifelse(seq_n < 260, "< 260", "> 260"))) %>%
-             filter(!str_detect(asv_names, "NMBC"))) +
+             filter(str_detect(asv_names, "ASV"))) +
     geom_bar(aes(x=seq_n, y=asv_names, fill=seq_n_col), position = "dodge", stat = "identity", width=0.8, size=0.2) +
     geom_text(aes(x=1, y=asv_names, label = seq_n), col="white", size=4, hjust="left") + #, position=position_dodge(width=0.9)
     scale_fill_manual(values=c("260" = "#84B48F", "< 260" = "#377EB8", "> 260" = "#F39B7FFF"), breaks=c("260", "< 260", "> 260")) +
@@ -187,7 +188,7 @@ plot_similarity = function(df_to_plot_final) {
   # it shows similarity using Pairwise Alignment to original BC10.ORG and i.e. 100% means max similarity to the BC10.ORG
   bar_pid <- 
     ggplot(data=dplyr::select(df_to_plot_final, asv_names, pid) %>% unique() %>%
-             filter(!str_detect(asv_names, paste0(c("NMBC"), collapse = "|"))) %>%
+             filter(str_detect(asv_names, "ASV")) %>%
              dplyr::mutate_if(is.numeric, round, 0), 
            aes(x=pid, y=asv_names)) +
     geom_segment(aes(y=asv_names, yend=asv_names, x=0, xend=100), size=2, color="gray50") +

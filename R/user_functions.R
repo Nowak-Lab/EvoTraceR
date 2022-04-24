@@ -85,12 +85,12 @@
 # @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
 initialize_EvoTraceR = function(output_dir,
-                             trimmomatic_path,
-                             flash_path,
-                             input_dir = NULL,
-                             map_file_sample = NULL,
-                             sample_order = 'alphabetical',
-                             ...) {
+                                trimmomatic_path,
+                                flash_path,
+                                input_dir = NULL,
+                                map_file_sample = NULL,
+                                sample_order = 'alphabetical',
+                                ...) {
   # Check that the user inserted the correct parameters
   if (is.null(input_dir) ) {
     stop('Please provide a directory containing fastqs')
@@ -324,7 +324,8 @@ asv_analysis = function(EvoTraceR_object,
                         pwa_mismatch = -4,
                         pwa_type = 'global',
                         compute_msa = FALSE,
-                        ...) {
+                        cleaning_window = c(3,3)
+) {
   
   if (output_figures) {
     figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
@@ -361,17 +362,21 @@ asv_analysis = function(EvoTraceR_object,
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   ###### COLLAPSING
-  seqtab_df = asv_collapsing(seqtab_df, 
-                             barcodes_info$ref_seq,
-                             pwa_match,
-                             pwa_mismatch,
-                             pwa_gapOpening,
-                             pwa_gapExtension, sample_columns)
+  # Collapse sequences that differ only by substitutions.
+  collapse_result = asv_collapsing(seqtab_df, 
+                                   barcodes_info$ref_seq,
+                                   pwa_match,
+                                   pwa_mismatch,
+                                   pwa_gapOpening,
+                                   pwa_gapExtension, sample_columns)
   
+  seqtab_df = collapse_result$seqtab_df
+  tidy_alignment = collapse_result$tidy_alignment
   endseq_filter <- nrow(seqtab_df)
   
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
   
+  tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
   flanking_filtering = nrow(seqtab_df)
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
@@ -383,22 +388,42 @@ asv_analysis = function(EvoTraceR_object,
     seqtab_df[seqtab_df$seq_names == paste0(barcodes_info$ref_name, ".NMBC"), sample_columns] = 0
     
   } else {
-    seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"] = paste0(barcodes_info$ref_name, ".NMBC")
+    barcode_seqname = as.character(seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"])
+    seqtab_df[seqtab_df$seq_names == barcode_seqname, "seq_names"] = paste0(barcodes_info$ref_name, '')#".NMBC")
+    tidy_alignment[tidy_alignment$seq_names == barcode_seqname, 'seq_names'] = barcodes_info$ref_name
   }
   
   #pidseq_filter_dim = nrow(pidseq_filter)
+  
+  ### CReo matrice delle corrdinate per filtrare le mutazioni
+  coordinate_matrix = mutation_coordinate_matrix(tidy_alignment, barcodes_info$ref_name)
+  # Clean the mutations coordinate matrix
+  cleaned_coordinate_matrix = clean_mutations(coordinate_matrix, 
+                                              orange_lines = barcodes_info$ref_cut_sites, 
+                                              left_right_window = cleaning_window)
+  # Go back to the long format after cleaning
+  tidy_alignment_clean = tidy_alignment_cleaned(tidy_alignment, cleaned_coordinate_matrix, barcodes_info$ref_name)
+  seqtab_df = seqtab_df %>% filter(seq_names %in% cleaned_coordinate_matrix$seq_names | seq_names == barcodes_info$ref_name)
+  
+  # Now collapse sequences that ar the same after cleaning
+  seqtab_df = perform_collapsing(tidy_alignment_clean, seqtab_df, sample_columns)
+  # Filter the coordinate matrix and the tidy alignment matrix as well
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
+  tidy_alignment_clean = tidy_alignment_clean %>% filter(seq_names %in% seqtab_df$seq_names)
   
   # Now sort ASV by total frequency and assign an ASV ID
   seqtab_df_clean_asv <-
     tibble(seqtab_df) %>% mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>% arrange(-asv_total_freq) %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
-  seqtab_df_clean_nmbc <- seqtab_df_clean_asv[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, pattern = "NMBC"),]
+  seqtab_df_clean_nmbc <- seqtab_df_clean_asv %>% filter(asv_names == barcodes_info$ref_name)
+  #[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, pattern = "NMBC"),]
+  
   
   # skip NMBC
   seqtab_df_clean_asv <-
-    seqtab_df_clean_asv %>%
-    filter(!stringr::str_detect(string = seq_names, pattern = "NMBC")) 
+    seqtab_df_clean_asv %>% filter(seq_names != barcodes_info$ref_name)
+  #filter(!stringr::str_detect(string = seq_names, pattern = "NMBC")) 
   # create ASV count
   seqtab_df_clean_asv$asv_names <- paste0("ASV", 
                                           formatC(c(1:nrow(seqtab_df_clean_asv)), 
@@ -408,16 +433,34 @@ asv_analysis = function(EvoTraceR_object,
   seqtab_df_clean_asv <-
     seqtab_df_clean_asv %>%
     add_row(seqtab_df_clean_nmbc) %>%
-    arrange(-asv_total_freq) %>%
-    dplyr::select(-c("seq_names", "asv_total_freq")) %>%
-    relocate(asv_names)
+    arrange(-asv_total_freq) #%>%
+  #dplyr::select(-c("seq_names", "asv_total_freq")) %>%
+  #relocate(asv_names)
+  
+  tidy_alignment_clean = tidy_alignment_clean %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>% 
+    select(-c(seq_names))
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
+    select(-c(seq_names))
+  
+  seqtab_df_clean_asv = seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
   # final number of ASVs for analysis
   clean_asv <- nrow(seqtab_df_clean_asv)
   # save csv with final ASvs
   utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
+  binary_mutation_matrix = coordinate_to_binary(cleaned_coordinate_matrix, barcodes_info$ref_name)
+  EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
+  
+  cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%
+    dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
   
   EvoTraceR_object$clean_asv_dataframe = seqtab_df_clean_asv
+  EvoTraceR_object$alignment$asv_barcode_alignment = tidy_alignment_clean
+  EvoTraceR_object$alignment$mutations_coordinates = cleaned_coordinate_matrix
+  
+  
+  
+  
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
@@ -434,12 +477,15 @@ asv_analysis = function(EvoTraceR_object,
                    file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
                    row.names = F)
   
+  # Ricontrollare quando uso nmbc in questa funzione
+  # Salvare il risultato dell'allineamento e creare la matrice binaria
+  
   EvoTraceR_object = asv_statistics(EvoTraceR_object, 
-                                 sample_columns, 
-                                 asv_count_cutoff,
-                                 figure_dir,
-                                 nmbc = paste0( barcodes_info$ref_name, ".NMBC"),
-                                 output_dir = output_dir)
+                                    sample_columns, 
+                                    asv_count_cutoff,
+                                    figure_dir,
+                                    nmbc = barcodes_info$ref_name, #paste0( barcodes_info$ref_name, ".NMBC"),
+                                    output_dir = output_dir)
   
   
   if(output_figures) {
@@ -482,23 +528,25 @@ asv_analysis = function(EvoTraceR_object,
     # save csv
     write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
   }
-  output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
-  if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
   
-  output_dir_figures_alignment = file.path(EvoTraceR_object$output_directory, "alignment_figures")
-  if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
+  # output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
+  # if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
+  # 
+  # output_dir_figures_alignment = file.path(EvoTraceR_object$output_directory, "alignment_figures")
+  # if (!dir.exists(output_dir_figures_alignment)) {dir.create(output_dir_figures_alignment)}
+  # 
   
   
-  EvoTraceR_object = align_asv(EvoTraceR_object, 
-                            pwa_match= pwa_match,
-                            pwa_mismatch = pwa_mismatch,
-                            pwa_gapOpening = pwa_gapOpening,
-                            pwa_gapExtension = pwa_gapExtension,
-                            output_dir_files = output_dir_files_alignment, 
-                            output_dir_figures = output_dir_figures_alignment,
-                            pwa_type = pwa_type,
-                            compute_msa = compute_msa,
-                            ...)
+  # EvoTraceR_object = align_asv(EvoTraceR_object, 
+  #                              pwa_match= pwa_match,
+  #                              pwa_mismatch = pwa_mismatch,
+  #                              pwa_gapOpening = pwa_gapOpening,
+  #                              pwa_gapExtension = pwa_gapExtension,
+  #                              output_dir_files = output_dir_files_alignment, 
+  #                              output_dir_figures = output_dir_figures_alignment,
+  #                              pwa_type = pwa_type,
+  #                              compute_msa = compute_msa,
+  #                              ...)
   
   return(EvoTraceR_object)
   
@@ -569,7 +617,7 @@ asv_analysis = function(EvoTraceR_object,
 #' @importFrom tidyr pivot_wider
 #' @importFrom pheatmap pheatmap 
 #' @importFrom plyr count
-analyse_mutations = function(EvoTraceR_object, cleaning_window = c(3,3)) {
+analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
   
   output_dir_files = file.path(EvoTraceR_object$output_directory, "alignment_files")
   if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
@@ -583,13 +631,13 @@ analyse_mutations = function(EvoTraceR_object, cleaning_window = c(3,3)) {
   #EvoTraceR_object = align_asv(EvoTraceR_object, output_dir_files, output_dir_figures)
   
   EvoTraceR_object = count_alterations(EvoTraceR_object, 
-                                    output_dir_files,
-                                    output_dir_figures)
+                                       output_dir_files,
+                                       output_dir_figures)
   
-  EvoTraceR_object = binary_mutation_matrix(EvoTraceR_object, 
-                                         output_dir_files, 
-                                         output_dir_figures,
-                                         cleaning_window)
+  # EvoTraceR_object = binary_mutation_matrix(EvoTraceR_object, 
+  #                                           output_dir_files, 
+  #                                           output_dir_figures,
+  #                                           cleaning_window)
   
   return(EvoTraceR_object)
   
@@ -645,12 +693,12 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   
   if (!dir.exists(output_dir)) {dir.create(output_dir)}
   
-  asv_bin_var = EvoTraceR_object$cleaned_deletions_insertions$binary_matrix
+  asv_bin_var = EvoTraceR_object$alignment$binary_mutation_matrix
   barcode_var = asv_bin_var[EvoTraceR_object$reference$ref_name,]  
   if (mutations_use == 'del_ins') { #del- del_ins - smooth_del - smooth_del_ins
     
     asv_bin_var = asv_bin_var %>%
-      dplyr::select(starts_with('ins_') | starts_with('del_')) %>% 
+      dplyr::select(starts_with('i_') | starts_with('d_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
   } else {
@@ -683,7 +731,8 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
   
-  EvoTraceR_object$phylogeny$tree = phyl_result$tree_collapsed_df#phyl_result$tree_collapsed_df
+  EvoTraceR_object$phylogeny$tree = phyl_result$tree_collapsed_df
+  EvoTraceR_object$phylogeny$tree_uncollapsed = phyl_result$tree_uncollapsed
   
   write.csv(EvoTraceR_object$phylogeny$tree, file.path(output_dir, "phylogeny_collapsed_df.csv"))
   
@@ -806,19 +855,19 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
                                    by.x ="asv_names", by.y="asv_names"))
   
   
-  width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), 
-                              all_of(starts_with('width_')))
-  final_nmbc <- filter(df_to_plot_perf_match, str_detect(asv_names, "NMBC")) %>% 
-    mutate(asv_names = stringr::str_replace_all(string = asv_names, pattern = '.NMBC', ''))
-  nmbc_mrg <- cbind(final_nmbc, width_nmbc)
-  
-  # add back NMBC
-  df_to_plot_final <- rbind(df_to_plot_final %>% filter(str_detect(asv_names, "ASV")), 
-                            nmbc_mrg)
+  # width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), 
+  #                             all_of(starts_with('width_')))
+  # final_nmbc <- filter(df_to_plot_perf_match, !str_detect(asv_names, "ASV")) %>% 
+  #   mutate(asv_names = stringr::str_replace_all(string = asv_names, pattern = '.NMBC', ''))
+  # nmbc_mrg <- cbind(final_nmbc, width_nmbc)
+  # 
+  # # add back NMBC
+  # df_to_plot_final <- rbind(df_to_plot_final %>% filter(str_detect(asv_names, "ASV")), 
+  #                           nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
   df_to_plot_final = tibble(merge(df_to_plot_final, 
-                                  EvoTraceR_object$cleaned_deletions_insertions$coordinate_matrix,
+                                  EvoTraceR_object$alignment$mutations_coordinates,
                                   by.x="asv_names", by.y="asv_names")) %>% dplyr::select(-c(spanned_cutSites))
   
   df_to_plot_final = tibble(dplyr::right_join(df_to_plot_final,
