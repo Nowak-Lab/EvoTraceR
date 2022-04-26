@@ -368,15 +368,24 @@ asv_analysis = function(EvoTraceR_object,
                                    pwa_match,
                                    pwa_mismatch,
                                    pwa_gapOpening,
-                                   pwa_gapExtension, sample_columns)
+                                   pwa_gapExtension, sample_columns,
+                                   barcodes_info$ref_name,
+                                   cut_sites = barcodes_info$ref_cut_sites,
+                                   cleaning_window)
   
   seqtab_df = collapse_result$seqtab_df
   tidy_alignment = collapse_result$tidy_alignment
   endseq_filter <- nrow(seqtab_df)
   
+  cleaned_coordinate_matrix = collapse_result$mutations_coordinates
+  binary_mutation_matrix = collapse_result$binary_matrix
+  
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
   
   tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
+  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% seqtab_df$seq_names) #[seqtab_df$seq_names,]
+  binary_mutation_matrix = binary_mutation_matrix %>% select_if(~ !is.numeric(.) || sum(.) != 0)
   flanking_filtering = nrow(seqtab_df)
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
@@ -393,23 +402,24 @@ asv_analysis = function(EvoTraceR_object,
     tidy_alignment[tidy_alignment$seq_names == barcode_seqname, 'seq_names'] = barcodes_info$ref_name
   }
   
-  #pidseq_filter_dim = nrow(pidseq_filter)
-  
-  ### CReo matrice delle corrdinate per filtrare le mutazioni
-  coordinate_matrix = mutation_coordinate_matrix(tidy_alignment, barcodes_info$ref_name)
-  # Clean the mutations coordinate matrix
-  cleaned_coordinate_matrix = clean_mutations(coordinate_matrix, 
-                                              orange_lines = barcodes_info$ref_cut_sites, 
-                                              left_right_window = cleaning_window)
-  # Go back to the long format after cleaning
-  tidy_alignment_clean = tidy_alignment_cleaned(tidy_alignment, cleaned_coordinate_matrix, barcodes_info$ref_name)
-  seqtab_df = seqtab_df %>% filter(seq_names %in% cleaned_coordinate_matrix$seq_names | seq_names == barcodes_info$ref_name)
-  
-  # Now collapse sequences that ar the same after cleaning
-  seqtab_df = perform_collapsing(tidy_alignment_clean, seqtab_df, sample_columns)
-  # Filter the coordinate matrix and the tidy alignment matrix as well
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
-  tidy_alignment_clean = tidy_alignment_clean %>% filter(seq_names %in% seqtab_df$seq_names)
+  # #pidseq_filter_dim = nrow(pidseq_filter)
+  # 
+  # ### CReo matrice delle corrdinate per filtrare le mutazioni
+  # coordinate_matrix = mutation_coordinate_matrix(tidy_alignment, barcodes_info$ref_name)
+  # binary_matrix = coordinate_to_binary(coordinate_matrix, barcodes_info$ref_name)
+  # # Clean the mutations coordinate matrix
+  # cleaned_coordinate_matrix = clean_mutations(coordinate_matrix, 
+  #                                             orange_lines = barcodes_info$ref_cut_sites, 
+  #                                             left_right_window = cleaning_window)
+  # # Go back to the long format after cleaning
+  # tidy_alignment_clean = tidy_alignment_cleaned(tidy_alignment, cleaned_coordinate_matrix, barcodes_info$ref_name)
+  # seqtab_df = seqtab_df %>% filter(seq_names %in% cleaned_coordinate_matrix$seq_names | seq_names == barcodes_info$ref_name)
+  # 
+  # # Now collapse sequences that ar the same after cleaning
+  # seqtab_df = perform_collapsing(tidy_alignment_clean, seqtab_df, sample_columns)
+  # # Filter the coordinate matrix and the tidy alignment matrix as well
+  # cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
+  # tidy_alignment_clean = tidy_alignment_clean %>% filter(seq_names %in% seqtab_df$seq_names)
   
   # Now sort ASV by total frequency and assign an ASV ID
   seqtab_df_clean_asv <-
@@ -437,10 +447,17 @@ asv_analysis = function(EvoTraceR_object,
   #dplyr::select(-c("seq_names", "asv_total_freq")) %>%
   #relocate(asv_names)
   
-  tidy_alignment_clean = tidy_alignment_clean %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>% 
+  tidy_alignment_clean = tidy_alignment %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>% 
     select(-c(seq_names))
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix  %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
     select(-c(seq_names))
+  binary_mutation_matrix = binary_mutation_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
+    tibble::column_to_rownames("asv_names") %>% select(-c(seq_names))
+  
+  bc_mut = as.list(rep(0, ncol(binary_mutation_matrix)))
+  names(bc_mut) = colnames(binary_mutation_matrix)
+  binary_mutation_matrix = dplyr::bind_rows(data.frame(bc_mut, row.names = barcodes_info$ref_name),
+                                            binary_mutation_matrix)
   
   seqtab_df_clean_asv = seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
   # final number of ASVs for analysis
@@ -448,7 +465,7 @@ asv_analysis = function(EvoTraceR_object,
   # save csv with final ASvs
   utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
-  binary_mutation_matrix = coordinate_to_binary(cleaned_coordinate_matrix, barcodes_info$ref_name)
+  #binary_mutation_matrix = coordinate_to_binary(cleaned_coordinate_matrix, barcodes_info$ref_name)
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
   
   cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%

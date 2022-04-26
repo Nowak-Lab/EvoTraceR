@@ -33,11 +33,14 @@ perform_flanking_filtering = function(barcodes_info, seqtab_df, flanking_filteri
 
 # This function takes the ASVs and cleans them, by collapsing the ones that differ from one another only by substitutions.
 asv_collapsing = function(seqtab, 
-                        barcode,
-                        pwa_match,
-                        pwa_mismatch,
-                        pwa_gapOpening,
-                        pwa_gapExtension, sample.names) {
+                          barcode,
+                          pwa_match,
+                          pwa_mismatch,
+                          pwa_gapOpening,
+                          pwa_gapExtension, sample.names,
+                          barcode_name,
+                          cut_sites,
+                          cleaning_window = c(3,3)) {
   
   dnastringset <- Biostrings::DNAStringSet(seqtab$seq) 
   names(dnastringset) <- seqtab$seq_names
@@ -66,13 +69,15 @@ asv_collapsing = function(seqtab,
   
   cli::cli_alert_info('Computing tidy alignment for cleaning')
   alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, length(mpwa)), .combine=rbind) %do% {
-    # aligned_sequence = as.data.frame(Biostrings::alignedPattern(mpwa[i]))$x
-    # aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa[i]))$x
     
-    data.frame("seq_names" = rownames(aligned_sequences)[i],#names(dnastringset)[i],#
+    # postaligned_seqs <- Biostrings:::.makePostalignedSeqs(mpwa[i])[[1]]
+    # aligned_sequence = as.character(postaligned_seqs[1])
+    # aligned_reference = as.character(postaligned_seqs[2])
+    
+    data.frame("seq_names" = rownames(aligned_sequences)[i], #names(postaligned_seqs)[1], #names(dnastringset)[i],#
                "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], #strsplit(aligned_sequence, split='')[[1]],#
-               "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]], 
-               "position" = seq(1, nchar(aligned_reference$x[i])))
+               "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]],#strsplit(aligned_reference, split='')[[1]], #
+               "position" = seq(1, nchar(aligned_reference$x[i])))#seq(1, nchar(aligned_reference))) #
   }
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
   
@@ -82,14 +87,15 @@ asv_collapsing = function(seqtab,
   # In cases where ref_asv == "-" & read_asv == "-", then the alteration type is set to ins_smwr 
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
-    mutate(alt = ifelse(ref_asv == read_asv, "n",
+    mutate(alt = ifelse(ref_asv == read_asv, "w",
                         ifelse(read_asv == "-", "d", 
-                               ifelse(ref_asv == "-", "i", "n")))) %>%
+                               ifelse(ref_asv == "-", "i", "s")))) %>%
     mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
   
-  algn = perform_collapsing(alignment_tidy_ref_alt, seqtab, sample.names)
+  # algn = perform_collapsing(alignment_tidy_ref_alt, seqtab, sample.names)
+  # 
+  # alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% filter(seq_names %in% algn$seq_names)
   
-  alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% filter(seq_names %in% algn$seq_names)
   # Now translate barcode to barcode 260 nts long.
   # In case of sites of insertion, the last position not affected by the insertion is propagated
   # for all the nucleotides affected by that insertion.
@@ -115,47 +121,79 @@ asv_collapsing = function(seqtab,
   # subset_tidy = subset_tidy %>% select(c(seq_names, position, alt)) %>%
   #   arrange(seq_names, position, alt)
   
-  alignment_tidy_ref_alt <-
-    alignment_tidy_ref_alt %>%
-    mutate(alt = ifelse(ref_asv == read_asv, "w",
-                        ifelse(read_asv == "-", "d", 
-                               ifelse(ref_asv == "-", "i", "s")))) %>%
-    mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
+  coord = mutation_coordinate_matrix(alignment_tidy_ref_alt, barcode_name)
+  # Select sequences that have no indels, they are collapsed to the original barcode
+  no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
+  no_indels = seqtab %>% filter(seq_names %in% no_indels)
+  no_indels = no_indels %>% summarise(seq = seq[which.max(totalCounts)], #compute_consensus_sequence(seq, sum_counts), 
+                                      seq_names = seq_names[which.max(totalCounts)],
+                                      across(sample.names, sum))
   
   
-  return(list(seqtab_df = algn, tidy_alignment = alignment_tidy_ref_alt))
+  # I take the coordinate matrix, I clean it and I binarize it
+  # and then I collapse the sequences that are the same
+  
+  # Clean the mutations coordinate matrix
+  coord_cleaned = clean_mutations(coord, 
+                                  orange_lines = cut_sites, 
+                                  left_right_window = cleaning_window)
+  coord_cleaned = coord_cleaned %>% mutate(asv_names = seq_names)
+  binary_matrix = coordinate_to_binary(coord_cleaned, barcode_name)
+  
+  # Join the binary matrix with the sequences dataframe, in order to have counts
+  mutations = unique(coord_cleaned$mut_id)
+  binary_matrix$seq_names = rownames(binary_matrix) 
+  seqtab_collapsed = binary_matrix %>% dplyr::left_join(seqtab) %>% filter(!is.na(totalCounts))
+  # Collapse sequences that have the same cleaned mutations
+  seqtab_collapsed = seqtab_collapsed %>% group_by(across(all_of(mutations))) %>% 
+    summarize(consensus_seq = seq[which.max(totalCounts)], #compute_consensus_sequence(seq, sum_counts), 
+              seq_names = seq_names[which.max(totalCounts)],
+              across(sample.names, sum)) %>% ungroup() %>%
+    rename(seq = consensus_seq) %>%
+    select(-all_of(mutations))
+  
+  seqtab_collapsed = dplyr::bind_rows(seqtab_collapsed, no_indels)
+  
+  alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% filter(seq_names %in% seqtab_collapsed$seq_names)
+  # Ora devo anche pulire le mutazioni nel tidy
+  clean_tidy_alignment = tidy_alignment_cleaned(alignment_tidy_ref_alt, 
+                                                coord_cleaned, 
+                                                no_indels %>% pull(seq_names))
+  
+  return(list(seqtab_df = seqtab_collapsed, tidy_alignment = clean_tidy_alignment,
+              mutations_coordinates = coord_cleaned %>% select(-c(asv_names)), binary_matrix = binary_matrix))
 }
 
 
-perform_collapsing <- function(alignment_tidy_ref_alt, seqtab, sample.names) {
-  algn = alignment_tidy_ref_alt %>% ungroup() %>% select(c(seq_names, position, alt)) %>%
-    tidyr::pivot_wider(names_from = 'position', values_from = 'alt') 
-  
-  position_columns = setdiff(colnames(algn), "seq_names")
-  
-  
-  algn = algn %>% 
-    inner_join(seqtab %>% mutate(seq_names = gsub(pattern='.NMBC', replacement = '', x = seq_names)), by = "seq_names") %>%
-    #tibble::column_to_rownames("seq_names")  %>% 
-    mutate(sum_counts = seqtab %>% select(all_of(sample.names)) %>% rowSums(na.rm = TRUE))
-  
-  
-  algn = algn %>% group_by(across(all_of(position_columns))) %>% 
-    summarise(consensus_seq = seq[which.max(sum_counts)], #compute_consensus_sequence(seq, sum_counts), 
-              seq_names = seq_names[which.max(sum_counts)],
-              across(sample.names, sum)) %>%
-    ungroup() %>% 
-    select(-all_of(position_columns))
-  
-  # algn$seq_names = paste0("SEQ", formatC(c(1:(nrow(algn))), 
-  #                                        width = nchar(trunc(nrow(algn))), 
-  #                                        format = "d", flag = "0")) # -1 to start 00 with no changes sequence
-  
-  algn = algn %>% rename(seq = consensus_seq) %>% tibble::column_to_rownames("seq")
-  algn$seq = rownames(algn)
-  
-  return(algn)
-}
+# perform_collapsing <- function(alignment_tidy_ref_alt, seqtab, sample.names) {
+#   algn = alignment_tidy_ref_alt %>% ungroup() %>% select(c(seq_names, position, alt)) %>%
+#     tidyr::pivot_wider(names_from = 'position', values_from = 'alt') 
+#   
+#   position_columns = setdiff(colnames(algn), "seq_names")
+#   
+#   
+#   algn = algn %>% 
+#     inner_join(seqtab %>% mutate(seq_names = gsub(pattern='.NMBC', replacement = '', x = seq_names)), by = "seq_names") %>%
+#     #tibble::column_to_rownames("seq_names")  %>% 
+#     mutate(sum_counts = seqtab %>% select(all_of(sample.names)) %>% rowSums(na.rm = TRUE))
+#   
+#   
+#   algn = algn %>% group_by(across(all_of(position_columns))) %>% 
+#     summarise(consensus_seq = seq[which.max(sum_counts)], #compute_consensus_sequence(seq, sum_counts), 
+#               seq_names = seq_names[which.max(sum_counts)],
+#               across(sample.names, sum)) %>%
+#     ungroup() %>% 
+#     select(-all_of(position_columns))
+#   
+#   # algn$seq_names = paste0("SEQ", formatC(c(1:(nrow(algn))), 
+#   #                                        width = nchar(trunc(nrow(algn))), 
+#   #                                        format = "d", flag = "0")) # -1 to start 00 with no changes sequence
+#   
+#   algn = algn %>% rename(seq = consensus_seq) %>% tibble::column_to_rownames("seq")
+#   algn$seq = rownames(algn)
+#   
+#   return(algn)
+# }
 
 
 
@@ -201,7 +239,7 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   
   # prepare levels and orders for days or organs
   sample_order = EvoTraceR_object$sample_order
-    
+  
   seqtab_df_clean_asv_long <- 
     seqtab_df_clean_asv_long %>%
     dplyr::mutate(sample = forcats::fct_relevel(sample, sample_order)) %>%
@@ -217,7 +255,7 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   # Rule 1.: max number perc calculation based on count - the highest number of reads will be 100% or 1.0
   # Rule 2.: log2 calculation based on count - first colony appearance value numbers of reads different than 0 in Day type experiment
   # pick the highest count in asv_names group (ASVs)
-
+  
   seqtab_df_clean_asv_long <-
     seqtab_df_clean_asv_long %>%
     group_by(asv_names) %>%
@@ -301,15 +339,15 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
                                              y=dplyr::select(EvoTraceR_object$clean_asv_dataframe, seq, asv_names), 
-                                              by="asv_names") # %>%
-    # add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
-    #                    seq = EvoTraceR_object$reference$ref_seq, 
-    #                    stringsAsFactors = F))
+                                             by="asv_names") # %>%
+  # add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
+  #                    seq = EvoTraceR_object$reference$ref_seq, 
+  #                    stringsAsFactors = F))
   
-
+  
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
-
+  
   pwa <- Biostrings::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
                                        pattern = df_to_plot_perf_match$seq,
                                        type="global", gapOpening = 20, gapExtension = 1)
@@ -325,7 +363,7 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   # # Save as Data csv
   write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')],
             file.path(output_dir, "asv_toBarcode_similarity.csv"))
-
+  
   EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
   EvoTraceR_object$statistics$all_asv_statistics = df_to_plot_perf_match
