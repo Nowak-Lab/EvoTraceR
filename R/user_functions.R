@@ -355,8 +355,9 @@ asv_analysis = function(EvoTraceR_object,
   
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
+  #seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  seqtab_df = seqtab_df %>% filter(if_any(where(is.numeric), ~ . > asv_count_cutoff))
   seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
-  seqtab_df = seqtab_df %>% filter(totalCounts > asv_count_cutoff)
   
   counts_filtering = nrow(seqtab_df)
   
