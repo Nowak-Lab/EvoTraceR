@@ -393,9 +393,9 @@ asv_analysis = function(EvoTraceR_object,
   # In case no original barcode is found then insert it with 0 counts
   if (sum(seqtab_df$seq == barcodes_info$ref_seq) == 0){
     
-    seqtab_df = seqtab_df %>% dplyr::add_row(seq_names = paste0(barcodes_info$ref_name, ".NMBC"), 
+    seqtab_df = seqtab_df %>% dplyr::add_row(seq_names = barcodes_info$ref_name, #paste0(barcodes_info$ref_name, ".NMBC"), 
                                              seq = barcodes_info$ref_seq)
-    seqtab_df[seqtab_df$seq_names == paste0(barcodes_info$ref_name, ".NMBC"), sample_columns] = 0
+    seqtab_df[seqtab_df$seq_names == barcodes_info$ref_name, sample_columns] = 0 # paste0(barcodes_info$ref_name, ".NMBC")
     
   } else {
     barcode_seqname = as.character(seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"])
@@ -477,19 +477,19 @@ asv_analysis = function(EvoTraceR_object,
   EvoTraceR_object$alignment$mutations_coordinates = cleaned_coordinate_matrix
   
   
-  
-  
-  
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
-  norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                    EvoTraceR_object$dada2$track[sample_columns,'input'], '/') 
+  EvoTraceR_object$clean_asv_dataframe_nonnorm = seqtab_df_clean_asv
+  # norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
+  #                                                   EvoTraceR_object$dada2$track[sample_columns,'input'], '/') 
   
-  # norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-  #                                                          EvoTraceR_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
+  norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
+                                                           EvoTraceR_object$dada2$track[sample_columns,'input'], '/') * 1e6, as.integer)
   
   norm_seqtab_df_clean_asv[sample_columns] = norm_seqtab_df_clean_asv[sample_columns]
   
-  EvoTraceR_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
+  # EvoTraceR_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
+
+  EvoTraceR_object$clean_asv_dataframe = norm_seqtab_df_clean_asv
   
   utils::write.csv(norm_seqtab_df_clean_asv, 
                    file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
@@ -505,48 +505,10 @@ asv_analysis = function(EvoTraceR_object,
                                     nmbc = barcodes_info$ref_name, #paste0( barcodes_info$ref_name, ".NMBC"),
                                     output_dir = output_dir)
   
-  
-  if(output_figures) {
-    # assemble data  with all number for each step of filtering
-    track_data <- data.frame(name=as.factor(c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter", "Final ASVs")), 
-                             num=c(orgseq, counts_filtering, endseq_filter, flanking_filtering, clean_asv))
-    # set order of columns DGN
-    track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter",  "Final ASVs")))
-    track_data$num_names <- paste0(track_data$num, " x ASVs") # numbers of ASV included on the top of bar  
+  EvoTraceR_object$dada2$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter", "Final ASVs")), 
+                                                  num=c(orgseq, counts_filtering, endseq_filter, flanking_filtering, clean_asv))
+
     
-    # calculate percent change from previous filter
-    track_data <-
-      track_data %>%
-      mutate(track_data, diff_perc = ceiling(x=(num/lag(num)-1)*100)) %>%
-      mutate(diff_perc = paste0(diff_perc, " %")) %>%
-      mutate(diff_perc = if_else(name == "Starting ASVs" | name == "Final ASVs", "", diff_perc)) %>%
-      mutate(num_names_sf = if_else(name == "Starting ASVs" | name == "Final ASVs", num_names, "")) %>%
-      mutate(num_names_ins = if_else(name == "Starting ASVs" | name == "Final ASVs", "", num_names))
-    
-    # start graph plotting 
-    seqtab_df_clean_track <-
-      ggplot(data=track_data) +
-      geom_bar(aes(x=name, y=num, fill=name), position = "dodge", stat = "identity", width=0.8, size=0.2, show.legend = FALSE) +
-      geom_text(aes(x=name, y=num, label=num_names_sf), vjust=-0.25, size=3) + # change order to have up whatever you choose, opposite to order
-      geom_text(aes(x=name, y=num, label=num_names_ins), vjust=-1.75, size=3) + # change order to have up whatever you choose, opposite to order
-      geom_text(aes(x=name, y=num, label=diff_perc), vjust=-0.25, size=3, col="blue") + # change order to have up whatever you choose, opposite to order
-      scale_y_continuous(expand = c(0, 0), 
-                         limits= c(0, plyr::round_any(max(track_data$num), 100, f = ceiling)+100/4), 
-                         breaks = seq(0, (plyr::round_any(max(track_data$num), 100, f = ceiling)), 100)) +
-      scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
-      labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
-      lemon::coord_capped_cart(left="both") + # axis with lemon
-      barplot_nowaklab_theme() + # add theme 
-      theme(plot.margin = unit(c(0, 0, 0, 0), "mm"), # update theme specifically 
-            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
-            axis.line.x = element_blank(), # disable x axis lines
-            axis.ticks.x = element_blank()) # disable x axis ticks lines
-    # save pdf
-    ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
-    # save csv
-    write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
-  }
-  
   # output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
   # if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
   # 
@@ -751,6 +713,7 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   
   EvoTraceR_object$phylogeny$tree = phyl_result$tree_collapsed_df
   EvoTraceR_object$phylogeny$tree_uncollapsed = phyl_result$tree_uncollapsed
+  EvoTraceR_object$phylogeny$tree_phylo = phyl_result$tree_collapsed_phylo
   
   write.csv(EvoTraceR_object$phylogeny$tree, file.path(output_dir, "phylogeny_collapsed_df.csv"))
   
@@ -902,7 +865,7 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   
   sample_columns = sort(setdiff(colnames(EvoTraceR_object$clean_asv_dataframe), c("asv_names", "seq")))
   
-  ggtree_mp = plot_phylogenetic_tree(tree_mp_df, sample_columns)
+  ggtree_mp = plot_phylogenetic_tree(tree_mp_df)
   
   # if (is_smoothed)
   msa_cna_bc_smoothed = plot_msa(EvoTraceR_object, cleaned_deletions = mut_in_phyl, subset_asvs = unique(df_to_plot_final$asv_names))

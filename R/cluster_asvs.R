@@ -95,7 +95,9 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
   tree_df = tree_df %>% mutate(group = as.numeric(group))
   
-  small_groups = tree_df %>% plyr::count('group') %>% filter(freq == 1) %>% pull(group)
+  small_groups = tree_df %>% 
+    filter(isTip) %>%
+    plyr::count('group') %>% filter(freq == 1) %>% pull(group)
   
   # Riassegno lo 0 ai gruppi singoli
   tree_df$group[tree_df$group %in% small_groups] = 0

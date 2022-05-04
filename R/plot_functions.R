@@ -1,20 +1,22 @@
-plot_phylogenetic_tree = function(tree_mp_df, sample_columns) {
+plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   
-  if (is.null(tree_mp_df$group)) {
+  if (!('group' %in% colnames(tree_mp_df))) {
     tree_mp_df$group = 1
+    tree_mp_df$group = as.factor(tree_mp_df$group)
   }
   
   ggtree_mp <- 
     ggtree::ggtree(tree_mp_df) + #%<+%
     # perc_max_tip_colors + # add data for labelling tips
     # geom_tippoint(aes(color = group), size=3) +
-    geom_text2(aes(subset=!isTip, label=node), hjust=-.3)  + 
-    ggtree::geom_tiplab(aes(fill=group, alpha = 0.5), geom = "label", 
-                        align=TRUE, linesize=0.5, linetype="dotted", size=6) +
+    #geom_text2(aes(subset=!isTip, label=node), hjust=-.3)  + 
+    ggtree::geom_tiplab(#aes(fill=group, alpha = 0.5), 
+                        geom = "text", 
+                        align=TRUE, linesize=0.5, linetype="dotted", size=5) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), limits=c(0, 1.15*max(tree_mp_df$x)), breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
-    xlab("Phylogenetic Tree \n Maximum Parsimony Camin-Sokal") +
+    xlab("Phylogenetic Tree \n Cassiopeia Greedy") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon +
     scale_fill_manual(values=sample(rainbow(n = length(unique(tree_mp_df$group)))))
@@ -82,12 +84,20 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   # Put insertions after wt for visualization
   to_plot_df = to_plot_df %>% dplyr::arrange(asv_names, position_bc260, desc(alt))
   
+  
+  # add full names for labeling of plots
+  to_plot_df <-
+    to_plot_df %>%
+    mutate(alt_long_names = ifelse(alt == "i", "Insertion", 
+                                   ifelse(alt == "d", "Deletion", 
+                                          ifelse(alt == "s", "Substitutions", "No Edits"))))
+  
   # Position of PAM in guides
   pam_pos <- EvoTraceR_object$reference$ref_cut_sites
   bc_len = nchar(EvoTraceR_object$reference$ref_seq)
   # Adjust for height of tiles -> "sub" smaller
   
-  to_plot_df$tile_height <- ifelse(to_plot_df$alt == "sub", 0.3, 0.75)
+  to_plot_df$tile_height <- ifelse(to_plot_df$alt == "s", 0.3, 0.75)
   # frames around msa apart ORG
   msa_frame <- data.frame(xmin= 1, xmax =bc_len, 
                           ymin = seq(from = 1.6, to = nlevels(as.factor(to_plot_df$asv_names)), by=1), 
@@ -95,17 +105,19 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   
   ### "msa Plot" - Barcode; Scale (1-260)  ------------------------------------------------------
   #to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
-  to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('d', 'w', 'i'))
+  to_plot_df$alt_long_names = factor(x = to_plot_df$alt_long_names)#, levels = c('Deletion', 'w', 'i'))
   msa_cna_bc <- 
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
-    geom_tile(aes(fill=alt, width=0.75, height=tile_height), colour = NA) +
-    scale_fill_manual(values=c("d"="#3366FF", "i"="#FF0033", "w"="#f2f2f2"), breaks=c("i", "w", "d")) + 
+    geom_tile(aes(fill=alt_long_names, width=0.75, height=tile_height), colour = NA) +
+    scale_fill_manual(values=c("Deletion"="#3366FF", "Insertion"="#FF0033", "No Edits"="#f2f2f2"), 
+                      breaks=c("Insertion", "No Edits", "Deletion")) + 
     geom_vline(xintercept=pam_pos, linetype="solid", size=0.3, col="grey50") + # lines for guide targets
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.4, col="#ff8300") + # Cas9 Cleavage
     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(26, 260, 26)), expand = c(0.014, 0.014)) +
     geom_rect(data=msa_frame, mapping=aes_string(xmin="xmin", xmax="xmax", ymin="ymin", ymax="ymax"), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +
     geom_rect(xmin=1, xmax=260, ymin=0.6, ymax=1.4, colour = "#65A7F3", fill=NA, size=0.6) +
-    xlab("Barcode Nucleotides \n (1-260)") #+
+    xlab("Barcode Nucleotides \n (1-260)") +
+    labs(fill = "Type of Editing")
     #lemon::coord_capped_cart(bottom="both") # axis with lemon
     #"sub"="#329932",
   # add theme
@@ -213,16 +225,23 @@ plot_similarity = function(df_to_plot_final) {
 # Dotplot where the size indicate the normalized asv count with respect to the total
 # count in each sample, and the color indicates the counts of each ASV normalized with respect to
 # to the counts for the same ASV in the sample with the highest abundance.
-# input must be a tibble with this columns: asv_names, perc_in_sample, perc_fold_to_max
-plot_percentage_asv_sample = function(df_to_plot_final) {
-  ### "Bubble Plot" - ASV % of colony  ------------------------------------------------------ 
-  # bubble graph size corresponds to percentage of colony in i.e. Days or Organ
+# input must be a tibble with this columns: asv_names, sample, perc_in_sample, perc_fold_to_max
+plot_percentage_asv_sample = function(df_to_plot_final, subset_asvs = NULL) {
+
   scale_bubble <- ceiling(max(df_to_plot_final %>% 
                                 dplyr::pull(perc_in_sample), na.rm = T))
   
   scale_bubble_nonmbc <- ceiling(max(df_to_plot_final %>% 
                         filter(str_detect(asv_names, "ASV")) %>% 
                         dplyr::pull(perc_in_sample), na.rm = T))
+  
+  
+  if (! is.null(subset_asvs)) {
+    df_to_plot_final = df_to_plot_final %>% filter(asv_names %in% subset_asvs)
+    if (nrow(df_to_plot_final) == 0) {
+      stop('None of the asv names provided in subset_asvs matches any of the ASVs in the EvoTraceR object.\nPlease select valid ASV names.')
+    }
+  }
   
   # df_to_plot_final = df_to_plot_final %>% filter(str_detect(asv_names, "ASV") | str_detect(asv_names, '.NMBC'))
   # df_to_plot_final$asv_names = stringr::str_replace_all(string = df_to_plot_final$asv_names, pattern = '.NMBC', '')

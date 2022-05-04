@@ -30,13 +30,13 @@ count_alterations <- function(EvoTraceR_object, output_dir_files, output_dir_fig
   # Select only deletions and substitutions
   del_sub_df <- 
     alignment_tidy_ref_alt_mrg_final %>%
-    filter(!alt %in% c("ins", "ins_smwr")) %>% 
+    filter(alt != "i") %>% 
     dplyr::select(asv_names, sample, position_bc260, alt, perc_in_sample)
   
   # Leave only insertion with ASV
   ins_df <- 
     alignment_tidy_ref_alt_mrg_final %>%
-    filter(alt == "ins") %>%
+    filter(alt == "i") %>%
     group_by(asv_names, sample, perc_in_sample) %>% 
     mutate(cons_bin = c(0, abs(diff(position_bc260)) == 1)) %>% # find if number is consecutive = 0, if not = 1
     #filter(cons_bin == 0) %>%
@@ -63,13 +63,13 @@ count_alterations <- function(EvoTraceR_object, output_dir_files, output_dir_fig
     del_sub_ins_df %>% ungroup() %>%
     group_by(sample, alt, position_bc260) %>% #
     dplyr::summarise(sum_perc = sum(perc_in_sample), .groups = 'drop') %>%
-    dplyr::filter(alt != "wt" & alt != "ins") # don't plot "wt" and "ins
+    dplyr::filter(alt != "w" & alt != "i") # don't plot "wt" and "ins
   
   # "ins" only -> position is not stacked but added as one; i.e. pos 10 & freq: 12%, 10%, will be pos: 10 freq: 22%
   ins_df_data_to_plot_sum_perc <-
     del_sub_ins_df %>%
     dplyr::select(asv_names, sample, position_bc260, alt, perc_in_sample) %>%
-    dplyr::filter(alt == "ins") %>% # get only "ins"
+    dplyr::filter(alt == "i") %>% # get only "ins"
     unique() %>%
     group_by(sample, alt, position_bc260) %>%
     dplyr::summarise(sum_perc = sum(perc_in_sample), .groups = 'drop')
