@@ -67,7 +67,7 @@ clean_mutations = function(mut_df, orange_lines, left_right_window = c(3,3)) {
 
 coordinate_to_binary = function(mut_df, barcode) {
   mut_df_wide = plyr::count(mut_df, vars = c("asv_names", "mut_id")) %>% 
-    pivot_wider(names_from = mut_id, values_from = freq) %>% column_to_rownames("asv_names")
+    pivot_wider(names_from = mut_id, values_from = freq) %>% tibble::column_to_rownames("asv_names")
   
   mut_df_wide[is.na(mut_df_wide)] <- 0
   mut_df_wide[mut_df_wide >= 1] = 1

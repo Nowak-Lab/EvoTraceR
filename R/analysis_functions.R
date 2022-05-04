@@ -125,7 +125,7 @@ asv_collapsing = function(seqtab,
   # Select sequences that have no indels, they are collapsed to the original barcode
   no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
   no_indels = seqtab %>% filter(seq_names %in% no_indels)
-  no_indels = no_indels %>% summarise(seq = seq[which.max(totalCounts)], #compute_consensus_sequence(seq, sum_counts), 
+  no_indels = no_indels %>% dplyr::summarise(seq = barcode, #compute_consensus_sequence(seq, sum_counts), 
                                       seq_names = seq_names[which.max(totalCounts)],
                                       across(sample.names, sum))
   
