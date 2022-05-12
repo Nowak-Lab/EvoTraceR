@@ -508,7 +508,7 @@ asv_analysis = function(EvoTraceR_object,
   EvoTraceR_object$dada2$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter", "Final ASVs")), 
                                                   num=c(orgseq, counts_filtering, endseq_filter, flanking_filtering, clean_asv))
 
-    
+  seq_filtering_plot(EvoTraceR_object)
   # output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
   # if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
   # 
@@ -882,8 +882,9 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
   # msa and bar_seq_n
   # if (is_smoothed) {
-  smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
-  msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
+  # smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
+  msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
+ # msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
   # } else {
   #   msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
   # }
@@ -901,7 +902,7 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   # Save PDF
   # output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
-         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=80,
+         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=50,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
   #EvoTraceR_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid

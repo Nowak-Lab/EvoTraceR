@@ -1,3 +1,45 @@
+plot_phylogenetic_tree_ggraph = function(toplot_tree) {# , sample_columns) {
+  toplot_tree = toplot_tree %>% arrange(y)
+  
+  nodes <- data.frame(name=toplot_tree$node,
+                      label=toplot_tree$label)
+  relations <- data.frame(from=toplot_tree$parent,
+                          to=toplot_tree$node,
+                          length = toplot_tree$branch.length)
+  
+  g <- graph_from_data_frame(relations, directed=T, vertices=nodes)
+  #prova_edge_list = toplot_tree %>% select(parent, node) %>% rename(from = parent, to = node)
+  
+  ggtree_mp = ggraph(g, layout = 'dendrogram', circular = FALSE) +#, length = length) +
+    geom_node_text(aes(label=label), nudge_y = 0.5 ) +
+    geom_edge_diagonal() +
+    geom_node_point() +
+    #scale_x_continuous(c(0, sum(!is.na(toplot_tree$label)))) +
+    theme_void() +
+    coord_flip() + 
+    scale_y_reverse() +
+    barplot_nowaklab_theme() +
+    theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
+          axis.text.y = element_blank(), # disable y axis text
+          #axis.title.x = element_text(size=8, angle=0),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.line.x = element_blank(),
+          axis.line.y = element_blank()) +
+    # scale_y_continuous(expand = c(0.05, 0.05),
+    #                    limits=c(0, 1.15*max(toplot_tree$x)),
+    #                    breaks=sort(c(0, 10, max(toplot_tree$x)))) +
+    #lim_tree(1.1*max(toplot_tree$x)) +
+    ylab("Phylogenetic Tree \n Cassiopeia Greedy") +
+    xlab('') +
+    theme(panel.border=element_blank(), axis.line = element_line()) #+
+  #lemon::coord_capped_cart(bottom="both")
+  
+  return(ggtree_mp)
+}
+
+
+
 plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   
   if (!('group' %in% colnames(tree_mp_df))) {
@@ -6,15 +48,17 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   }
   
   ggtree_mp <- 
-    ggtree::ggtree(tree_mp_df) + #%<+%
+    ggtree::ggtree(tree_mp_df) + #, layout="ellipse") + #%<+%
     # perc_max_tip_colors + # add data for labelling tips
     # geom_tippoint(aes(color = group), size=3) +
     #geom_text2(aes(subset=!isTip, label=node), hjust=-.3)  + 
     ggtree::geom_tiplab(#aes(fill=group, alpha = 0.5), 
-                        geom = "text", 
-                        align=TRUE, linesize=0.5, linetype="dotted", size=5) +
+      geom = "text", 
+      align=TRUE, linesize=0.5, linetype="dotted", size=5) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
-    scale_x_continuous(expand = c(0.05, 0.05), limits=c(0, 1.15*max(tree_mp_df$x)), breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
+    scale_x_continuous(expand = c(0.05, 0.05), 
+                       limits=c(0, 1.15*max(tree_mp_df$x)), 
+                       breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
     xlab("Phylogenetic Tree \n Cassiopeia Greedy") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
@@ -42,7 +86,7 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
     to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment %>% 
       mutate(alt = ifelse(alt %in% c('d','i'), alt, 'w'))
   } else {
-     to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment
+    to_plot_df = EvoTraceR_object$alignment$asv_barcode_alignment
   }
   
   if (! is.null(subset_asvs)) {
@@ -50,6 +94,8 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
     if (nrow(to_plot_df) == 0) {
       stop('None of the asv names provided in subset_asvs matches any of the ASVs in the EvoTraceR object.\nPlease select valid ASV names.')
     }
+  } else {
+    subset_asvs = unique(to_plot_df$asv_names)
   }
   # else if (smoothed_deletions == 'sub_smooth_del_ins') {
   #   to_plot_df = EvoTraceR_object$cleaned_deletions_insertions$asv_barcode_alignment
@@ -63,21 +109,21 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   #     mutate(next_alt = lead(alt), previous_alt = lag(alt)) 
   #   del_to_expand_left = del_to_expand %>%
   #     filter(alt == 'del' & alt != previous_alt) #& alt != next_alt)
-    
+  
   #   del_to_expand_right = del_to_expand %>%
   #     filter(alt == 'del' & alt != next_alt)
-    
+  
   #   asvs_with_del = unique(c(as.character(del_to_expand_left$asv_names), as.character(del_to_expand_right$asv_names)))
-    
+  
   #   for (asv in asvs_with_del) {
   #     to_plot_sub = to_plot_df %>% filter(asv_names == asv)
   #     to_plot_df = to_plot_df %>% filter(asv_names != asv)
-      
+  
   #     to_plot_sub$alt <- ifelse(sapply(to_plot_sub$position_bc260, function(p) 
   #       any((del_to_expand_left$position_bc260 - 5 <= p & p <= del_to_expand_left$position_bc260 & del_to_expand_left$asv_names == asv)|
   #           (del_to_expand_right$position_bc260 + 5 >= p & p >= del_to_expand_left$position_bc260 & del_to_expand_right$asv_names == asv))),
   #       "del",to_plot_sub$alt)
-      
+  
   #     to_plot_df = to_plot_df %>% bind_rows(to_plot_sub)
   #   }
   # }
@@ -106,7 +152,8 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   ### "msa Plot" - Barcode; Scale (1-260)  ------------------------------------------------------
   #to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
   to_plot_df$alt_long_names = factor(x = to_plot_df$alt_long_names)#, levels = c('Deletion', 'w', 'i'))
-  msa_cna_bc <- 
+  to_plot_df$asv_names = factor(x = to_plot_df$asv_names, levels = subset_asvs)
+   msa_cna_bc <- 
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt_long_names, width=0.75, height=tile_height), colour = NA) +
     scale_fill_manual(values=c("Deletion"="#3366FF", "Insertion"="#FF0033", "No Edits"="#f2f2f2"), 
@@ -117,13 +164,14 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
     geom_rect(data=msa_frame, mapping=aes_string(xmin="xmin", xmax="xmax", ymin="ymin", ymax="ymax"), colour = "grey50", fill=NA, inherit.aes = F, size=0.6) +
     geom_rect(xmin=1, xmax=260, ymin=0.6, ymax=1.4, colour = "#65A7F3", fill=NA, size=0.6) +
     xlab("Barcode Nucleotides \n (1-260)") +
-    labs(fill = "Type of Editing")
-    #lemon::coord_capped_cart(bottom="both") # axis with lemon
-    #"sub"="#329932",
+    labs(fill = "Type of Editing") +
+    lemon::coord_capped_cart(bottom="both") # axis with lemon
+  #"sub"="#329932",
   # add theme
   msa_cna_bc <- 
     msa_cna_bc +
     barplot_nowaklab_theme() +
+    scale_y_discrete(c(0,length(subset_asvs))) +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
           axis.line.y = element_blank(), # disable y axis lines
           axis.ticks.y = element_blank(), # disable y axis ticks lines
@@ -227,13 +275,7 @@ plot_similarity = function(df_to_plot_final) {
 # to the counts for the same ASV in the sample with the highest abundance.
 # input must be a tibble with this columns: asv_names, sample, perc_in_sample, perc_fold_to_max
 plot_percentage_asv_sample = function(df_to_plot_final, subset_asvs = NULL) {
-
-  scale_bubble <- ceiling(max(df_to_plot_final %>% 
-                                dplyr::pull(perc_in_sample), na.rm = T))
   
-  scale_bubble_nonmbc <- ceiling(max(df_to_plot_final %>% 
-                        filter(str_detect(asv_names, "ASV")) %>% 
-                        dplyr::pull(perc_in_sample), na.rm = T))
   
   
   if (! is.null(subset_asvs)) {
@@ -241,24 +283,36 @@ plot_percentage_asv_sample = function(df_to_plot_final, subset_asvs = NULL) {
     if (nrow(df_to_plot_final) == 0) {
       stop('None of the asv names provided in subset_asvs matches any of the ASVs in the EvoTraceR object.\nPlease select valid ASV names.')
     }
+  } else {
+    subset_asvs = unique(df_to_plot_final$asv_names)
   }
+  
+  df_to_plot_final$asv_names = factor(df_to_plot_final$asv_names, levels = subset_asvs)
+  
+  scale_bubble <- ceiling(max(df_to_plot_final %>% 
+                                dplyr::pull(perc_in_sample), na.rm = T))
+  
+  scale_bubble_nonmbc <- ceiling(max(df_to_plot_final %>% 
+                                       filter(str_detect(asv_names, "ASV")) %>% 
+                                       dplyr::pull(perc_in_sample), na.rm = T))
   
   # df_to_plot_final = df_to_plot_final %>% filter(str_detect(asv_names, "ASV") | str_detect(asv_names, '.NMBC'))
   # df_to_plot_final$asv_names = stringr::str_replace_all(string = df_to_plot_final$asv_names, pattern = '.NMBC', '')
   # plot
   bubble <- 
     ggplot(data=df_to_plot_final, #%>% 
-             #filter(str_detect(asv_names, "ASV")),
+           #filter(str_detect(asv_names, "ASV")),
            aes(x=sample, y=asv_names, scale="globalminmax")) + # %>% darop_na() -> for BC10.ORG
     geom_point(aes(size=perc_in_sample, fill=perc_fold_to_max), shape=21, stroke=0.5, col="black") +
     #scale_fill_gradient2(low = "#417dd4", mid = "#f2f2f2", high = "#DC0000FF") + # for log2
     colorspace::scale_fill_continuous_sequential(palette = "Plasma", limits=c(0, 100), rev = F, na.value = "grey") +
     scale_size_area(#max_size = scale_bubble, 
-                    limits = c(0, scale_bubble), 
-                    trans = 'log1p',
-                    breaks = c(1, scale_bubble_nonmbc/2, scale_bubble_nonmbc, scale_bubble)) + # manual
+      limits = c(0, scale_bubble), 
+      trans = 'log1p',
+      breaks = c(1, scale_bubble_nonmbc/2, scale_bubble_nonmbc, scale_bubble)) + # manual
     xlab("Analyzed \n Samples") +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon
+    scale_y_discrete(c(0,length(subset_asvs))) +
     # Add theme
     barplot_nowaklab_theme() +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),

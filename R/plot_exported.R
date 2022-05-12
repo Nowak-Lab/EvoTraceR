@@ -55,11 +55,14 @@ plot_cluster_summary = function(EvoTraceR_object, cluster_list = NULL) {
   }
   cli::cli_progress_bar("Plotting clusters", total = length(clusters))
   
-  for (c in clusters) {
+  for (c in setdiff(clusters, "0")) {
     
     cluster_tips = tree_mp_df %>% filter(group == c & isTip) %>% pull(label)
     
     toplot_tree_phylo = ape::drop.tip(EvoTraceR_object$phylogeny$tree_phylo,
+                                      setdiff(tree_mp_df %>% filter(isTip) %>% pull(label), cluster_tips))
+    
+    toplot_tree_phylo = ape::drop.tip(return_list$tree_collapsed_phylo,
                                       setdiff(tree_mp_df %>% filter(isTip) %>% pull(label), cluster_tips))
     
     toplot_tree_df = ggtree::fortify(toplot_tree_phylo, ladderize = T, right=T)
@@ -69,18 +72,30 @@ plot_cluster_summary = function(EvoTraceR_object, cluster_list = NULL) {
     
     toplot_tree = ggtree::fortify(toplot_tree_phylo)
     
+    sequence_order = tip_order#toplot_tree %>% arrange(y) %>% filter(!is.na(label)) %>% pull(label)
+    
     tree_cluster = plot_phylogenetic_tree(toplot_tree)
-    msa_cna_bc = plot_evotracer(EvoTraceR_object, what = 'msa', cleaned_deletions = FALSE, subset_asvs = cluster_tips)
-    bubble = plot_evotracer(EvoTraceR_object, what = 'frequency',  subset_asvs = cluster_tips)
+    tree_cluster = tree_cluster + scale_x_continuous(expand = expand_scale(0,0.6))
+      #scale_x_continuous(breaks = seq(-5, length(cluster_tips) + 0.6, by=1))
+    
+    msa_cna_bc = plot_evotracer(EvoTraceR_object, what = 'msa', 
+                                cleaned_deletions = FALSE, 
+                                subset_asvs = sequence_order)
+    msa_cna_bc = msa_cna_bc + 
+      scale_y_discrete(expand = expand_scale(0,0.6))
+      scale_y_discrete(breaks = seq(0, length(cluster_tips) - 1, by=1))
+    bubble = plot_evotracer(EvoTraceR_object, what = 'frequency',  subset_asvs = sequence_order)
     
     msa.bubble = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
     
     tree.msa.bubble <- aplot::insert_left(msa.bubble, tree_cluster, width = 1)
     
+    prova = gridExtra::grid.arrange(tree_cluster, msa_cna_bc, nrow=1)
+    
     ggsave(filename=file.path(output_dir, paste0("summary_mutations_cluster", c, ".pdf")), 
            plot=tree.msa.bubble, width=50,
            height=dim(toplot_tree)[1]*0.6, units = "cm", limitsize = FALSE)
-    cli::cli_progress_update()
+    #cli::cli_progress_update()
   }
   cli::cli_progress_done()
   
@@ -106,7 +121,7 @@ plot_cluster_summary = function(EvoTraceR_object, cluster_list = NULL) {
 #' 
 #' @export seq_filtering_plot
 #' 
-seq_filtering_plot = function(EvoTraceR_object) {
+seq_filtering_plot = function(EvoTraceR_object, figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")) {
   track_data = EvoTraceR_object$dada2$seq_filters
 
   # # assemble data  with all number for each step of filtering
@@ -142,7 +157,8 @@ seq_filtering_plot = function(EvoTraceR_object) {
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"), # update theme specifically 
           axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
           axis.line.x = element_blank(), # disable x axis lines
-          axis.ticks.x = element_blank()) # disable x axis ticks lines
+          axis.ticks.x = element_blank(),
+          axis.text.y = element_blank()) # disable x axis ticks lines
   # save pdf
   ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
   # save csv

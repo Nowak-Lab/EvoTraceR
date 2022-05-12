@@ -72,28 +72,59 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
   cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
   
-  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = F))
+  #########################
+  edge_dict = cas_tree[["_CassiopeiaTree__network"]][["_adj"]]
   
-  tree_df = ggtree::fortify(tree)
-  # Find node to root in the original sequence in "bc10_org"
-  tree_root_mp <-
-    tree_df %>%
-    filter(label == 'BC10v0') %>%
-    pull(node)
+  for (e in names(edge_dict)) {
+    if (length(edge_dict[[e]]) > 0) {
+      print(e)
+      subdict = edge_dict[[e]]
+      nmut_parent = sum(cas_tree$get_character_states(e) == 1)
+      for (child in names(subdict)) {
+        nmut_child = sum(cas_tree$get_character_states(child) == 1)
+        cas_tree$set_branch_length(parent = e, child = child, 
+                                   length = (nmut_child - nmut_parent))
+        #(nodes_dict[[child]][['nchanges']] + 1) - (nodes_dict[[cas_tree$parent(child)]][['nchanges']] + 1) )
+        # cas_tree[["_CassiopeiaTree__network"]][[e]][[child]] = 
+      }
+      #edge_dict[[e]] = subdict
+    }
+  }
+  # tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+  # tree$node.label = seq(length(tree$tip.label)+1,
+  #                       (length(tree$tip.label) + toplot_tree_phylo$Nnode))
+  
+  #toplot_tree_phylo$node.label[toplot_tree_phylo$node.label == 77] = 'ciao'
+  #########################
   
   
-  ### Re-root in the Original Sequence ------------------------------------------------------ 
-  tree <- TreeTools::RootTree(tree, tree_root_mp)
+  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+  
+  # tree_df = ggtree::fortify(tree)
+  # # Find node to root in the original sequence in "bc10_org"
+  # tree_root_mp <-
+  #   tree_df %>%
+  #   filter(label == 'BC10v0') %>%
+  #   pull(node)
+  # 
+  # 
+  # ### Re-root in the Original Sequence ------------------------------------------------------ 
+  # tree <- TreeTools::RootTree(tree, tree_root_mp)
+  
+  tree_df = ggtree::fortify(tree, ladderize = T, right=T)
+  
+  tip_order = tree_df %>% filter(!is.na(label)) %>% arrange(desc(y)) %>% pull(label)
+  tree = ape::rotateConstr(tree, constraint = tip_order)
   
   tree = ggtree::fortify(tree)
   # Take the parent node with the minimum label, which should be the the one to which all subtrees corresponding to clusters
   # are attached to.
-  mock_root = min(tree$parent) + 1
-  clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
-  tree_df = ggtree::groupClade(tree, .node=clusters_roots)
-  #table(tree_df %>% filter(!is.na(label)) %>% pull(group))
-  
-  tree_df = tree_df %>% mutate(group = as.numeric(group))
+  mock_root = min(tree$parent) #+ 1
+    clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
+    tree_df = ggtree::groupClade(tree, .node=clusters_roots)
+    #table(tree_df %>% filter(!is.na(label)) %>% pull(group))
+    
+    tree_df = tree_df %>% mutate(group = as.numeric(group))
   
   small_groups = tree_df %>% 
     filter(isTip) %>%
@@ -104,7 +135,7 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
   # Re-compute te phylo object so that tips can be easily removed with ape::drop.tip
   
-  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = F))
+    tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
   
   # Find node to root in the original sequence in "bc10_org"
   tree_root_mp <-
