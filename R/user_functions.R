@@ -902,7 +902,7 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   # Save PDF
   # output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
-         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=50,
+         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=60,
          height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
   
   #EvoTraceR_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid

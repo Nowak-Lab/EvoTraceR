@@ -52,18 +52,33 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
     # perc_max_tip_colors + # add data for labelling tips
     # geom_tippoint(aes(color = group), size=3) +
     #geom_text2(aes(subset=!isTip, label=node), hjust=-.3)  + 
-    ggtree::geom_tiplab(#aes(fill=group, alpha = 0.5), 
-      geom = "text", 
-      align=TRUE, linesize=0.5, linetype="dotted", size=5) +
+    ggtree::geom_tiplab(#aes(fill=group, alpha = 0.5, color=NULL), 
+                        geom = "text", 
+                        align=TRUE, linesize=0.5, linetype="dotted", size=5) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), 
-                       limits=c(0, 1.15*max(tree_mp_df$x)), 
+                       limits=c(0, 1.15*max(tree_mp_df$x) + 0.8), 
                        breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
     xlab("Phylogenetic Tree \n Cassiopeia Greedy") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon +
     scale_fill_manual(values=sample(rainbow(n = length(unique(tree_mp_df$group)))))
+  
+  set.seed(1)
+  colors = sample(rainbow(n = length(unique(tree_mp_df$group))))
+  names(colors) = unique(tree_mp_df$group)
+  colors[['1']] = 'grey'
+  for (c in unique(tree_mp_df$group)) {
+    cluster_nodes = tree_mp_df %>% filter(group == c & isTip) %>% arrange(y) %>% pull(node)
+    ggtree_mp = ggtree_mp +
+      geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
+                 label= c, offset.text=0.25, offset = 1, angle = 90, align = T) 
+    # geom_hilight(mapping=aes(subset = node %in% cluster_nodes, 
+    #                               fill = group),
+    #                   type = "gradient", gradient.direction = 'rt',
+    #                   alpha = .8)
+  }
   
   
   ggtree_mp <-
@@ -153,7 +168,7 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   #to_plot_df$alt = factor(x = to_plot_df$alt, levels = c('sub', 'del', 'wt', 'ins'))
   to_plot_df$alt_long_names = factor(x = to_plot_df$alt_long_names)#, levels = c('Deletion', 'w', 'i'))
   to_plot_df$asv_names = factor(x = to_plot_df$asv_names, levels = subset_asvs)
-   msa_cna_bc <- 
+  msa_cna_bc <- 
     ggplot(data=to_plot_df, aes(x=position_bc260, y=asv_names)) +
     geom_tile(aes(fill=alt_long_names, width=0.75, height=tile_height), colour = NA) +
     scale_fill_manual(values=c("Deletion"="#3366FF", "Insertion"="#FF0033", "No Edits"="#f2f2f2"), 
