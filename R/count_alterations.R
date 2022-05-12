@@ -122,7 +122,7 @@ count_alterations <- function(EvoTraceR_object, output_dir_files, output_dir_fig
     geom_vline(xintercept=pam_pos, linetype="dashed", size=0.3, col="orange") + # Cas9 Cleavage
     lemon::coord_capped_cart(left="both", bottom="both") +
     lemon::facet_rep_grid(rows = vars(sample), cols=vars(alt_long_names), repeat.tick.labels = TRUE) +
-    labs(y = "Editing Frequency", x = "Position of Nucleotides", fill = "Type of Editing")
+    labs(y = "Marking Frequency", x = "Position of Nucleotides", fill = "Type of Marking")
   
   # add theme
   alt_count_bc <- 

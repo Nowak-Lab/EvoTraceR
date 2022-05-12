@@ -194,7 +194,7 @@ plot_mutations_width = function(df_to_plot_final) {
     scale_x_continuous(labels=scales::comma, expand = c(0.01, 0.01), breaks=c(0, 130, 260))+#, limits=c(0, 286)) +
     geom_vline(xintercept=130, linetype="dotted", size=0.5, col="gray50") +
     geom_vline(xintercept=260, linetype="dotted", size=0.5, col="gray50") +
-    xlab("Cummulative \n Widths of Alterations") +
+    labs(x = "Cummulative \n Widths of Markings", fill = 'Width of Marking') +
     theme(panel.border=element_blank(), axis.line = element_line()) + #From: https://github.com/stefanedwards/lemon/issues/26
     lemon::coord_capped_cart(bottom="both") # axis with lemon
   
@@ -225,7 +225,7 @@ plot_asv_length = function(df_to_plot_final) {
     geom_vline(xintercept=260, linetype="dotted", size=0.5, col="#84B48F") + # 260 bp = original length
     geom_vline(xintercept=520, linetype="dotted", size=0.5, col="#F39B7FFF") + # 0 
     scale_x_continuous(labels=scales::comma, expand = c(0.01, 0.01), limits=c(0, 572), breaks=c(0, 130, 260, 390, 520)) + # 572 = 1.1 * 520 -> nice separation between graphs
-    xlab("Length of  \n ASV") +
+    labs(x = "ASV\nLength", fill = "ASV Length") +
     lemon::coord_capped_cart(bottom="both") # axis with lemon
   
   # Add Theme  
@@ -311,11 +311,13 @@ plot_percentage_asv_sample = function(df_to_plot_final, subset_asvs = NULL) {
       trans = 'log1p',
       breaks = c(1, scale_bubble_nonmbc/2, scale_bubble_nonmbc, scale_bubble)) + # manual
     xlab("Analyzed \n Samples") +
+    labs(x = "Analyzed \n Samples", size = "Frequency in\nSample", fill = "Frequency\nNormalized to Max") +
     lemon::coord_capped_cart(bottom="both") + # axis with lemon
     scale_y_discrete(c(0,length(subset_asvs))) +
     # Add theme
     barplot_nowaklab_theme() +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
+          legend.title.align = 0.5,
           axis.line.y = element_blank(), # disable y axis lines
           axis.ticks.y = element_blank(), # disable y axis ticks lines
           axis.title.y = element_blank(), # disable y axis lines
