@@ -9,7 +9,7 @@ merge_hamming = function(counts, sample_columns) {
   
   #organ = 'PRL'
   for (organ in sample_columns) {
-    counts_organ = counts %>% select(all_of(c('seq', organ, 'seq_names', 'length'))) %>%
+    counts_organ = counts %>% dplyr::select(all_of(c('seq', organ, 'seq_names', 'length'))) %>%
       filter(get(organ) > 0)
     
     #counts_organ = reticulate::r_to_py(counts_organ)
@@ -19,8 +19,8 @@ merge_hamming = function(counts, sample_columns) {
     for (seq_len in counts_organ %>% pull('length') %>% unique) {
       
       cb = counts_organ %>% filter(length == seq_len) %>% pull(seq)
-      cb = unlist(map(cb, function(x) builtins$bytes(x, 'ascii')))
-      
+      cb = unlist(purrr::map(cb, function(x) builtins$bytes(x, 'ascii')))
+
       #cbc = builtins$dict(builtins$zip(cb, counts_organ %>% filter(length == seq_len) %>% pull(get(organ))))
       
       cbc = reticulate::py_dict(keys = cb, 
