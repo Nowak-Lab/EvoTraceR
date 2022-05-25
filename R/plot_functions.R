@@ -42,10 +42,10 @@ plot_phylogenetic_tree_ggraph = function(toplot_tree) {# , sample_columns) {
 
 plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   
-  if (!('group' %in% colnames(tree_mp_df))) {
-    tree_mp_df$group = 1
-    tree_mp_df$group = as.factor(tree_mp_df$group)
-  }
+  # if (!('group' %in% colnames(tree_mp_df))) {
+  #   tree_mp_df$group = 1
+  #   tree_mp_df$group = as.factor(tree_mp_df$group)
+  # }
   
   ggtree_mp <- 
     ggtree::ggtree(tree_mp_df) + #, layout="ellipse") + #%<+%
@@ -57,7 +57,7 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
                         align=TRUE, linesize=0.5, linetype="dotted", size=5) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), 
-                       limits=c(0, 1.15*max(tree_mp_df$x) + 0.8), 
+                       limits=c(0, 1.15*max(tree_mp_df$x)), 
                        breaks=sort(c(0, 10, max(tree_mp_df$x)))) +
     xlim_tree(1.1*max(tree_mp_df$x)) +
     xlab("Phylogenetic Tree \n Cassiopeia Greedy") +
@@ -66,18 +66,23 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
     scale_fill_manual(values=sample(rainbow(n = length(unique(tree_mp_df$group)))))
   
   set.seed(1)
-  colors = sample(rainbow(n = length(unique(tree_mp_df$group))))
-  names(colors) = unique(tree_mp_df$group)
-  colors[['1']] = 'grey'
-  for (c in unique(tree_mp_df$group)) {
-    cluster_nodes = tree_mp_df %>% filter(group == c & isTip) %>% arrange(y) %>% pull(node)
-    ggtree_mp = ggtree_mp +
-      geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
-                 label= c, offset.text=0.25, offset = 1, angle = 90, align = T) 
-    # geom_hilight(mapping=aes(subset = node %in% cluster_nodes, 
-    #                               fill = group),
-    #                   type = "gradient", gradient.direction = 'rt',
-    #                   alpha = .8)
+  
+  
+  if (('group' %in% colnames(tree_mp_df))) {
+    colors = sample(rainbow(n = length(unique(tree_mp_df$group))))
+    names(colors) = unique(tree_mp_df$group)
+    colors[['1']] = 'grey'
+    for (c in unique(tree_mp_df$group)) {
+      cluster_nodes = tree_mp_df %>% filter(group == c & isTip) %>% arrange(y) %>% pull(node)
+      ggtree_mp = ggtree_mp +
+        geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
+                   label= c, offset.text=0.25, offset = 1, angle = 90, align = T) 
+      # geom_hilight(mapping=aes(subset = node %in% cluster_nodes, 
+      #                               fill = group),
+      #                   type = "gradient", gradient.direction = 'rt',
+      #                   alpha = .8)
+  }
+  
   }
   
   
