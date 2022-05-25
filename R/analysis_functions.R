@@ -1,3 +1,67 @@
+merge_hamming = function(counts, sample_columns) {
+  pd = reticulate::import('pandas')
+  network = reticulate::import('umi_tools.network')
+  builtins <- import_builtins()
+  
+  counts = counts %>% mutate(length = nchar(seq)) #%>% mutate(length = as.integer(length))
+  
+  df = data.frame()
+  
+  #organ = 'PRL'
+  for (organ in sample_columns) {
+    counts_organ = counts %>% select(all_of(c('seq', organ, 'seq_names', 'length'))) %>%
+      filter(get(organ) > 0)
+    
+    #counts_organ = reticulate::r_to_py(counts_organ)
+    
+    df_organ = data.frame(matrix(ncol = 1, nrow=0))
+    colnames(df_organ)= organ
+    for (seq_len in counts_organ %>% pull('length') %>% unique) {
+      
+      cb = counts_organ %>% filter(length == seq_len) %>% pull(seq)
+      cb = unlist(map(cb, function(x) builtins$bytes(x, 'ascii')))
+      
+      #cbc = builtins$dict(builtins$zip(cb, counts_organ %>% filter(length == seq_len) %>% pull(get(organ))))
+      
+      cbc = reticulate::py_dict(keys = cb, 
+                                values = counts_organ %>% filter(length == seq_len) %>% pull(get(organ)) %>% as.integer, 
+                                convert = F)
+      
+      uc = network$UMIClusterer()
+      CBclusters = uc(cbc, as.integer(2))
+      cbFinal = list()
+      for (l in CBclusters) {  # This is a list with the first element the dominant barcode
+        decoded = l[[1]]$decode('ascii')
+        cbFinal[[decoded]] = 0
+        for (x in l) {  # Iterate over all barcodes in a cluster
+          cbFinal[[decoded]] = cbFinal[[decoded]] + reticulate::py_to_r(cbc[[x]])
+        }
+      }
+      #print(cbFinal)
+      tmp = as.data.frame(do.call(rbind, cbFinal)) %>%
+        tibble::rownames_to_column('seq') %>%
+        dplyr::rename(!!organ:= V1)
+      
+      df_organ = bind_rows(df_organ, tmp)
+    }
+    
+    if (nrow(df) == 0) {
+      df = df_organ
+    } else {
+      df = dplyr::full_join(df, df_organ, by = 'seq')
+    }
+    
+  }
+  
+  df = df %>% replace(is.na(.), 0) %>%
+    left_join(counts %>% select(seq, seq_names), by = 'seq')
+  
+  return(df)
+  
+}
+
+
+
 perform_flanking_filtering = function(barcodes_info, seqtab_df, flanking_filtering) {
   # Removal of contamination: keep only those ASV that start (5 nucleotides) and end (10 nuceotides) like the original barcode.
   # The first 5 nts are the same for all barcodes, while the end is barcode-specific
@@ -126,8 +190,8 @@ asv_collapsing = function(seqtab,
   no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
   no_indels = seqtab %>% filter(seq_names %in% no_indels)
   no_indels = no_indels %>% dplyr::summarise(seq = barcode, #compute_consensus_sequence(seq, sum_counts), 
-                                      seq_names = seq_names[which.max(totalCounts)],
-                                      across(sample.names, sum))
+                                             seq_names = seq_names[which.max(totalCounts)],
+                                             across(sample.names, sum))
   
   
   # I take the coordinate matrix, I clean it and I binarize it
@@ -148,7 +212,9 @@ asv_collapsing = function(seqtab,
   seqtab_collapsed = seqtab_collapsed %>% group_by(across(all_of(mutations))) %>% 
     summarize(consensus_seq = seq[which.max(totalCounts)], #compute_consensus_sequence(seq, sum_counts), 
               seq_names = seq_names[which.max(totalCounts)],
-              across(sample.names, sum)) %>% ungroup() %>%
+              across(sample.names, sum)) %>%
+    #across(sample.names, function(x) {x[which.max(totalCounts)]})) %>% 
+    ungroup() %>%
     rename(seq = consensus_seq) %>%
     select(-all_of(mutations))
   

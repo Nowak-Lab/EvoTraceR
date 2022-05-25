@@ -355,11 +355,20 @@ asv_analysis = function(EvoTraceR_object,
   
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
+  #seqtab_df = seqtab_df %>% filter(if_any(where(is.numeric), ~ . > asv_count_cutoff))
   #seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
-  seqtab_df = seqtab_df %>% filter(if_any(where(is.numeric), ~ . > asv_count_cutoff))
-  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
   
-  counts_filtering = nrow(seqtab_df)
+  cli::cli_alert_info('Merging sequences based on Hamming distance')
+  seqtab_df = merge_hamming(seqtab_df, sample_columns)
+  
+  hamming_filter = nrow(seqtab_df)
+  
+  # seqtab_df = seqtab_df %>% rowwise() %>% 
+  #   mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
+  #   ungroup()
+  # seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
+  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  #counts_filtering = nrow(seqtab_df)
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   ###### COLLAPSING
@@ -380,6 +389,15 @@ asv_analysis = function(EvoTraceR_object,
   
   cleaned_coordinate_matrix = collapse_result$mutations_coordinates
   binary_mutation_matrix = collapse_result$binary_matrix
+  
+  #### Spostamento filtro
+  seqtab_df = seqtab_df %>% rowwise() %>% 
+    mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
+    ungroup()
+  seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
+  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  counts_filtering = nrow(seqtab_df)
+  ##### Fine spostamento filtro
   
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
   
@@ -488,7 +506,7 @@ asv_analysis = function(EvoTraceR_object,
   norm_seqtab_df_clean_asv[sample_columns] = norm_seqtab_df_clean_asv[sample_columns]
   
   # EvoTraceR_object$clean_asv_dataframe_countnorm = norm_seqtab_df_clean_asv
-
+  
   EvoTraceR_object$clean_asv_dataframe = norm_seqtab_df_clean_asv
   
   utils::write.csv(norm_seqtab_df_clean_asv, 
@@ -505,9 +523,9 @@ asv_analysis = function(EvoTraceR_object,
                                     nmbc = barcodes_info$ref_name, #paste0( barcodes_info$ref_name, ".NMBC"),
                                     output_dir = output_dir)
   
-  EvoTraceR_object$dada2$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Frequency Filter", "Substitutions Filter", "Flanking Seq. Filter", "Final ASVs")), 
-                                                  num=c(orgseq, counts_filtering, endseq_filter, flanking_filtering, clean_asv))
-
+  EvoTraceR_object$dada2$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Substitutions Merging",  "Frequency Filter", "Flanking Seq. Filter", "Final ASVs")), 
+                                                  num=c(orgseq, hamming_filter, endseq_filter, counts_filtering, flanking_filtering, clean_asv))
+  
   seq_filtering_plot(EvoTraceR_object)
   # output_dir_files_alignment = file.path(EvoTraceR_object$output_directory, "alignment")
   # if(!dir.exists(output_dir_files_alignment)) dir.create(output_dir_files_alignment)
@@ -884,7 +902,7 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   # if (is_smoothed) {
   # smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
   msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
- # msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
+  # msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
   # } else {
   #   msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
   # }
@@ -908,3 +926,6 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   #EvoTraceR_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
   return(EvoTraceR_object)
 }
+
+
+

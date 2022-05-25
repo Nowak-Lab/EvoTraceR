@@ -137,15 +137,15 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
     tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
   
-  # Find node to root in the original sequence in "bc10_org"
-  tree_root_mp <-
-    ggtree::fortify(tree) %>%
-    filter(label == 'BC10v0') %>%
-    pull(node)
-  
-  
-  ### Re-root in the Original Sequence ------------------------------------------------------ 
-  tree <- TreeTools::RootTree(tree, tree_root_mp)
+  # # Find node to root in the original sequence in "bc10_org"
+  # tree_root_mp <-
+  #   ggtree::fortify(tree) %>%
+  #   filter(label == 'BC10v0') %>%
+  #   pull(node)
+  # 
+  # 
+  # ### Re-root in the Original Sequence ------------------------------------------------------ 
+  # tree <- TreeTools::RootTree(tree, tree_root_mp)
   
   tree_df$group = as.factor(tree_df$group)
   
