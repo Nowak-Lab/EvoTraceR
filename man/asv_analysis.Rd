@@ -23,7 +23,7 @@ asv_analysis(
   pwa_mismatch = -4,
   pwa_type = "global",
   compute_msa = FALSE,
-  ...
+  cleaning_window = c(3, 3)
 )
 }
 \arguments{

@@ -4,7 +4,7 @@
 \alias{analyse_mutations}
 \title{analyse_mutations}
 \usage{
-analyse_mutations(EvoTraceR_object, cleaning_window = c(3, 3))
+analyse_mutations(EvoTraceR_object)
 }
 \arguments{
 \item{EvoTraceR_object}{EvoTraceR object on which we want to perform msa.}

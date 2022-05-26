@@ -605,7 +605,7 @@ asv_analysis = function(EvoTraceR_object,
 #' @rawNamespace import(data.table, except = c(last, first, between))
 #' @importFrom muscle muscle
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
-#' @importFrom ggmsa tidy_msa 
+# @importFrom ggmsa tidy_msa 
 #' @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom utils write.csv
 #' @importFrom forcats fct_relevel
@@ -673,7 +673,7 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 #' @importFrom phytools mrp.supertree
 #' @importFrom TreeTools RootTree
 #' @importFrom ggtree fortify
-#' @importFrom dynamicTreeCut cutreeDynamic
+# @importFrom dynamicTreeCut cutreeDynamic
 #' @importFrom ape cophenetic.phylo bind.tree drop.tip
 #' @importFrom phylogram as.dendrogram
 #' @importFrom ade4 dist.binary

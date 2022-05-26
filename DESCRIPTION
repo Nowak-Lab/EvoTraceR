@@ -1,5 +1,5 @@
 Package: EvoTraceR
-Version: 0.99.21
+Version: 0.99.22
 Date: 2022-01-04
 Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
@@ -17,7 +17,6 @@ Imports:
     lemon,
     scales,
     muscle,
-    ggmsa,
     utils,
     tidyr,
     tibble,
@@ -34,7 +33,6 @@ Imports:
     colorspace,
     aplot,
     ape,
-    dynamicTreeCut,
     phylogram,
     ade4,
     foreach

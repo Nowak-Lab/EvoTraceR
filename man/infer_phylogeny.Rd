@@ -4,20 +4,20 @@
 \alias{infer_phylogeny}
 \title{infer_phylogeny}
 \usage{
-infer_phylogeny(EvoTraceR_object, phylip_package_path, mutations_use = "del_ins")
+infer_phylogeny(EvoTraceR_object, mutations_use = "del_ins")
 }
 \arguments{
 \item{EvoTraceR_object}{(Required)}
-
-\item{phylip_package_path}{(Required). Prior to running this function, users should install 
-\href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
-For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
-then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.}
 
 \item{mutations_use}{(optional). Default = 'smooth_del' A string indicating what type of mutations to use for phylogeny reconstruction.
 Can be one of c('del', 'del_ins'). The first
 corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
 and insertios are considered.}
+
+\item{phylip_package_path}{(Required). Prior to running this function, users should install 
+\href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
+For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
+then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.}
 }
 \value{
 EvoTraceR object with a new filed called phylogeny, that stores the inferred tree.

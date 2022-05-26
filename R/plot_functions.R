@@ -77,7 +77,10 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
       if (c != 'CP00') { # & isTip %>% arrange(y) %>% pull(node)
         min_parent = min(setdiff(cluster_nodes$parent, c(min(tree_mp_df$parent))))
         ggtree_mp = ggtree_mp +
-          geom_cladelab(node = min_parent, label = c, textcolor='white', barcolor=colors[[c]], offset = 0.8, barsize = 8, align = T, angle = 90)
+          geom_cladelab(node = min_parent, label = '', textcolor='white', barcolor=colors[[c]], 
+                        offset = 0.8, barsize = 8, align = T, angle = 90) +
+          geom_cladelab(node=min_parent, label=c, 
+                            textcolor="white", angle = 90, offset=.75, align=TRUE, barcolor=colors[[c]])
         # geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
         #            #label= c, 
         #            #offset.text=0.1,
