@@ -15,6 +15,7 @@
 #' @param cluster_list (Optional). Subset of clusters for which one wants to create the visualization. 
 #' 
 #' @return NULL. This function stores in the phylogeny output directory a pdf file for each cluster.
+#' @export plot_cluster_summary
 plot_cluster_summary = function(EvoTraceR_object, cluster_list = NULL) {
   
   mut_in_phyl = EvoTraceR_object$phylogeny$mutations_in_phylogeny

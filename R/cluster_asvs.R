@@ -15,7 +15,7 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   
   #rm(ancestral)
   # Rename It
-
+  
   
   ### Estimating the MRP (matrix representation parsimony) - SuperTree from a set of input trees (Baum 1992; Ragan 1992)) ------------------------------------------------------ 
   set.seed(1980)
@@ -24,14 +24,14 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
   } else {
     tree_mp = tree_mp_all_rmix
   }
-
+  
   # Option 2: Choose What Tree Number to Plot (Arbitrary Choice) -> need to argue why this one, the best score as 1?
   #tree_mp <- tree_mp_all[100] # plot single tree -> #1 chosen arbitrarily
   
   #tree_mp = tree_mp_all_rmix[[1]]
   ### Fortify tree to data frame
   tree_mp_df <- ggtree::fortify(tree_mp)
-
+  
   tree_mp_df$parent = tree_mp_df$parent + 1
   tree_mp_df$node = tree_mp_df$node + 1
   tree_mp_df$y = tree_mp_df$y + 1
@@ -48,7 +48,7 @@ compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) 
                                              branch = node1_data$branch, 
                                              angle = node1_data$angle)
   
-
+  
   return(list(tree_mp = tree_mp, tree_mp_df = tree_mp_df))
 }
 
@@ -120,22 +120,26 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   # Take the parent node with the minimum label, which should be the the one to which all subtrees corresponding to clusters
   # are attached to.
   mock_root = min(tree$parent) #+ 1
-    clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
-    tree_df = ggtree::groupClade(tree, .node=clusters_roots)
-    #table(tree_df %>% filter(!is.na(label)) %>% pull(group))
-    
-    tree_df = tree_df %>% mutate(group = as.numeric(group))
+  clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
+  tree_df = ggtree::groupClade(tree, .node=clusters_roots)
+  #table(tree_df %>% filter(!is.na(label)) %>% pull(group))
   
-  small_groups = tree_df %>% 
-    filter(isTip) %>%
-    plyr::count('group') %>% filter(freq == 1) %>% pull(group)
+  tree_df = tree_df %>% mutate(group = as.numeric(group) - 1)
+  # 
+  # small_groups = tree_df %>% 
+  #   filter(isTip) %>%
+  #   plyr::count('group') %>% filter(freq == 1) %>% pull(group)
+  # 
+  # # Riassegno lo 0 ai gruppi singoli
+  # tree_df$group[tree_df$group %in% small_groups] = 0
   
-  # Riassegno lo 0 ai gruppi singoli
-  tree_df$group[tree_df$group %in% small_groups] = 0
+  tree_df$group = paste0("CP", formatC(tree_df$group,
+                                       width = nchar(trunc(max(tree_df$group))),
+                                       format = "d", flag = "0"))
   
   # Re-compute te phylo object so that tips can be easily removed with ape::drop.tip
   
-    tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
+  tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
   
   # # Find node to root in the original sequence in "bc10_org"
   # tree_root_mp <-
@@ -151,7 +155,7 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
   return_list$tree_collapsed_df = tree_df
   return_list$tree_collapsed_phylo = tree
-
+  
   return(return_list)
 }
 

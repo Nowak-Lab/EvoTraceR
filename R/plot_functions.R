@@ -53,8 +53,8 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
     # geom_tippoint(aes(color = group), size=3) +
     #geom_text2(aes(subset=!isTip, label=node), hjust=-.3)  + 
     ggtree::geom_tiplab(#aes(fill=group, alpha = 0.5, color=NULL), 
-                        geom = "text", 
-                        align=TRUE, linesize=0.5, linetype="dotted", size=5) +
+      geom = "text", 
+      align=TRUE, linesize=0.5, linetype="dotted", size=5) +
     #scale_colour_manual(values = sample_col[sample_columns], guide=guide_legend(keywidth=0.5, keyheight=0.5, order=4)) +
     scale_x_continuous(expand = c(0.05, 0.05), 
                        limits=c(0, 1.15*max(tree_mp_df$x)), 
@@ -71,18 +71,33 @@ plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   if (('group' %in% colnames(tree_mp_df))) {
     colors = sample(rainbow(n = length(unique(tree_mp_df$group))))
     names(colors) = unique(tree_mp_df$group)
-    colors[['1']] = 'grey'
+    colors[['CP00']] = 'grey'
     for (c in unique(tree_mp_df$group)) {
-      cluster_nodes = tree_mp_df %>% filter(group == c & isTip) %>% arrange(y) %>% pull(node)
-      ggtree_mp = ggtree_mp +
-        geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
-                   label= c, offset.text=0.25, offset = 1, angle = 90, align = T) 
-      # geom_hilight(mapping=aes(subset = node %in% cluster_nodes, 
-      #                               fill = group),
-      #                   type = "gradient", gradient.direction = 'rt',
-      #                   alpha = .8)
-  }
-  
+      cluster_nodes = tree_mp_df %>% filter(group == c)
+      if (c != 'CP00') { # & isTip %>% arrange(y) %>% pull(node)
+        min_parent = min(setdiff(cluster_nodes$parent, c(min(tree_mp_df$parent))))
+        ggtree_mp = ggtree_mp +
+          geom_cladelab(node = min_parent, label = c, textcolor='white', barcolor=colors[[c]], offset = 0.8, barsize = 8, align = T, angle = 90)
+        # geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]], 
+        #            #label= c, 
+        #            #offset.text=0.1,
+        #            offset = 0.8, 
+        #            #angle = 90, 
+        #            align = T)  +
+        # geom_cladelabel(node = cluster_nodes[ceiling(length(cluster_nodes) / 2)], label = c, offset.text = )
+      } else {
+        ggtree_mp = ggtree_mp +
+          geom_strip(cluster_nodes[1], cluster_nodes[length(cluster_nodes)], barsize=8, color=colors[[c]],
+                     #label= c,
+                     #offset.text=0.1,
+                     offset = 0.8,
+                     #angle = 90,
+                     align = T)
+      }
+      
+    }
+    ggtree_mp = ggtree_mp + ggplot2::xlim(0, 1.15*max(tree_mp_df$x) + 0.3)
+    
   }
   
   
