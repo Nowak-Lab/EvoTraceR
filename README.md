@@ -1,4 +1,4 @@
-REvoBC
+EvoTracer
 ================
 
 [![Actions Status](https://github.com/Nowak-Lab/REvoBC/workflows/check-master/badge.svg)](https://github.com/Nowak-Lab/REvoBC/actions?query=workflow%3Acheck-master)
