@@ -6,7 +6,7 @@
 \usage{
 seq_filtering_plot(
   EvoTraceR_object,
-  figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
+  figure_dir = EvoTraceR_object$output_directory
 )
 }
 \arguments{

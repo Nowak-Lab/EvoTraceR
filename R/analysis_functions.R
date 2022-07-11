@@ -272,7 +272,7 @@ asv_collapsing = function(seqtab,
 # sample. List of the column names containing the organs/days.
 # asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
-asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, figure_dir, nmbc, output_dir) {
+asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, nmbc) {
   seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe
   
   seqtab_df_clean_asv_long <-
@@ -330,9 +330,9 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   EvoTraceR_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
   
   # save as Data csv
-  write.csv(seqtab_df_clean_asv_long, 
-            paste0(output_dir, "/asv_df_percentages.csv"),
-            row.names = F)
+  # write.csv(seqtab_df_clean_asv_long, 
+  #           paste0(output_dir, "/asv_df_percentages.csv"),
+  #           row.names = F)
   
   ### Abundance and Richness Calculations
   # asv_names summary
@@ -353,13 +353,13 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   EvoTraceR_object$statistics$asv_totalCounts = asv_names_stat
   EvoTraceR_object$statistics$sample_totalcounts = sample_stat
   
-  write.csv(asv_names_stat, 
-            file.path(output_dir, "asv_totalCounts.csv"),
-            row.names = F)
+  # write.csv(asv_names_stat, 
+  #           file.path(output_dir, "asv_totalCounts.csv"),
+  #           row.names = F)
   
-  write.csv(sample_stat, 
-            file.path(output_dir, "sample_totalcounts.csv"),
-            row.names = F)
+  # write.csv(sample_stat, 
+  #           file.path(output_dir, "sample_totalcounts.csv"),
+  #           row.names = F)
   
   # merge data
   seqtab_df_clean_asv_long <- tibble(merge(seqtab_df_clean_asv_long, asv_names_stat, "asv_names")) 
@@ -381,8 +381,8 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
     mutate(pielous_evenness_persample = shannons_index_persample / log(richness_asv_persample) )
   
   EvoTraceR_object$statistics$asv_diversity_persample = diversity
-  write.csv(diversity, 
-            file.path(output_dir, "asv_diversity_persample.csv"))
+  # write.csv(diversity, 
+  #           file.path(output_dir, "asv_diversity_persample.csv"))
   
   # matrix rows: organ_day and coumns ASV names
   mx_freq <- 
@@ -394,11 +394,11 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
     as.matrix()
   # Save as Data csv
   mx_freq= mx_freq[,c(nmbc, sort(colnames(mx_freq)[colnames(mx_freq)!=nmbc]))]
-  write.csv(mx_freq, file.path(output_dir, "asv_persample_frequency.csv"))
+  # write.csv(mx_freq, file.path(output_dir, "asv_persample_frequency.csv"))
   
   mx_freq_bin <- as.matrix(ifelse(mx_freq == 0, 0, 1))
   # Save as Data csv
-  write.csv(mx_freq_bin, file.path(output_dir, "asv_persample_detection.csv"))
+  # write.csv(mx_freq_bin, file.path(output_dir, "asv_persample_detection.csv"))
   
   EvoTraceR_object$statistics$asv_persample_frequency = mx_freq
   EvoTraceR_object$statistics$asv_persample_detection = mx_freq_bin
@@ -427,51 +427,51 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, f
   df_to_plot_perf_match$alignment_score <- Biostrings::score(pwa)
   #
   # # Save as Data csv
-  write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')],
-            file.path(output_dir, "asv_toBarcode_similarity.csv"))
+  # write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')],
+  #           file.path(output_dir, "asv_toBarcode_similarity.csv"))
   
   EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
   EvoTraceR_object$statistics$all_asv_statistics = df_to_plot_perf_match
   # Histogram of Length    
-  # skip nmbc
-  data_for_hist = df_to_plot_perf_match %>% filter(stringr::str_detect(asv_names, "ASV"))
-  if (!is.null(figure_dir)) {
-    hist_seq_count <- 
-      ggplot(data=data_for_hist, 
-             aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
-      geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-      scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10), 
-                                                               nchar(EvoTraceR_object$reference$ref_seq)*2, 
-                                                               floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10))), 
-                         limits=c(0, nchar(EvoTraceR_object$reference$ref_seq)*2), 
-                         expand = c(0.01, 0.01)) +
-      scale_y_continuous(labels=function(x) paste0(x, "%"),
-                         limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
-                         expand = c(0.01, 0.01)) +
-      xlab("ASV Length") +
-      ylab("ASV Frequency") +
-      geom_vline(xintercept=nchar(EvoTraceR_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
-      lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
-      lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
-      # add theme
-      barplot_nowaklab_theme() +
-      theme(aspect.ratio = 1/4,
-            plot.margin = unit(c(0, 2, -2, -2), "mm"),
-            legend.position = "None")
+  # REMOVED FROM PACKAGE
+  # data_for_hist = df_to_plot_perf_match %>% filter(stringr::str_detect(asv_names, "ASV"))
+  # if (!is.null(figure_dir)) {
+  #   hist_seq_count <- 
+  #     ggplot(data=data_for_hist, 
+  #            aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
+  #     geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
+  #     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10), 
+  #                                                              nchar(EvoTraceR_object$reference$ref_seq)*2, 
+  #                                                              floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10))), 
+  #                        limits=c(0, nchar(EvoTraceR_object$reference$ref_seq)*2), 
+  #                        expand = c(0.01, 0.01)) +
+  #     scale_y_continuous(labels=function(x) paste0(x, "%"),
+  #                        limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
+  #                        expand = c(0.01, 0.01)) +
+  #     xlab("ASV Length") +
+  #     ylab("ASV Frequency") +
+  #     geom_vline(xintercept=nchar(EvoTraceR_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
+  #     lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
+  #     lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
+  #     # add theme
+  #     barplot_nowaklab_theme() +
+  #     theme(aspect.ratio = 1/4,
+  #           plot.margin = unit(c(0, 2, -2, -2), "mm"),
+  #           legend.position = "None")
     
-    # Save PDF
-    ggsave(filename=file.path(figure_dir, "histogram_sequenceLength.pdf"), 
-           plot=hist_seq_count, 
-           #device=cairo_pdf, 
-           width=25, 
-           height=5*length(sample_columns), 
-           units = "cm") #17.5 for 4x
-    #pg <- ggplot_build(hist_seq_count)
-    write.csv(data_for_hist, #pg$data[[1]],  
-              file.path(figure_dir, "/histogram_sequenceLength_data.csv"),
-              row.names = FALSE, quote = FALSE)
-  }
+  #   # Save PDF
+  #   ggsave(filename=file.path(figure_dir, "histogram_sequenceLength.pdf"), 
+  #          plot=hist_seq_count, 
+  #          #device=cairo_pdf, 
+  #          width=25, 
+  #          height=5*length(sample_columns), 
+  #          units = "cm") #17.5 for 4x
+  #   #pg <- ggplot_build(hist_seq_count)
+  #   write.csv(data_for_hist, #pg$data[[1]],  
+  #             file.path(figure_dir, "/histogram_sequenceLength_data.csv"),
+  #             row.names = FALSE, quote = FALSE)
+  # }
   
   return(EvoTraceR_object)
 }

@@ -7,17 +7,21 @@ plot_phylogenetic_tree_ggraph = function(toplot_tree) {# , sample_columns) {
                           to=toplot_tree$node,
                           length = toplot_tree$branch.length)
   
-  g <- graph_from_data_frame(relations, directed=T, vertices=nodes)
+  g <- igraph::graph_from_data_frame(relations, directed=T, vertices=nodes)
   #prova_edge_list = toplot_tree %>% select(parent, node) %>% rename(from = parent, to = node)
   
-  ggtree_mp = ggraph(g, layout = 'dendrogram', circular = FALSE) +#, length = length) +
-    geom_node_text(aes(label=label), nudge_y = 0.5 ) +
+  ggtree_mp = ggraph(g, layout = 'dendrogram', circular = FALSE) + #, length = length) +
     geom_edge_diagonal() +
     geom_node_point() +
-    #scale_x_continuous(c(0, sum(!is.na(toplot_tree$label)))) +
+    geom_node_label(aes(label=label), fill = 'white') + #, nudge_y = 0.5 ) +
+    scale_x_continuous(limits = c(0, (toplot_tree %>% filter(isTip) %>% pull(label) %>% length)),
+                       expand = c(0, 0.6)) +
     theme_void() +
+    scale_y_continuous(expand = c(0.05, 0.3),
+                       limits=c(-1, 1.15*max(toplot_tree$x)),
+                       breaks=sort(c(-1, 10, max(toplot_tree$x)))) +
     coord_flip() + 
-    scale_y_reverse() +
+    scale_y_reverse(limits=c(1.15*max(toplot_tree$x),0), expand=c(0.05,0.3)) +
     barplot_nowaklab_theme() +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
           axis.text.y = element_blank(), # disable y axis text
@@ -26,9 +30,6 @@ plot_phylogenetic_tree_ggraph = function(toplot_tree) {# , sample_columns) {
           axis.ticks.y = element_blank(),
           axis.line.x = element_blank(),
           axis.line.y = element_blank()) +
-    # scale_y_continuous(expand = c(0.05, 0.05),
-    #                    limits=c(0, 1.15*max(toplot_tree$x)),
-    #                    breaks=sort(c(0, 10, max(toplot_tree$x)))) +
     #lim_tree(1.1*max(toplot_tree$x)) +
     ylab("Phylogenetic Tree \n Cassiopeia Greedy") +
     xlab('') +
@@ -37,8 +38,6 @@ plot_phylogenetic_tree_ggraph = function(toplot_tree) {# , sample_columns) {
   
   return(ggtree_mp)
 }
-
-
 
 plot_phylogenetic_tree = function(tree_mp_df) {# , sample_columns) {
   
@@ -209,7 +208,7 @@ plot_msa = function(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = N
   msa_cna_bc <- 
     msa_cna_bc +
     barplot_nowaklab_theme() +
-    scale_y_discrete(c(0,length(subset_asvs))) +
+    scale_y_discrete(c(0,length(subset_asvs)), expand = c(0, 0.6)) +
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"),
           axis.line.y = element_blank(), # disable y axis lines
           axis.ticks.y = element_blank(), # disable y axis ticks lines

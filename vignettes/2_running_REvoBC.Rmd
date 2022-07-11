@@ -99,7 +99,7 @@ Note that prior to running this function, users should install PHYLIP and then p
 This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the EvoTraceR objetc.
 
 ```{r eval=FALSE}
-summary_figre = plot_summary(revo_phyl)
+summary_figre = create_df_summary(revo_phyl)
 ```
 
 Finally, a summary plot is prodced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical

@@ -142,8 +142,8 @@ This step computes the phylogeny, using the binary mutation matrix computed in t
 Note that prior to running this function, users should install PHYLIP and then provide the path to the folder containing the binary of mix using the parameter phylip_package_path.
 This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the EvoTraceR objetc.
 
-<<example_plot_summary, eval=FALSE>>=
-summary_figure = plot_summary(revo_phyl)
+<<example_create_df_summary, eval=FALSE>>=
+summary_figure = create_df_summary(revo_phyl)
 @
 
 Finally, a summary plot is prodced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical

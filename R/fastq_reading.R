@@ -18,19 +18,11 @@ alignment_pipeline = function(fnFs,
   if (!dir.exists(trimmed_dir)) dir.create(trimmed_dir, recursive = T)
   if (!dir.exists(flash_input_dir)) dir.create(flash_input_dir, recursive = T)
   
-  figure_dir = file.path(output_dir, "preprocessing_figures")
-  if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
+  # output_dir = file.path(output_dir, "preprocessing_figures")
+  # if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
   
-  output_dir_files = file.path(output_dir, "preprocessing_files")
-  if (!dir.exists(output_dir_files)) dir.create(output_dir_files, recursive = T)
-  
-  # TODO: understand which figures to include
-  # if (output_figures) {
-  #   figure_dir = file.path(output_dir, "dada2_figures")
-  #   if (!dir.exists(figure_dir)) dir.create(figure_dir)
-  # } else {
-  #   figure_dir = NULL
-  # }
+  # output_dir_files = file.path(output_dir, "preprocessing_files")
+  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = T)
   
   # dada2 filter and trim
   cli::cli_alert_info('Filtering and trimming')
@@ -114,13 +106,13 @@ alignment_pipeline = function(fnFs,
     geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
     barplot_nowaklab_theme() 
   
-  ggsave(filename=file.path(figure_dir, 'sequence_length.pdf'), 
+  ggsave(filename=file.path(output_dir, '03_sequence_length.pdf'), 
          plot=hist_seq_count, 
          #device=grDevices::cairo_pdf, 
          width=25, height=5, units = "cm") #17.5 for 4x
   
   # Save as Data csv
-  utils::write.csv(track_reads, file.path(output_dir_files, "quality_track_reads.csv"), quote = FALSE)
+  utils::write.csv(track_reads, file.path(output_dir, "01_quality_track_reads.csv"), quote = FALSE)
   
   return(list(seqtab=df, track = track_reads))
 }
@@ -171,7 +163,7 @@ check_input = function(sample.names = NULL,
 
 
 # Adjust Data Frame
-adjust_seqtab = function(seqtab.nochim, map_file_sample, output_dir_files) {
+adjust_seqtab = function(seqtab.nochim, map_file_sample) {
   # Transpose to Get Sequences that Are Now Rows with removed chimeras
   seqtab_df = data.frame(t(seqtab.nochim))
   colnames(seqtab_df) = map_file_sample[colnames(seqtab_df),'sample']
@@ -181,9 +173,9 @@ adjust_seqtab = function(seqtab.nochim, map_file_sample, output_dir_files) {
   seqtab_df$seq_names = paste0("SEQ", formatC(c(1:(dim(seqtab_df)[1])), width = nchar(trunc(dim(seqtab_df)[1])), format = "d", flag = "0")) # -1 to start 00 with no changes sequence
   rownames(seqtab_df) = seqtab_df$seq
   
-  # save as data csv
-  utils::write.csv(seqtab_df, file.path(output_dir_files, "dada2_asv_prefilter.csv"),
-                   row.names = FALSE)
+  # # save as data csv
+  # utils::write.csv(seqtab_df, file.path(output_dir, "dada2_asv_prefilter.csv"),
+  #                  row.names = FALSE)
   return(tibble::tibble(seqtab_df))
 }
 

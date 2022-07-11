@@ -2,11 +2,11 @@
 
 export(analyse_mutations)
 export(asv_analysis)
+export(create_df_summary)
 export(infer_phylogeny)
 export(initialize_EvoTraceR)
 export(plot_cluster_summary)
 export(plot_evotracer)
-export(plot_summary)
 export(seq_filtering_plot)
 import(dada2)
 import(data.table, except = c(last, first, between))

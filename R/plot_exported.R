@@ -119,7 +119,7 @@ plot_cluster_summary = function(EvoTraceR_object, cluster_list = NULL) {
 #' 
 #' @export seq_filtering_plot
 #' 
-seq_filtering_plot = function(EvoTraceR_object, figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")) {
+seq_filtering_plot = function(EvoTraceR_object, figure_dir = EvoTraceR_object$output_directory) {
   track_data = EvoTraceR_object$dada2$seq_filters
 
   # # assemble data  with all number for each step of filtering
@@ -159,7 +159,7 @@ seq_filtering_plot = function(EvoTraceR_object, figure_dir = file.path(EvoTraceR
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank()) # disable x axis ticks lines
   # save pdf
-  ggsave(filename=file.path(figure_dir, "track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
+  ggsave(filename=file.path(figure_dir, "02_track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
   # save csv
   # write.csv(track_data, file.path(figure_dir, "/track_asv_number_data.csv"), row.names = FALSE, quote = FALSE)
 }

@@ -327,14 +327,14 @@ asv_analysis = function(EvoTraceR_object,
                         cleaning_window = c(3,3)
 ) {
   
-  if (output_figures) {
-    figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
-    if (!dir.exists(figure_dir)) dir.create(figure_dir)
-  } else {
-    figure_dir = NULL
-  }
-  output_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_files")
-  if (!dir.exists(output_dir)) dir.create(output_dir)
+  # if (output_figures) {
+  #   figure_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_figures")
+  #   if (!dir.exists(figure_dir)) dir.create(figure_dir)
+  # } else {
+  #   figure_dir = NULL
+  # }
+  # output_dir = file.path(EvoTraceR_object$output_directory, "asv_analysis_files")
+  # if (!dir.exists(output_dir)) dir.create(output_dir)
   
   barcodes_info = list(
     ref_name = ref_name,
@@ -482,7 +482,7 @@ asv_analysis = function(EvoTraceR_object,
   # final number of ASVs for analysis
   clean_asv <- nrow(seqtab_df_clean_asv)
   # save csv with final ASvs
-  utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
+  # utils::write.csv(seqtab_df_clean_asv, file.path(output_dir, "/clean_asv_dataframe.csv"), row.names = F)
   
   #binary_mutation_matrix = coordinate_to_binary(cleaned_coordinate_matrix, barcodes_info$ref_name)
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
@@ -509,9 +509,9 @@ asv_analysis = function(EvoTraceR_object,
   
   EvoTraceR_object$clean_asv_dataframe = norm_seqtab_df_clean_asv
   
-  utils::write.csv(norm_seqtab_df_clean_asv, 
-                   file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
-                   row.names = F)
+  # utils::write.csv(norm_seqtab_df_clean_asv, 
+  #                  file.path(output_dir, "/clean_asv_dataframe_countnorm.csv"), 
+  #                  row.names = F)
   
   # Ricontrollare quando uso nmbc in questa funzione
   # Salvare il risultato dell'allineamento e creare la matrice binaria
@@ -519,9 +519,7 @@ asv_analysis = function(EvoTraceR_object,
   EvoTraceR_object = asv_statistics(EvoTraceR_object, 
                                     sample_columns, 
                                     asv_count_cutoff,
-                                    figure_dir,
-                                    nmbc = barcodes_info$ref_name, #paste0( barcodes_info$ref_name, ".NMBC"),
-                                    output_dir = output_dir)
+                                    nmbc = barcodes_info$ref_name)
   
   EvoTraceR_object$dada2$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Substitutions Merging",  "Frequency Filter", "Flanking Seq. Filter", "Final ASVs")), 
                                                   num=c(orgseq, hamming_filter, endseq_filter, counts_filtering, flanking_filtering, clean_asv))
@@ -617,25 +615,18 @@ asv_analysis = function(EvoTraceR_object,
 #' @importFrom plyr count
 analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
   
-  output_dir_files = file.path(EvoTraceR_object$output_directory, "alignment_files")
-  if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
+  # output_dir_files = file.path(EvoTraceR_object$output_directory, "alignment_files")
+  # if(!dir.exists(output_dir_files)) dir.create(output_dir_files)
   
-  output_dir_figures = file.path(EvoTraceR_object$output_directory, "alignment_figures")
-  if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
+  # output_dir_figures = file.path(EvoTraceR_object$output_directory, "alignment_figures")
+  # if (!dir.exists(output_dir_figures)) {dir.create(output_dir_figures)}
   
   # Store in the field EvoTraceR_object$alignment$asv_barcode_alignment the tidy alignment
   # data, which is a tibble where each line corresponds to a nucleotide in a ASV
   # and there is the information about reference and alternative nucleotides.
   #EvoTraceR_object = align_asv(EvoTraceR_object, output_dir_files, output_dir_figures)
   
-  EvoTraceR_object = count_alterations(EvoTraceR_object, 
-                                       output_dir_files,
-                                       output_dir_figures)
-  
-  # EvoTraceR_object = binary_mutation_matrix(EvoTraceR_object, 
-  #                                           output_dir_files, 
-  #                                           output_dir_figures,
-  #                                           cleaning_window)
+  EvoTraceR_object = count_alterations(EvoTraceR_object)
   
   return(EvoTraceR_object)
   
@@ -739,9 +730,9 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   
 }
 
-#' This function plots all the data that have been computed for the phylogenetic analysis.
+#' This function combines in one dataframe all the data that have been computed for the phylogenetic analysis.
 #' 
-#' @title plot_summary
+#' @title create_df_summary 
 #' 
 #' 
 #' @examples
@@ -749,19 +740,14 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
 #' data(revo_phyl)
 #' output_dir = system.file("extdata", "output", package = "EvoTraceR")
 #' revo_phyl$output_directory = output_dir
-#' summary_plot = plot_summary(revo_phyl)
+#' summary_plot = create_df_summary(revo_phyl)
 #' }
 #' 
 #' @param EvoTraceR_object (Required).
-#' @param sample_order (Optional). When visualizing the output, users can set the order in which they want the different samples to be visualized.
-#' This is by default \code{alphabetical}: in this case all samples are sorted alphabetically. Users can also set this parameter to a list, such as c('PRL', 'HMR', 'LGR'), which would be used as the order of the samples. 
 #' 
-#' @return A summary plot is produced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
-#' representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
-#' next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original barcode; finally, there is a dot plot
-#' where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
+#' @return dataframe containing all the information computed within the package for each ASV in each sample.
 #' 
-#' @export plot_summary
+#' @export create_df_summary
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import lemon
 #' @import tibble
@@ -770,81 +756,11 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
 #' @importFrom scales comma
 #' @importFrom colorspace scale_fill_continuous_sequential
 #' @importFrom aplot insert_right insert_left
-plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
+create_df_summary = function(EvoTraceR_object) {
   mut_in_phyl = EvoTraceR_object$phylogeny$mutations_in_phylogeny
   
   df_to_plot_perf_match = EvoTraceR_object$statistics$all_asv_statistics
-  
-  tree_mp_df = EvoTraceR_object$phylogeny$tree
-  
-  barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
-  
-  # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
-  # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
-  if (nrow(barcode_tip) > 0){
-    first_tip = tree_mp_df %>% filter(y == 1)
-    if (barcode_tip$y != 1) {
-      current_barcode_y = barcode_tip$y
-      tree_mp_df = tree_mp_df %>% 
-        dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
-        dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-      #dplyr::mutate(branch.length = ifelse(label == EvoTraceR_object$reference$ref_name, 1, branch.length)) %>%
-      #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-      # dplyr::mutate(x = ifelse(label == EvoTraceR_object$reference$ref_name, 1, x)) %>%
-      # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
-      
-    }
-    
-  } 
-  
-  # TODO: remove this, because Cassiopeia automatically puts in singlet clusters those sequences that
-  # have nothing in common with the others.
-  wt_asv = c()#setdiff(EvoTraceR_object$alignment$mutations_df$asv_names, tree_mp_df$label)
-  wt_asv = sort(wt_asv,decreasing = TRUE) # Sort the ASV so that the Barcode is always the first
-  if (length(wt_asv) > 0) {
-    # Need to re-insert the ASVs without any mutations in common with the others, which are not used during phylogeny reconstruction
-    # barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
-    first_tip = tree_mp_df %>% filter(y == 1)
-    root_node = tree_mp_df %>% filter(x == 0) %>% pull(node)
-    
-    # # Cassiopeia puts first the sequences that are not assigned to any cluster: it puts them at the bottom of the tree
-    # # So, if the barcode is not at the bottom I should put it there, swapping it with another sequence
-    # if (nrow(barcode_tip) > 0){
-    #   if (barcode_tip$y != 1) {
-    #     current_barcode_y = barcode_tip$y
-    #     tree_mp_df = tree_mp_df %>% 
-    #       dplyr::mutate(label = ifelse(y == 1, barcode_tip$label, label)) %>%
-    #       dplyr::mutate(label = ifelse(y == current_barcode_y, first_tip$label, label)) #%>%
-    #     #dplyr::mutate(branch.length = ifelse(label == EvoTraceR_object$reference$ref_name, 1, branch.length)) %>%
-    #     #dplyr::mutate(branch.length = ifelse(label == first_tip$label, first_tip$branch.length, branch.length)) #%>%
-    #     # dplyr::mutate(x = ifelse(label == EvoTraceR_object$reference$ref_name, 1, x)) %>%
-    #     # dplyr::mutate(x = ifelse(label == first_tip$label, 3, x))
-    #     
-    #   }
-    #   
-    # } 
-    barcode_tip = tree_mp_df %>% filter(label == EvoTraceR_object$reference$ref_name)
-    vary = 'y'
-    if (EvoTraceR_object$reference$ref_name %in% wt_asv) {
-      new_y = c(1:(length(wt_asv)))
-    } else {
-      new_y = c(2:(1+length(wt_asv)))
-    }
-    tree_mp_df = tree_mp_df %>% filter(label != EvoTraceR_object$reference$ref_name | is.na(label)) %>%  
-      dplyr::mutate(y = y + length(wt_asv)) %>%
-      add_row(parent = root_node, 
-              node = c((max(tree_mp_df$node) + 1) : (max(tree_mp_df$node) + length(wt_asv))), 
-              label = wt_asv,
-              isTip = TRUE, 
-              x = 3, #first_tip$x, 
-              #branch.length = 2,
-              y = new_y,
-              branch = first_tip$branch, angle = first_tip$angle) %>% 
-      add_row(barcode_tip)
-  }
-  #}
-  
-  
+
   # merge with df_to_plot_perf_match
   sample_order = EvoTraceR_object$sample_order
   df_to_plot_perf_match$sample = factor(df_to_plot_perf_match$sample, levels = sample_order)
@@ -854,15 +770,6 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
                                    by.x ="asv_names", by.y="asv_names"))
   
   
-  # width_nmbc <- dplyr::select(filter(df_to_plot_final, !str_detect(asv_names, "ASV")), 
-  #                             all_of(starts_with('width_')))
-  # final_nmbc <- filter(df_to_plot_perf_match, !str_detect(asv_names, "ASV")) %>% 
-  #   mutate(asv_names = stringr::str_replace_all(string = asv_names, pattern = '.NMBC', ''))
-  # nmbc_mrg <- cbind(final_nmbc, width_nmbc)
-  # 
-  # # add back NMBC
-  # df_to_plot_final <- rbind(df_to_plot_final %>% filter(str_detect(asv_names, "ASV")), 
-  #                           nmbc_mrg)
   df_to_plot_final$asv_names <- as.factor(df_to_plot_final$asv_names)
   
   df_to_plot_final = tibble(merge(df_to_plot_final, 
@@ -875,55 +782,11 @@ plot_summary = function(EvoTraceR_object, sample_order = 'alphabetical') {
   
   output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
   
-  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}
-  
+  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}  
   
   write.csv(df_to_plot_final, file.path(output_dir, "df_to_plot_final.csv"), quote = F, row.names = F)
   EvoTraceR_object$plot_summary$df_to_plot_final = df_to_plot_final
-  
-  sample_columns = sort(setdiff(colnames(EvoTraceR_object$clean_asv_dataframe), c("asv_names", "seq")))
-  
-  ggtree_mp = plot_phylogenetic_tree(tree_mp_df)
-  
-  # if (is_smoothed)
-  msa_cna_bc_smoothed = plot_msa(EvoTraceR_object, cleaned_deletions = mut_in_phyl, subset_asvs = unique(df_to_plot_final$asv_names))
-  msa_cna_bc = plot_msa(EvoTraceR_object, cleaned_deletions = FALSE, subset_asvs = unique(df_to_plot_final$asv_names))
-  
-  bar_ins_del_sub_width = plot_mutations_width(df_to_plot_final)
-  
-  bar_seq_n = plot_asv_length(df_to_plot_final)
-  
-  bar_pid = plot_similarity(df_to_plot_final)
-  
-  bubble = plot_percentage_asv_sample(df_to_plot_final)
-  
-  # Maximum Parsimony Based Tree with msa/Bubble (barcode scale) ------------------------------------------------------ 
-  # msa and bar_seq_n
-  # if (is_smoothed) {
-  # smoothed.bubble = aplot::insert_right(msa_cna_bc_smoothed, bubble, width = 0.2)
-  msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
-  # msa_cna_bc = aplot::insert_right(smoothed.bubble, msa_cna_bc, width = 1)
-  # } else {
-  #   msa_cna_bc = aplot::insert_right(msa_cna_bc, bubble, width = 0.2)
-  # }
-  
-  msa_cna_bc.bar_ins_del_sub_width <- aplot::insert_right(msa_cna_bc, bar_ins_del_sub_width, width = 0.25) 
-  # add ggtree_mp
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp <- aplot::insert_left(msa_cna_bc.bar_ins_del_sub_width, ggtree_mp, width = 1)#0.75)
-  # add bar_seq_n
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp, bar_seq_n, width = 0.2)
-  # add bar_pid
-  msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n, bar_pid, width = 0.2)
-  # add bubbles
-  #msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid.bubble <- aplot::insert_right(msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, bubble, width = 0.2)
-  
-  # Save PDF
-  # output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
-  ggsave(filename=file.path(output_dir, "summary_mutations.pdf"), 
-         plot=msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid, width=60,
-         height=dim(tree_mp_df)[1]*0.6, units = "cm", limitsize = FALSE)
-  
-  #EvoTraceR_object$plot_summary$summary_mutations_plot = msa_cna_bc.bar_ins_del_sub_width.ggtree_mp.bar_seq_n.bar_pid
+
   return(EvoTraceR_object)
 }
 
