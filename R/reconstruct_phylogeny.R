@@ -1,5 +1,5 @@
 
-
+# 
 compute_phylogenetic_tree = function(asv_bin_var, phylip_package_path, barcode) {
   # Compute phylogeny
   ancestral <<- as.character(rep(0, dim(asv_bin_var)[2]))
@@ -77,7 +77,6 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   
   for (e in names(edge_dict)) {
     if (length(edge_dict[[e]]) > 0) {
-      print(e)
       subdict = edge_dict[[e]]
       nmut_parent = sum(cas_tree$get_character_states(e) == 1)
       for (child in names(subdict)) {

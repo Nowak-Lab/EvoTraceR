@@ -25,7 +25,6 @@ The R version of *EvoTraceR* can be installed from Github. To do so, we need to 
 if (!require("devtools")) install.packages("devtools")
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-if (!require("dada2")) BiocManager::install("dada2")
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("cli")) install.packages("cli")
 if (!require("Biostrings")) BiocManager::install("Biostrings")

@@ -1,4 +1,4 @@
-# This function actually performs all dada2 steps.
+# This function calls Trimmomatic and Flash.
 alignment_pipeline = function(fnFs,
                               fnRs,
                               output_dir,
@@ -24,7 +24,7 @@ alignment_pipeline = function(fnFs,
   # output_dir_files = file.path(output_dir, "preprocessing_files")
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = T)
   
-  # dada2 filter and trim
+  # filter and trim
   cli::cli_alert_info('Filtering and trimming')
   
   # Users will input the path up to the trimmomatic binary. I need to go up to one level wrt that, in order to find the adapters folder
@@ -122,13 +122,9 @@ alignment_pipeline = function(fnFs,
 # In case users do not provide a map between samples and organ/day code, then there can be two options:
 # On the one hand, if users provide the fastq files input directory, then this function assumes that fastq filenames
 # are in the correct format and prints out the samples and corresponding organ/day codes identified.
-# On the other hand, in case users provide the path to dada2 output, it is assumed that the file contains a dataframe
-# where row names have the same format as the one expected for fastq files (i.e. SAMPLE_ORGAN|DAY_BARCODEVERSION_XXXXX).
-# In both this two cases, this function will print the samples and organ/day codes idenfied.
-# 
+
 # When users provide a map between samples and organ/day code, this function checks that the sample names
-# provided in the list correspond to either the rownames of dada2 output (when this is passed directly by the user) or
-# to the filenames of fastqs.
+# provided in the list correspond to either the filenames of fastqs.
 check_input = function(sample.names = NULL,
                        map_file_sample = NULL){
   if (! is.null(map_file_sample) & class(map_file_sample) == 'list'){
@@ -173,9 +169,7 @@ adjust_seqtab = function(seqtab.nochim, map_file_sample) {
   seqtab_df$seq_names = paste0("SEQ", formatC(c(1:(dim(seqtab_df)[1])), width = nchar(trunc(dim(seqtab_df)[1])), format = "d", flag = "0")) # -1 to start 00 with no changes sequence
   rownames(seqtab_df) = seqtab_df$seq
   
-  # # save as data csv
-  # utils::write.csv(seqtab_df, file.path(output_dir, "dada2_asv_prefilter.csv"),
-  #                  row.names = FALSE)
+
   return(tibble::tibble(seqtab_df))
 }
 

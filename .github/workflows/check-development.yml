@@ -159,7 +159,6 @@ jobs:
         run: |
           install.packages("BiocManager")
           install.packages('remotes')
-          BiocManager::install("dada2")
           install.packages("tidyverse")
           install.packages("cli")
           BiocManager::install("Biostrings")

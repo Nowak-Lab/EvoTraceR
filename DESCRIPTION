@@ -8,7 +8,6 @@ Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@ca
 Depends:
     R (>= 4.1.0)
 Imports:
-    dada2,
     ggplot2,
     dplyr,
     cli,
