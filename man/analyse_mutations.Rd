@@ -8,47 +8,14 @@ analyse_mutations(EvoTraceR_object)
 }
 \arguments{
 \item{EvoTraceR_object}{EvoTraceR object on which we want to perform msa.}
-
-\item{cleaning_window}{(Optional) Default is c(3,3). After identifying all mutations in each sequence, we discard the ones that are not biologically meaningful. 
-In order to perform this step, we assume that both the beginning and end of each indel should be close to one of the cut sites. Thus, we perfom the following: for each
-indel, we extend its start to the left by cleaning_window[1] positions and its end by cleaning_window[2] positions. If the extended indel doesn't span any of the cut sites, than it is removed.
-The result of this cleaning procedure are stored in EvoTraceR_object$cleaned_deletions_insertions (See output for more details.)}
 }
 \value{
-EvoTraceR object with the field \code{alignment}, updated with the following fields:
-\itemize{
-\item \code{ASV_alterations_width}: number of alterations for each type in each ASV
-\item \code{mutations_coordinates}: tibble that stores all mutations identified on each ASV, indicating the start and end position and the nucleotides involved in the mutation
-\item \code{binary_mutation_matrix}: binary matrix encoding presence/absence of mutations on ASVs.
-\item \code{mutations_frequency}: tibble where for each position in each ASV you have the information about the frequency of the observed ASV in the sample.
-This is useful to convey an idea about what is the fraction of total ASVs in each sample that are affected by that mutation in that position.
-}. 
-It also creates a new field in the EvoTraceR object called \code{cleaned_deletions_insertions}, which contains the following information for
-all the deletions identified in the ASVs, whose start and end site have been cleaned using the known cutting sites.
-The following dataframes are stored in the field \code{cleaned deletions}:
-\itemize{
-\item binary_matrix: matrix |ASV| x |mutations|, which contains 1/0 if the mutation is respectively present or not in the ASV.
-\item coordinate_matrix: matrix which stores all the information regarding the cleaned deletions. Information include start and end and number of cut sites spanned by the indel.
-}
-In addition, the following files are saved in the sub-folder "msa" created in the output directory chosen by the user:
-\itemize{
-\item dnastringset.fa: fasta file where the sequences are stored.
-\item dnastringset.fa: same as fasta, but in csv format.
-\item dnastringset_muscle-muscle_msa.fasta: fasta with the stringset resulted from MUSCLE.
-\item ASV_alterations_width.csv: number of alterations for each type in each ASV
-\item mutations_frequency.csv: per sample normalized frequency of each alteration type, computed for each position of the barcode in each sample.
-\item mutations_df.csv: content of mutations_df variable explained above.
-\item mutations_coordinates: content of mutations_coordinates variable explained above.
-\item binary_mutation_matrix: content of binary_mutation_matrix variable explained above.
-}
-All identified mutations are displayed in a heatmap, saved inside the folder \code{msa_figures}.
-This function also produces an output figure that contain the frequency of 
-deletion, substitutions and insertions found in the different samples.
+EvoTraceR object with the field \code{alignment}, updated with 
+\item \code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
 }
 \description{
-This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the binary matrix indicating the presence/absence of
-mutations in each ASV. Each mutation is characterized by a start position and an end position, it is thus identified through an ID
-which indicates the start, end and type of mutation.
+This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the overall frequency in each 
+sample of each mutation in each barcode position.
 }
 \examples{
 data(revo_analyzed)

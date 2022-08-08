@@ -15,14 +15,12 @@ asv_analysis(
   ref_cut_sites = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
   ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
   output_figures = TRUE,
-  pid_cutoff_nmbc = 98,
   asv_count_cutoff = 2,
   pwa_gapOpening = -25,
   pwa_gapExtension = 0,
   pwa_match = 15,
   pwa_mismatch = -4,
   pwa_type = "global",
-  compute_msa = FALSE,
   cleaning_window = c(3, 3)
 )
 }
@@ -48,8 +46,6 @@ Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{output_figures}{(Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
-\item{pid_cutoff_nmbc}{(Optional). Default to 98\%. Percentage of similarity between a sequence and the original barcode. The ASVs with a similarity obve this threshold will be considered as original non-mutated sequences in the analysis.}
-
 \item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
 
 \item{pwa_gapOpening}{(Optional). Delafult is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
@@ -63,8 +59,6 @@ together with the previous one, are used to construct the substitution matrix us
 
 \item{pwa_type}{(Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation}}
-
-\item{compute_msa}{(Optional) Default is FALSE. If TRUE, multi-sequence alignment using muscle is performed on the ASVs.}
 
 \item{...}{(Optional). Additional parameter passed to muscle.}
 }
@@ -97,7 +91,7 @@ to their total counts.
 }
 \item \code{alignment}, another list with the following fields:
 \itemize{
-\item \code{msa_stringset}: output of MSA performed with MUSCLE.
+\item \code{Binary_mutation_matrix}: binary matrix encoding the presence/absence of a mutation in an ASV.
 \item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
 \itemize{
 \item asv_names: name of the ASV
@@ -107,37 +101,29 @@ are assigned to the position that coincides with their beginning.
 \item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
 \item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
 }
+\item \code{mutations_coordinates}: dataframe containing a list of all mutations, with their start and end position.
+\item \code{ASV_alterations_width}: dataframe containing the number of nucleotides affected by each type of mutation in each ASV.
 }
 }
-
-
-It saves the following \code{.csv} files in a sub-folder \code{asv_analysis} of the main output folder:
-\itemize{
-\item \code{sequences_barcode_mapping.csv}: dataframe that stores, for each sequence,
-its counts in all samples. It also overwrites the sequence name (column seq_names) 
-of those that exactly match any of the possible barcodes, using the barcode identifier. The sequences
-that don't match the barcode in the current analysis may be due to contamination. 
-\item \code{clean_asv_dataframe.csv}, \code{asv_totalCounts.csv}, \code{sample_totalcounts.csv}, \code{asv_df_percentages.csv}, \code{asv_diversity_persample.csv}  
-\code{asv_persample_frequency.csv}, \item \code{asv_persample_detection.csv}, \code{asv_diversity_persample.csv} and \code{asv_toBarcode_similarity.csv}: content of the corresponding variables with the same name described above.
-
-}
+This function saves the figure \code{02_track_asv_number.pdf}, which is a barplot indicating the change in the number of sequences 
+during all the processing steps.
 }
 \description{
-This function performs the analysis on ASV sequences identified by dada2 and aligns them to the reference sequence.
-First, it removes possible contamination sequences (ASVs resulting from other barcodes). 
+This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
+First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
 in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
 (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-Then it considers all those sequences exhibiting a similarity higher than \code{pid_cutoff_nmbc} with the original barcode as Non-Marking Guide Controls.
-Then, it computes different statistics for the ASVS, storing:
+Next it pools together those sequences that differ by one another only by substitutions, summing their counts, and after this it removes
+those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}
+Finally it performs filtering of the sequences based on their flanking sequances.
+}
+\details{
+Then, it computes different statistics for the final ASVS, storing:
  the relative frequency of all ASVs in each sample. 
  the relative frequency of each ASV in the samples.
  the counts for each ASV normalized to the counts of the sample with maximum frequency
  the frequency of the different ASVs in each sample.
- 
-Finally, the ASVs that passed the previous filters are aligned again, either through multi-sequence alignment
-using the \href{https://bioconductor.org/packages/release/bioc/html/muscle.html}{MUSCLE} algorithm, or using the same 
-\code{pairwiseAlignment} function from \code{Biostrings} used to compute the similarity.
 }
 \examples{
 data(revo_initialized)

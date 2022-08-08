@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_exported.R
 \name{seq_filtering_plot}
 \alias{seq_filtering_plot}
-\title{plot_cluster_summary}
+\title{seq_filtering_plot}
 \usage{
 seq_filtering_plot(
   EvoTraceR_object,
@@ -19,13 +19,4 @@ NULL. This function stores in the phylogeny output directory a pdf file for each
 }
 \description{
 This function plots different aspects of the data.
-}
-\examples{
-\dontrun{
-data(revo_phyl)
-output_dir = system.file("extdata", "output", package = "EvoTraceR")
-revo_phyl$output_directory = output_dir
-summary_plot = plot_cluster_summary(revo_phyl)
-}
-
 }

@@ -10,7 +10,8 @@ create_df_summary(EvoTraceR_object)
 \item{EvoTraceR_object}{(Required).}
 }
 \value{
-dataframe containing all the information computed within the package for each ASV in each sample.
+EvoTraceR_object with a field named plot_summary containing dataframe df_to_plot_final.
+This dataframe containins all the information computed within the package for each ASV in each sample.
 }
 \description{
 This function combines in one dataframe all the data that have been computed for the phylogenetic analysis.

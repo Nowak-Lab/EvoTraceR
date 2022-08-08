@@ -9,29 +9,32 @@ infer_phylogeny(EvoTraceR_object, mutations_use = "del_ins")
 \arguments{
 \item{EvoTraceR_object}{(Required)}
 
-\item{mutations_use}{(optional). Default = 'smooth_del' A string indicating what type of mutations to use for phylogeny reconstruction.
+\item{mutations_use}{(optional). Default = 'del_ins' A string indicating what type of mutations to use for phylogeny reconstruction.
 Can be one of c('del', 'del_ins'). The first
 corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
-and insertios are considered.}
-
-\item{phylip_package_path}{(Required). Prior to running this function, users should install 
-\href{https://evolution.genetics.washington.edu/phylip.html}{PHYLIP} and then provide the path to the folder containing the executable of mix.
-For example, if in Windows a user stores the folder of phylip in path \code{D:/Programs/phylip},
-then the value of \code{phylip_package_path} should be set to \code{D:/Programs/phylip/exe/}.}
+and insertions are considered.}
 }
 \value{
-EvoTraceR object with a new filed called phylogeny, that stores the inferred tree.
+EvoTraceR object with a new field called phylogeny, that stores:
+ \itemize{
+ \item \code{mutations_in_phylogeny}: string indicating which mutations were used for phylogeny reconstruction.
+ \item \code{tree}: dataframe storing the tree returned b y Cassiopeia. This dataframe has a column "group" that indicates
+ the clonal population to which the node belongs to (a clonal population is a cluster returned by Cassiopeia).
+ \item \code{tree_phylo}: \code{phylo} object containing the tree returned by Cassiopeia.
+ \item \code{tree_uncollapsed}: \code{phylo} object containing the tree returned by Cassiopeia prior to the collapsing of mutationless edges.
+ }
 }
 \description{
-This function calls Rmix from package Rphylip to perform the inference of the phylogeny
-with Camin-Sokal.
+This function reconstructs the phylogenetic tree using the Cassiopeia's suite. 
+It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
+based on the most common mutation at each iteration.
 }
 \examples{
 \dontrun{
 data(revo_msa)
 output_dir = system.file("extdata", "output", package = "EvoTraceR")
 revo_msa$output_directory = output_dir
-revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'D:/Programmi/phylip-3.698/exe/')
+revo_phyl = infer_phylogeny(revo_msa)
 }
 
 }
