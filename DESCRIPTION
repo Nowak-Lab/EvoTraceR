@@ -7,6 +7,12 @@ Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@ca
             person("Dawid","Nowak",role=c("aut")))
 Depends:
     R (>= 4.1.0)
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "umi_tools", pip = TRUE)
+    )
+  )
 Imports:
     ggplot2,
     dplyr,
