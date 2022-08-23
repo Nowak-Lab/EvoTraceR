@@ -7,12 +7,12 @@
 \format{
 An object of class EvoTraceR, which is a list with the following fields:
 \describe{
-\item \code{fastq_directory}: directory where the input fastq files are located.
-\item \code{output_directory}: directory where all the output files are being stored.
-\item \code{map_file_sample}: dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
-to which it is associated.
-\item \code{asv_prefilter}: dataframe that stores all sequences detected after this preliminary steps. Note that
-these sequences still need to be filtered (see also \code{\link{asv_analysis}}).
+\item{fastq_directory}{directory where the input fastq files are located.}
+\item{output_directory}{directory where all the output files are being stored.}
+\item{map_file_sample}{dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
+to which it is associated.}
+\item{asv_prefilter}{dataframe that stores all sequences detected after this preliminary steps. Note that
+these sequences still need to be filtered (see also \code{\link{asv_analysis}}).}
 }. 
 An object of class EvoTraceR
 }

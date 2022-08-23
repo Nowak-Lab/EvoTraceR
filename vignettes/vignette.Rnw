@@ -67,15 +67,16 @@ The first step initializes the EvoTraceR object, which is a list that gets popul
 library("EvoTraceR")
 @
 
-
-
-The main parameters for the initialization are the directory where the output will be stored and one of the following:
-input directory: in this case users have the fastq files and want to perform the whole analysis using EvoTraceR. In this case they need to provide the path to the folder containing the fastq (which may be compressed).
-
-Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided.
-In order for EvoTraceR to associate each fastq pair to its sample users have two options:
-one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case EvoTraceR will consider as sample ID the second field separated by the underscore.
-The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")).
+The initialization function computes the set of Amplicon Sequence Variants.
+It calls trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge forward and reverse reads.
+The main parameters for the initialization are the directory where the output will be stored and one of the following: 
+input directory: in this case users have the fastq files and want to perform the whole analysis using EvoTraceR. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. 
+trimmomatic_path: Local path to the executable of Trimmomatic. 
+flash_path. Local path to the executable of \code{Flash}.
+Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the moouse or the an ID for the timepoint in case longitudinal data is provided. 
+In order for EvoTraceR to associate each fastq pair to its sample users have two options: 
+one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case EvoTraceR will consider as sample ID the second field separated by the underscore. 
+The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")). 
 
 In this example we will work with fastq files named according to the pattern, providing their directory as input.
 <<example_input_parameters>>=
@@ -86,60 +87,67 @@ output_dir = system.file("extdata", "output", package = "EvoTraceR")
 We can now perform the initialization. 
 
 <<example_initialization>>=
-revo_initialized = initialize_EvoTraceR(input_dir = input_dir, 
+EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir, 
                                      output_dir = output_dir)
-names(revo_initialized)
+names(EvoTraceR_object)
 @
 
 During the above computation, Trimmomatic and Flash were run and all ASVs are detected. The result is an object of class EvoTraceR, which is populated by 5 fields: a dataframe
 that tracks the number of sequences during all preliminary steps. map_file_sample is a dataframe with as many rows as the number of input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data) to which it is associated.
 asv_prefilter: dataframe that stores all sequences detected after running Trimmomatic and Flash.
 
-Next, we can perform the analysis of the ASV sequences identified. 
-The next function finds those that map to the original reference and gives them the name of NMBC (Non-Marked BarCode), considering also those with a similarity higher than 98\% (parameter pid_cutoff_nmbc) with the original reference as NMBC.
-It also removes possible contamination artifacts (ASVs whose flanking regions don't map the ones of the reference).
-In order to run, this function needs the reference name, reference sequence, flanking sequences (beginning and end of the ASV that never mutate over the course of the experiment),
-cutting sites positions and the positions of lines that equally divide the reference (just for visualization purpouses). By default, these values correspond to the informationrelated to
-barcode BC10v0.
-Then, it normalises the observed counts of each ASV in each sample, both by the total counts in each organ and by the total count of each ASV.
+Next, we need to run the following function to perform the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
+First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
+Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
+in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
+(See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
+Next it pools together those sequences that differ by one another only by substitutions, summing their counts, and after this it removes
+those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}
+Finally it performs filtering of the sequences based on their flanking sequances.
+Then, it computes different statistics for the final ASVS, storing:
+the relative frequency of all ASVs in each sample. 
+the relative frequency of each ASV in the samples.
+the counts for each ASV normalized to the counts of the sample with maximum frequency
+the frequency of the different ASVs in each sample.
 It also computes additional  measures of clonal richness and measures of heterogeneity for each sample based on the ASVs detected. 
 
 <<example_analysis>>=
-revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized)
-names(revo_analyzed)
+EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
+names(EvoTraceR_object)
 @
 
-There are three new fields: clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC).
-reference is the information on the reference sequence considered for the analysis. 
-statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterogeneity;
+There are new fields: 
+clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC). 
+reference is the information on the reference sequence considered for the analysis.
+clean_asv_dataframe: ASV sequences identified post-filtering (contamination removed,
+sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
+aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
+to their total counts. 
+reference: Info about the reference sequence used for the current analysis. 
+statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity. 
+alignemnt: is a new list containing the result of the alignment step. It contains two fields:  msa_stringset is the output of multiple sequence alignemnt performed by muscle; asv_barcode_alignment is a tibble
+where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated and the type of alteration.
 
 <<example_msa>>=
-revo_msa = analyse_mutations(revo_analyzed)
+EvoTraceR_object = analyse_mutations(EvoTraceR_object)
 @
 
-This step performs multi sequence alignemnt among the filtered ASVs. Alignment is performed using muscle, and users can provide any optional parameter for the algorithm through this function.
-After MSA, EvoTraceR identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
-This computation stores inside the EvoTraceR object a new field called alignment, which gets populated by 5 new fields: msa_stringset is the output of multiple sequence alignemnt performed by musle; mutations_df is a tibble
-where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated, the type of alteration and the frequency of that mutation in the corresponding sample; asv_alteration_width is another tibble
-which stores the number of nucleotides affected by each type of alteration in each ASV; mutations_coordinates contains the details about mutations, with the start and end positions and the corresponding mutated sequence (note that consecutive nucleotides affected by either an insertion or a deletion will be put toghether and considered ad a unique mutation);
-binary_mutations_matrix is finally a binary tibble, where each line corresponds to an ASV, and each column corresponds to a mutation. 1 and 0 indicate respectively the presence or absence of the mutation in the ASV.
+After alignment, EvoTraceR identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+This computation stores the result in a new field mutations_df. 
 
 <<example_phylogeny, eval=FALSE>>=
-revo_phyl = infer_phylogeny(revo_msa, phylip_package_path = 'C:/Users/*/Program Files/phylip-3.698/exe/')
+EvoTraceR_object = infer_phylogeny(EvoTraceR_object)
 @
 
-This step computes the phylogeny, using the binary mutation matrix computed in the previous step. Phylogeny is computed using camin-sokal method, using the implementation found in the package Rphylip.
-Note that prior to running this function, users should install PHYLIP and then provide the path to the folder containing the binary of mix using the parameter phylip_package_path.
-This functions infers the phylogeny and store the resulting tree inside the field phylogeny of the EvoTraceR objetc.
+This function reconstructs the phylogenetic tree using the Cassiopeia's suite. 
+It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
+based on the most common mutation at each iteration.
 
 <<example_create_df_summary, eval=FALSE>>=
-summary_figure = create_df_summary(revo_phyl)
+EvoTraceR_object = create_df_summary(EvoTraceR_object)
 @
 
-Finally, a summary plot is prodced and stored in the output directory associated to the EvoTraceR object. This plot is composed by 7 panels: the first contains the tree representation; then, there is a graphical
-representation of each ASV, that gives information about the position of all its mutations; next there is a barplot indicating the total number of nucletoides affected by each alteration type in each ASV;
-next there is a second barplot indicating the length of each ASV; next we find a bubble plot, which encodes the percentage sequence similarity of each ASV with respect to the original reference; finally, there is a dot plot
-where the size of each dot indicate the frequency of each ASV normalized by the total counts found in the corresponding sample, and the color of the dot represent the count normalized to the highest counts found for the same ASV in another sample.
+Finally, this function combines in one dataframe all the data that have been computed for the phylogenetic analysis.
 
 \section{\Rcode{sessionInfo()}}
 

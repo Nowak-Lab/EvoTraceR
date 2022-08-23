@@ -10,8 +10,11 @@ Depends:
 Config/reticulate:
   list(
     packages = list(
-      list(package = "umi_tools", pip = TRUE)
-    )
+      list(package = 'numpy', version = '1.21.5', pip = FALSE),
+      list(package = 'numba', pip = FALSE),
+      list(package = "umi_tools", pip = TRUE),
+      list(package = "git+https://github.com/YosefLab/Cassiopeia@master#egg=cassiopeia-lineage", pip = TRUE)
+      )
   )
 Imports:
     ggplot2,
@@ -21,7 +24,6 @@ Imports:
     benthos,
     lemon,
     scales,
-    muscle,
     utils,
     tidyr,
     tibble,
@@ -30,16 +32,11 @@ Imports:
     forcats,
     data.table,
     pheatmap,
-    Rphylip,
-    phytools,
     ggtree,
     plyr,
-    TreeTools,
     colorspace,
     aplot,
     ape,
-    phylogram,
-    ade4,
     foreach
 Suggests:
     BiocGenerics,

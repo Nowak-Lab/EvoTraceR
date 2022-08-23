@@ -189,7 +189,6 @@ initialize_EvoTraceR = function(output_dir,
 #' together with the previous one, are used to construct the substitution matrix used by the function \code{pairwiseAlignment}.
 #' @param pwa_type (Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 #' For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation} 
-#' @param ... (Optional). Additional parameter passed to muscle.
 #' 
 #'
 #' @return  The EvoTraceR object passed as a parameter with the following new fields:
@@ -444,14 +443,14 @@ asv_analysis = function(EvoTraceR_object,
 #' @param EvoTraceR_object EvoTraceR object on which we want to perform msa.
 #' 
 #' @return EvoTraceR object with the field \code{alignment}, updated with 
-#' \item \code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
+#' \code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
 #'
 #' @export analyse_mutations
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 #' @rawNamespace import(data.table, except = c(last, first, between))
-#' @importFrom muscle muscle
+# @importFrom muscle muscle
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
 # @importFrom ggmsa tidy_msa 
 #' @importFrom lemon coord_capped_cart facet_rep_grid
@@ -503,7 +502,7 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 #' @export infer_phylogeny
 #' @import reticulate
 #' @importFrom scales comma
-#' @importFrom TreeTools RootTree
+# @importFrom TreeTools RootTree
 #' @importFrom ggtree fortify
 # @importFrom dynamicTreeCut cutreeDynamic
 # @importFrom ape cophenetic.phylo bind.tree drop.tip

@@ -59,8 +59,6 @@ together with the previous one, are used to construct the substitution matrix us
 
 \item{pwa_type}{(Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation}}
-
-\item{...}{(Optional). Additional parameter passed to muscle.}
 }
 \value{
 The EvoTraceR object passed as a parameter with the following new fields:

@@ -31,28 +31,23 @@ if (!require("Biostrings")) BiocManager::install("Biostrings")
 if (!require("benthos")) install.packages("benthos")
 if (!require("lemon")) install.packages("lemon")
 if (!require("scales")) install.packages("scales")
-if (!require("phytools")) install.packages("phytools")
-if (!require("muscle")) BiocManager::install("muscle")
-if (!require("R4RNA")) BiocManager::install("R4RNA")
 # if (!require("ggmsa")) devtools::install_github("YuLab-SMU/ggmsa")
 if (!require("utils")) install.packages("utils")
 if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
-if (!require("Rphylip")) BiocManager::install("Rphylip")
-if (!require("phytols")) install.packages("phytools")
 if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require("TreeTools")) install.packages('TreeTools')
-if (!require("phylogram")) install.packages('phylogram')
 if (!require('ade4')) install.packages('ade4')
 if (!require('foreach')) install.packages('foreach')
+if (!require('reticulate')) install.packages('reticulate')
 
 # install devtools library and EvoTraceR
 
 devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master")
 ```
 
-In order to build the phylogenetic tree, EvoTraceR uses the camin-sokal implementation found in the package Rphylip. In order to use such package, users should also install [mix](https://evolution.genetics.washington.edu/phylip.html).
-The path to the mix binary needs to be provided to the EvoTraceR function that performs the phylogeny inference.
+In order to handle fastq files with forward and reverse reads, EvoTraceR uses trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge
+forward and reverse reads. In order to use such packages, users should install [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) and [flash]{https://ccb.jhu.edu/software/FLASH/}.
 
 ```{r eval=FALSE}
 # load EvoTraceR library

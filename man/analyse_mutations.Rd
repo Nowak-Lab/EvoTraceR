@@ -11,7 +11,7 @@ analyse_mutations(EvoTraceR_object)
 }
 \value{
 EvoTraceR object with the field \code{alignment}, updated with 
-\item \code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
+\code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
 }
 \description{
 This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the overall frequency in each 
