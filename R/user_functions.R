@@ -233,7 +233,7 @@ initialize_EvoTraceR = function(output_dir,
 #' \item \code{ASV_alterations_width}: dataframe containing the number of nucleotides affected by each type of mutation in each ASV.
 #' }
 #' }
-#' This function saves the figure \code{02_track_asv_number.pdf}, which is a barplot indicating the change in the number of sequences 
+#' This function saves the figure \code{asv_filtering_freq.pdf}, which is a barplot indicating the change in the number of sequences 
 #' during all the processing steps.
 #'   
 #' @export asv_analysis
@@ -516,9 +516,9 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
     stop('Exiting')
   }
   EvoTraceR_object$phylogeny$mutations_in_phylogeny = mutations_use
-  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mutations_use))
+  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_analysis/phylogeny_", mutations_use))
   
-  if (!dir.exists(output_dir)) {dir.create(output_dir)}
+  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = TRUE)}
   
   asv_bin_var = EvoTraceR_object$alignment$binary_mutation_matrix
   barcode_var = asv_bin_var[EvoTraceR_object$reference$ref_name,]  
@@ -599,9 +599,9 @@ create_df_summary = function(EvoTraceR_object) {
                                               EvoTraceR_object$phylogeny$tree %>% filter(isTip) %>% dplyr::select(label, group),
                                               by=c("asv_names" = "label")))
   
-  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_", mut_in_phyl))
+  output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_analysis/phylogeny_", mut_in_phyl))
   
-  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = T)}  
+  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = TRUE)}  
   
   write.csv(df_to_plot_final, file.path(output_dir, "asv_stat.csv"), quote = F, row.names = F)
   EvoTraceR_object$plot_summary$df_to_plot_final = df_to_plot_final

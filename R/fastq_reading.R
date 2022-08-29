@@ -12,8 +12,8 @@ alignment_pipeline = function(fnFs,
   dots = list(...)
   # Make directories for the filtered fastqs and (optionally) for figures
   
-  trimmed_dir = file.path(output_dir, "trimmed_fastq/")
-  flash_input_dir = file.path(output_dir, "flash_merged_reads/")
+  trimmed_dir = file.path(output_dir, "fastq_trimmed/")
+  flash_input_dir = file.path(output_dir, "fastq_flash_merged/")
   
   if (!dir.exists(trimmed_dir)) dir.create(trimmed_dir, recursive = T)
   if (!dir.exists(flash_input_dir)) dir.create(flash_input_dir, recursive = T)
@@ -97,7 +97,7 @@ alignment_pipeline = function(fnFs,
     ggplot2::ggplot(data=seq_lengths, aes(x = length)) + 
     geom_histogram(binwidth = 1, fill = '#B484A9') +
     scale_x_continuous(labels=scales::comma, 
-                       breaks=c(1, seq(52, 520, 26)),
+                       breaks=c(1, seq(26, 520, 26)),
                        limits=c(0, 520)) +
     xlab("Sequence Length") +
     ylab("Sequence count") +
@@ -106,13 +106,13 @@ alignment_pipeline = function(fnFs,
     geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
     barplot_nowaklab_theme() 
   
-  ggsave(filename=file.path(output_dir, '03_sequence_length.pdf'), 
+  ggsave(filename=file.path(output_dir, 'asv_length_freq.pdf'), 
          plot=hist_seq_count, 
          #device=grDevices::cairo_pdf, 
          width=25, height=5, units = "cm") #17.5 for 4x
   
   # Save as Data csv
-  utils::write.csv(track_reads, file.path(output_dir, "01_quality_track_reads.csv"), quote = FALSE)
+  utils::write.csv(track_reads, file.path(output_dir, "fastq_summary.csv"), quote = FALSE)
   
   return(list(seqtab=df, track = track_reads))
 }

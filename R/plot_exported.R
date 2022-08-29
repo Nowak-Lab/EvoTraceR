@@ -36,20 +36,21 @@ seq_filtering_plot = function(EvoTraceR_object, figure_dir = EvoTraceR_object$ou
     geom_text(aes(x=name, y=num, label=num_names_ins), vjust=-1.75, size=3) + # change order to have up whatever you choose, opposite to order
     geom_text(aes(x=name, y=num, label=diff_perc), vjust=-0.25, size=3, col="blue") + # change order to have up whatever you choose, opposite to order
     scale_y_continuous(expand = c(0, 0), 
-                        limits= c(0, plyr::round_any(max(track_data$num), 100, f = ceiling)+1000),#/4), 
-                        breaks = seq(0, (plyr::round_any(max(track_data$num), 100, f = ceiling)), 100)) +
+                       limits= c(0, plyr::round_any(max(track_data$num), 1000, f = ceiling)+1000)) +#/4), 
+                        # breaks = seq(0, (plyr::round_any(max(track_data$num), 100, f = ceiling)), 100)) +
     scale_fill_manual(values=c("#444c5c", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#aaaaaa", "#78a5a3")) +
-    labs(x = "ASVs Filtering Steps", y = "Number of ASVs") + 
-    lemon::coord_capped_cart(left="both") + # axis with lemon
+    labs(x = "ASVs Filtering Steps", y = element_blank()) + 
+    #lemon::coord_capped_cart(left="both") + # axis with lemon
     barplot_nowaklab_theme() + # add theme 
     theme(plot.margin = unit(c(0, 0, 0, 0), "mm"), # update theme specifically 
           axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), # , hjust = 1, vjust = 1
           axis.line.x = element_blank(), # disable x axis lines
+          axis.line.y=element_blank(),
           axis.ticks.x = element_blank(),
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank()) # disable x axis ticks lines
   # save pdf
-  ggsave(filename=file.path(figure_dir, "02_track_asv_number.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
+  ggsave(filename=file.path(figure_dir, "asv_filtering_freq.pdf"), plot=seqtab_df_clean_track, width=15, height=15, units = "cm")
 }
 
 

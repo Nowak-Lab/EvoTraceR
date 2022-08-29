@@ -103,7 +103,7 @@ are assigned to the position that coincides with their beginning.
 \item \code{ASV_alterations_width}: dataframe containing the number of nucleotides affected by each type of mutation in each ASV.
 }
 }
-This function saves the figure \code{02_track_asv_number.pdf}, which is a barplot indicating the change in the number of sequences 
+This function saves the figure \code{asv_filtering_freq.pdf}, which is a barplot indicating the change in the number of sequences 
 during all the processing steps.
 }
 \description{
