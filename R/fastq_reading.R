@@ -11,18 +11,23 @@ alignment_pipeline = function(fnFs,
   fnRs <- gsub(" ", "\ ", fnRs)
   dots = list(...)
   # Make directories for the filtered fastqs and (optionally) for figures
+  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = T)
+
+  fastq_dir = file.path(output_dir, "fastq_analysis/")
+  trimmed_dir = file.path(fastq_dir, "fastq_trimmed/")
+  flash_input_dir = file.path(fastq_dir, "fastq_flash_merged/")
+  figure_dir = file.path(output_dir, "asv_analysis/")
   
-  trimmed_dir = file.path(output_dir, "fastq_trimmed/")
-  flash_input_dir = file.path(output_dir, "fastq_flash_merged/")
-  
+  if (!dir.exists(fastq_dir)) dir.create(fastq_dir, recursive = T)
   if (!dir.exists(trimmed_dir)) dir.create(trimmed_dir, recursive = T)
   if (!dir.exists(flash_input_dir)) dir.create(flash_input_dir, recursive = T)
+  if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
   
   # output_dir = file.path(output_dir, "preprocessing_figures")
   # if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
   
   # output_dir_files = file.path(output_dir, "preprocessing_files")
-  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = T)
+  
   
   # filter and trim
   cli::cli_alert_info('Filtering and trimming')
@@ -106,13 +111,13 @@ alignment_pipeline = function(fnFs,
     geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
     barplot_nowaklab_theme() 
   
-  ggsave(filename=file.path(output_dir, 'asv_length_freq.pdf'), 
+  ggsave(filename=file.path(figure_dir, 'asv_length_freq.pdf'), 
          plot=hist_seq_count, 
          #device=grDevices::cairo_pdf, 
          width=25, height=5, units = "cm") #17.5 for 4x
   
   # Save as Data csv
-  utils::write.csv(track_reads, file.path(output_dir, "fastq_summary.csv"), quote = FALSE)
+  utils::write.csv(track_reads, file.path(fastq_dir, "fastq_summary.csv"), quote = FALSE)
   
   return(list(seqtab=df, track = track_reads))
 }

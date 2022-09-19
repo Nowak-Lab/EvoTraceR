@@ -10,10 +10,8 @@ Depends:
 Config/reticulate:
   list(
     packages = list(
-      list(package = 'numpy', version = '1.21.5', pip = FALSE),
-      list(package = 'numba', pip = FALSE),
-      list(package = "umi_tools", pip = TRUE),
-      list(package = "git+https://github.com/YosefLab/Cassiopeia@master#egg=cassiopeia-lineage", pip = TRUE)
+      list(package = 'numpy', version = '1.21.5', pip = TRUE),
+      list(package = 'numba', pip = TRUE)
       )
   )
 Imports:

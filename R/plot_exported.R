@@ -10,6 +10,8 @@
 #' @export seq_filtering_plot
 #' 
 seq_filtering_plot = function(EvoTraceR_object, figure_dir = EvoTraceR_object$output_directory) {
+  figure_dir = paste0(figure_dir, '/asv_analysis/')
+  if (!dir.exists(figure_dir)) {dir.create(figure_dir)}
   track_data = EvoTraceR_object$preprocessing$seq_filters
 
   # # assemble data  with all number for each step of filtering
