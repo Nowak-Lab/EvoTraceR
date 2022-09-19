@@ -1,5 +1,5 @@
 Package: EvoTraceR
-Version: 0.99.22
+Version: 0.99.23
 Date: 2022-01-04
 Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
