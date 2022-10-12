@@ -150,7 +150,7 @@ jobs:
       - name: Install latex packages
         run: |
           install.packages('tinytex')
-          tinytex::install_tinytex()
+          tinytex::install_tinytex(force = TRUE)
           tinytex::tlmgr_install(c('tcolorbox', 'bera', 'nowidow', 'parnotes',
           'marginfix', 'titlesec', 'fancyhdr', 'enumitem', 'parskip', 'preprint',
           'soul', 'placeins', 'ragged2e', 'ms', 'footmisc', 'changepage',
@@ -162,28 +162,21 @@ jobs:
         run: |
           install.packages("BiocManager")
           install.packages('remotes')
-          BiocManager::install("dada2")
           install.packages("tidyverse")
           install.packages("cli")
           BiocManager::install("Biostrings")
           install.packages("benthos")
           install.packages("lemon")
           install.packages("scales")
-          BiocManager::install("muscle")
-          BiocManager::install("R4RNA")
           install.packages("proj4")
           install.packages("ggalt")
-          remotes::install_github("YuLab-SMU/ggmsa")
           install.packages("utils")
           install.packages("methods")
           install.packages("data.table")
-          install.packages("phytools")
-          BiocManager::install("Rphylip")
           BiocManager::install("ggtree")
           install.packages('TreeTools')
           install.packages('phangorn')
-          install.packages('dynamicTreeCut')
-          install.packages("phylogram")
+          install.packages("foreach")
         shell: Rscript {0}
 
       - name: Query dependencies
@@ -399,7 +392,7 @@ jobs:
       - name: Install latex packages
         run: |
           install.packages('tinytex')
-          tinytex::install_tinytex()
+          tinytex::install_tinytex(force = TRUE)
           tinytex::tlmgr_install(c('tcolorbox', 'bera', 'nowidow', 'parnotes',
           'marginfix', 'titlesec', 'fancyhdr', 'enumitem', 'parskip', 'preprint',
           'soul', 'placeins', 'ragged2e', 'ms', 'footmisc', 'changepage',

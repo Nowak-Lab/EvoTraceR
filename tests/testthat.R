@@ -1,6 +1,6 @@
 Sys.setenv("R_TESTS" = "")
 
 library("testthat")
-library("REvoBC")
+library("EvoTraceR")
 
-test_check("REvoBC")
+test_check("EvoTraceR")

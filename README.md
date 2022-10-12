@@ -1,8 +1,8 @@
 EvoTraceR
 ================
 
-[![Actions Status](https://github.com/Nowak-Lab/REvoBC/workflows/check-master/badge.svg)](https://github.com/Nowak-Lab/REvoBC/actions?query=workflow%3Acheck-master)
-[![Actions Status](https://github.com/Nowak-Lab/REvoBC/workflows/check-development/badge.svg)](https://github.com/Nowak-Lab/REvoBC/actions?query=workflow%3Acheck-development)
+[![Actions Status](https://github.com/Nowak-Lab/EvoTraceR/workflows/check-master/badge.svg)](https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-master)
+[![Actions Status](https://github.com/Nowak-Lab/EvoTraceR/workflows/check-development/badge.svg)](https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-development)
 
 Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EvoTraceR.
 

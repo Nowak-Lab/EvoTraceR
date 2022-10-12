@@ -1,14 +1,20 @@
-Package: REvoBC
-Version: 0.99.11
-Date: 2021-11-16
-Title: REvoBC
+Package: EvoTraceR
+Version: 0.99.23
+Date: 2022-01-04
+Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
             person("Daniele", "Ramazzotti", role=c("aut"),email="daniele.ramazzotti@yahoo.com", comment = c(ORCID = "0000-0002-6087-2666")),
             person("Dawid","Nowak",role=c("aut")))
 Depends:
     R (>= 4.1.0)
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = 'numpy', version = '1.21.5', pip = TRUE),
+      list(package = 'numba', pip = TRUE)
+      )
+  )
 Imports:
-    dada2,
     ggplot2,
     dplyr,
     cli,
@@ -16,8 +22,6 @@ Imports:
     benthos,
     lemon,
     scales,
-    muscle,
-    ggmsa,
     utils,
     tidyr,
     tibble,
@@ -26,30 +30,26 @@ Imports:
     forcats,
     data.table,
     pheatmap,
-    Rphylip,
-    phytools,
     ggtree,
     plyr,
-    TreeTools,
     colorspace,
     aplot,
     ape,
-    dynamicTreeCut,
-    phylogram
+    foreach
 Suggests:
     BiocGenerics,
     BiocStyle,
     testthat,
     knitr
 Name:
-    REvoBC
+    EvoTraceR
 Description:
     Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EVoBC kit.
 Encoding: UTF-8
 LazyData: TRUE
 License: file LICENSE
-URL: https://github.com/Nowak-Lab/REvoBC
-BugReports: https://github.com/Nowak-Lab/REvoBC
+URL: https://github.com/Nowak-Lab/EvoTraceR
+BugReports: https://github.com/Nowak-Lab/EvoTraceR
 biocViews: 
     BiomedicalInformatics,
     SingleCell,

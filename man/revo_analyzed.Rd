@@ -5,7 +5,7 @@
 \alias{revo_analyzed}
 \title{example data obtained from running function \code{asv_analys}, where the original barcode is identified and all remaining ASVs are aligned to it.}
 \format{
-RevoBC object updated with the following fields: 
+EvoTraceR object updated with the following fields: 
 #' \describe{
 \item{clean_asv_dataframe}{ASV sequences identified post-filtering (contamination removed,
 sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
@@ -36,7 +36,7 @@ to their total counts. }
 data(revo_analyzed)
 }
 \value{
-RevoBC object updated with statistics about the ASVs.
+EvoTraceR object updated with statistics about the ASVs.
 }
 \description{
 example data obtained from running function \code{asv_analys}, where the original barcode is identified and all remaining ASVs are aligned to it.

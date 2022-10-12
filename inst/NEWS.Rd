@@ -1,5 +1,5 @@
 \name{NEWS}
-\title{News for package \pkg{REvoBC}}
+\title{News for package \pkg{EvoTraceR}}
 \encoding{UTF-8}
 
 \section{Changes in Version 0.99.11}{

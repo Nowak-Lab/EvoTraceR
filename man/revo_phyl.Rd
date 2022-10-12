@@ -5,7 +5,7 @@
 \alias{revo_phyl}
 \title{example data obtained from running function \code{infer_phylogeny}, using only smoothed deletions for phylogeny reconstruction.}
 \format{
-REvoBC object with a new field named \code{phylogeny}, which is a list with the following fields:
+EvoTraceR object with a new field named \code{phylogeny}, which is a list with the following fields:
 \describe{
 \item{mutations_in_phylogeny}{string indiating which mutations were used for phylogeny recontruction}
 \item{tree}{Phylogenetic tree reconstructed by Rmix}
