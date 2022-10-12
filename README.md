@@ -6,7 +6,4 @@ EvoTraceR
 
 Package to identifiy and analyse Amplicon Sequence Variants after performing an experiment through the EvoTraceR.
 
-Please feel free to contact us if you have problems running our tool at:
-Dawid Nowak: dgn2001@med.cornell.edu
-Lucrezia Patruno: l.patruno@campus.unimib.it.
-
+Please feel free to contact us if you have problems running our tool at: Dawid Nowak, dgn2001@med.cornell.edu or Lucrezia Patruno, l.patruno@campus.unimib.it.
