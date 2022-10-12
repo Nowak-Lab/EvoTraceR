@@ -2,7 +2,6 @@
 #' 
 #' @title setup_reticulate
 #' 
-#' 
 #' @export setup_reticulate
 #' @import reticulate
 setup_reticulate = function() {
@@ -567,8 +566,7 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
 
 #' This function combines in one dataframe all the data that have been computed for the phylogenetic analysis.
 #' 
-#' @title create_df_summary 
-#' 
+#' @title create_df_summary
 #' 
 #' @examples
 #' \dontrun{
@@ -620,6 +618,3 @@ create_df_summary = function(EvoTraceR_object) {
 
   return(EvoTraceR_object)
 }
-
-
-
