@@ -7,7 +7,7 @@
 analyse_mutations(EvoTraceR_object)
 }
 \arguments{
-\item{EvoTraceR_object}{EvoTraceR object on which we want to perform msa.}
+\item{EvoTraceR_object}{EvoTraceR object.}
 }
 \value{
 EvoTraceR object with the field \code{alignment}, updated with 
@@ -15,12 +15,12 @@ EvoTraceR object with the field \code{alignment}, updated with
 }
 \description{
 This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the overall frequency in each 
-sample of each mutation in each barcode position.
+sample of each mutation in every barcode position.
 }
 \examples{
-data(revo_analyzed)
-output_dir = system.file("extdata", "output", package = "EvoTraceR")
-revo_analyzed$output_directory = output_dir
-revo_msa = analyse_mutations(revo_analyzed)
+\dontrun{
+data(EvoTraceR_analyzed)
+EvoTraceR_object = analyse_mutations(EvoTraceR_object)
+}
 
 }

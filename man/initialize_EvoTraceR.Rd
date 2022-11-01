@@ -10,13 +10,12 @@ initialize_EvoTraceR(
   flash_path,
   input_dir = NULL,
   map_file_sample = NULL,
-  sample_order = "alphabetical",
-  ...
+  sample_order = "alphabetical"
 )
 }
 \arguments{
 \item{output_dir}{(Required). Path to the directory where all output files will be stored. 
-This function will output  the \code{.csv} \code{quality_track_reads.csv}, containing a track of the number of sequences during the 
+This function will output  the file \code{quality_track_reads.csv}, containing a track of the number of sequences during the 
 different steps.}
 
 \item{trimmomatic_path}{(Required). Local path to the executable of \code{Trimmomatic}. 
@@ -35,28 +34,20 @@ then users should provide a list that associates each filename (without the suff
 (e.g., if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL 
 (code for Prostate Left), than the parameter should be set as: \code{map_file_sample = c("file1" = "PRL")}).}
 
-\item{sample_order}{(Optional). Vector containing the order in which the user wants samples to appear in all plots. If \code{NULL} the alphabetical order will be set.}
-}
-\value{
-An object of type EvoTraceR, which is a list that will contain the following fields: 
-\itemize{
-\item \code{fastq_directory}: directory where the input fastq files are located.
-\item \code{output_directory}: directory where all the output files are being stored.
-\item \code{map_file_sample}: dataframe has as many rows as the input datasets, and for each input stores the sample (e.g. organ or day for longitudinal data)
-to which it is associated.
-\item \code{asv_prefilter}: dataframe that stores all sequences detected after these preliminary steps. Note that
-these sequences still need to be filtered (see also \code{\link{asv_analysis}}).
-}. 
-This function also saves the \code{.csv} file \code{quality_track_reads.csv}: track of the number of sequences during \code{trimming and merging} steps.
+\item{sample_order}{(Optional). Vector containing the order in which the user wants samples to appear in all plots. If \code{NULL} the alphabetical order will be set.
+
+This function also saves the \code{.csv} file \code{quality_track_reads.csv}: track of the number of sequences during \code{trimming and merging} steps.}
 }
 \description{
 This function initializes the EvoTraceR object, by computing the set of Amplicon Sequence Variants.
-It calls trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge
+It calls \href{http://www.usadellab.org/cms/?page=trimmomatic}{trimmomatic} and \href{https://ccb.jhu.edu/software/FLASH/}{flash} to perform adapters trimming, discard low quality bases and merge
 forward and reverse reads.
 }
 \examples{
+\dontrun{
 input_dir = system.file("extdata", "input", package = "EvoTraceR")
 output_dir = system.file("extdata", "output", package = "EvoTraceR")
-initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir)
+EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir, trimmomatic_path = '/path/to/trimmomatic.jar', flash_path = '/path/to/flash_bin_directory')
+}
 
 }

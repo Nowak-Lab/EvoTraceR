@@ -32,10 +32,10 @@ Imports:
     pheatmap,
     ggtree,
     plyr,
-    colorspace,
-    aplot,
     ape,
-    foreach
+    foreach,
+    purrr,
+    reticulate
 Suggests:
     BiocGenerics,
     BiocStyle,

@@ -109,14 +109,6 @@ asv_collapsing = function(seqtab,
   dnastringset <- Biostrings::DNAStringSet(seqtab$seq) 
   names(dnastringset) <- seqtab$seq_names
   
-  
-  # seqtab = seqtab %>% mutate(pairwise_sim =  list(Biostrings::pid(Biostrings::pairwiseAlignment(subject=seq, pattern=dnastringset))))
-  # 
-  # pid_matrix = seqtab$pairwise_sim
-  # names(pid_matrix) = seqtab$seq_names
-  # pid_matrix = bind_rows(pid_matrix)
-  # Output as FASTA files
-  
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   
   mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
@@ -133,11 +125,7 @@ asv_collapsing = function(seqtab,
   
   cli::cli_alert_info('Computing tidy alignment for cleaning')
   alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, length(mpwa)), .combine=rbind) %do% {
-    
-    # postaligned_seqs <- Biostrings:::.makePostalignedSeqs(mpwa[i])[[1]]
-    # aligned_sequence = as.character(postaligned_seqs[1])
-    # aligned_reference = as.character(postaligned_seqs[2])
-    
+  
     data.frame("seq_names" = rownames(aligned_sequences)[i], #names(postaligned_seqs)[1], #names(dnastringset)[i],#
                "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], #strsplit(aligned_sequence, split='')[[1]],#
                "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]],#strsplit(aligned_reference, split='')[[1]], #
@@ -156,13 +144,6 @@ asv_collapsing = function(seqtab,
                                ifelse(ref_asv == "-", "i", "s")))) %>%
     mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
   
-  # algn = perform_collapsing(alignment_tidy_ref_alt, seqtab, sample.names)
-  # 
-  # alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% filter(seq_names %in% algn$seq_names)
-  
-  # Now translate barcode to barcode 260 nts long.
-  # In case of sites of insertion, the last position not affected by the insertion is propagated
-  # for all the nucleotides affected by that insertion.
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     mutate(position_bc260 = ifelse(ref_asv == "-", NA, position)) %>% # add "bc260" scale
@@ -176,20 +157,10 @@ asv_collapsing = function(seqtab,
     mutate(position_bc260 = as.numeric(as.character(factor(x = position_bc260, levels = unique(position_bc260),
                                                            labels = seq_along(unique(position_bc260))))))
   
-  # algn_to_long = algn %>% tidyr::pivot_longer(all_of(position_columns), names_to = 'position', values_to = 'alt') %>%
-  #   filter(!is.na(alt))
-  # 
-  # algn_to_long = algn_to_long %>% select(c(seq_names, position, alt)) %>%
-  #   mutate(position = as.integer(position)) %>%
-  #   arrange(seq_names, position, alt)
-  # subset_tidy = subset_tidy %>% select(c(seq_names, position, alt)) %>%
-  #   arrange(seq_names, position, alt)
-  
   coord = mutation_coordinate_matrix(alignment_tidy_ref_alt, barcode_name)
-  # Select sequences that have no indels, they are collapsed to the original barcode
   no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
   no_indels = seqtab %>% filter(seq_names %in% no_indels)
-  no_indels = no_indels %>% dplyr::summarise(seq = barcode, #compute_consensus_sequence(seq, sum_counts), 
+  no_indels = no_indels %>% dplyr::summarise(seq = barcode, 
                                              seq_names = seq_names[which.max(totalCounts)],
                                              across(sample.names, sum))
   
@@ -229,39 +200,6 @@ asv_collapsing = function(seqtab,
   return(list(seqtab_df = seqtab_collapsed, tidy_alignment = clean_tidy_alignment,
               mutations_coordinates = coord_cleaned %>% select(-c(asv_names)), binary_matrix = binary_matrix))
 }
-
-
-# perform_collapsing <- function(alignment_tidy_ref_alt, seqtab, sample.names) {
-#   algn = alignment_tidy_ref_alt %>% ungroup() %>% select(c(seq_names, position, alt)) %>%
-#     tidyr::pivot_wider(names_from = 'position', values_from = 'alt') 
-#   
-#   position_columns = setdiff(colnames(algn), "seq_names")
-#   
-#   
-#   algn = algn %>% 
-#     inner_join(seqtab %>% mutate(seq_names = gsub(pattern='.NMBC', replacement = '', x = seq_names)), by = "seq_names") %>%
-#     #tibble::column_to_rownames("seq_names")  %>% 
-#     mutate(sum_counts = seqtab %>% select(all_of(sample.names)) %>% rowSums(na.rm = TRUE))
-#   
-#   
-#   algn = algn %>% group_by(across(all_of(position_columns))) %>% 
-#     summarise(consensus_seq = seq[which.max(sum_counts)], #compute_consensus_sequence(seq, sum_counts), 
-#               seq_names = seq_names[which.max(sum_counts)],
-#               across(sample.names, sum)) %>%
-#     ungroup() %>% 
-#     select(-all_of(position_columns))
-#   
-#   # algn$seq_names = paste0("SEQ", formatC(c(1:(nrow(algn))), 
-#   #                                        width = nchar(trunc(nrow(algn))), 
-#   #                                        format = "d", flag = "0")) # -1 to start 00 with no changes sequence
-#   
-#   algn = algn %>% rename(seq = consensus_seq) %>% tibble::column_to_rownames("seq")
-#   algn$seq = rownames(algn)
-#   
-#   return(algn)
-# }
-
-
 
 # Compute the frequency of the different ASV in each organ/day and the frequency of counts in each organ for every ASV.
 # Compute also, for each ASV the sample in which the frequency is maximum (store this information in a column \code{perc_fold_to_max} of tibble seqtab_df_clean_asv_long in the EvoTraceR object)
@@ -329,11 +267,6 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
     arrange(-count)
   EvoTraceR_object$statistics$asv_df_percentages = seqtab_df_clean_asv_long
   
-  # save as Data csv
-  # write.csv(seqtab_df_clean_asv_long, 
-  #           paste0(output_dir, "/asv_df_percentages.csv"),
-  #           row.names = F)
-  
   ### Abundance and Richness Calculations
   # asv_names summary
   asv_names_stat <-
@@ -352,14 +285,6 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   # Store in object and in csv file
   EvoTraceR_object$statistics$asv_totalCounts = asv_names_stat
   EvoTraceR_object$statistics$sample_totalcounts = sample_stat
-  
-  # write.csv(asv_names_stat, 
-  #           file.path(output_dir, "asv_totalCounts.csv"),
-  #           row.names = F)
-  
-  # write.csv(sample_stat, 
-  #           file.path(output_dir, "sample_totalcounts.csv"),
-  #           row.names = F)
   
   # merge data
   seqtab_df_clean_asv_long <- tibble(merge(seqtab_df_clean_asv_long, asv_names_stat, "asv_names")) 
@@ -381,8 +306,6 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
     mutate(pielous_evenness_persample = shannons_index_persample / log(richness_asv_persample) )
   
   EvoTraceR_object$statistics$asv_diversity_persample = diversity
-  # write.csv(diversity, 
-  #           file.path(output_dir, "asv_diversity_persample.csv"))
   
   # matrix rows: organ_day and coumns ASV names
   mx_freq <- 
@@ -405,11 +328,7 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   
   df_to_plot_perf_match <- dplyr::inner_join(x=seqtab_df_clean_asv_long, 
                                              y=dplyr::select(EvoTraceR_object$clean_asv_dataframe, seq, asv_names), 
-                                             by="asv_names") # %>%
-  # add_row(data.frame(asv_names = EvoTraceR_object$reference$ref_name, 
-  #                    seq = EvoTraceR_object$reference$ref_seq, 
-  #                    stringsAsFactors = F))
-  
+                                             by="asv_names")   
   
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
@@ -417,61 +336,16 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   pwa <- Biostrings::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
                                        pattern = df_to_plot_perf_match$seq,
                                        type="global", gapOpening = 20, gapExtension = 1)
-  # TOLTO PERCHE FORSE NON SERVE
-  # Perform pairwise Alignment Stat
-  # pid = Computes the percent sequence identity
+  
   df_to_plot_perf_match$pid <- Biostrings::pid(pwa)
   # nedit = Computes the Levenshtein edit distance of the alignments
   df_to_plot_perf_match$nedit <- Biostrings::nedit(pwa)
   # score = Extracts the pairwise sequence alignment scores
   df_to_plot_perf_match$alignment_score <- Biostrings::score(pwa)
-  #
-  # # Save as Data csv
-  # write.csv(df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')],
-  #           file.path(output_dir, "asv_toBarcode_similarity.csv"))
   
   EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
   EvoTraceR_object$statistics$all_asv_statistics = df_to_plot_perf_match
-  # Histogram of Length    
-  # REMOVED FROM PACKAGE
-  # data_for_hist = df_to_plot_perf_match %>% filter(stringr::str_detect(asv_names, "ASV"))
-  # if (!is.null(figure_dir)) {
-  #   hist_seq_count <- 
-  #     ggplot(data=data_for_hist, 
-  #            aes(y=perc_in_sample, x=seq_n)) + # remove NMBC (usually too big and masking smaller ASVs) and ORG (because of NAs)
-  #     geom_bar(stat="identity", position = "stack", fill="#B484A9", width=1) +
-  #     scale_x_continuous(labels=scales::comma, breaks=c(1, seq(floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10), 
-  #                                                              nchar(EvoTraceR_object$reference$ref_seq)*2, 
-  #                                                              floor(nchar(EvoTraceR_object$reference$ref_seq)*2/10))), 
-  #                        limits=c(0, nchar(EvoTraceR_object$reference$ref_seq)*2), 
-  #                        expand = c(0.01, 0.01)) +
-  #     scale_y_continuous(labels=function(x) paste0(x, "%"),
-  #                        limits=c(0, 1.25* max(data_for_hist$perc_in_sample)),  
-  #                        expand = c(0.01, 0.01)) +
-  #     xlab("ASV Length") +
-  #     ylab("ASV Frequency") +
-  #     geom_vline(xintercept=nchar(EvoTraceR_object$reference$ref_seq), linetype="dotted", size=0.25, col="#84B48F") + # expected size
-  #     lemon::coord_capped_cart(left="both", bottom="left") + # axis with lemon
-  #     lemon::facet_rep_grid(rows = vars(sample), repeat.tick.labels = TRUE) + 
-  #     # add theme
-  #     barplot_nowaklab_theme() +
-  #     theme(aspect.ratio = 1/4,
-  #           plot.margin = unit(c(0, 2, -2, -2), "mm"),
-  #           legend.position = "None")
-    
-  #   # Save PDF
-  #   ggsave(filename=file.path(figure_dir, "histogram_sequenceLength.pdf"), 
-  #          plot=hist_seq_count, 
-  #          #device=cairo_pdf, 
-  #          width=25, 
-  #          height=5*length(sample_columns), 
-  #          units = "cm") #17.5 for 4x
-  #   #pg <- ggplot_build(hist_seq_count)
-  #   write.csv(data_for_hist, #pg$data[[1]],  
-  #             file.path(figure_dir, "/histogram_sequenceLength_data.csv"),
-  #             row.names = FALSE, quote = FALSE)
-  # }
   
   return(EvoTraceR_object)
 }

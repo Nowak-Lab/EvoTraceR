@@ -12,11 +12,11 @@ seq_filtering_plot(
 \arguments{
 \item{EvoTraceR_object}{(Required).}
 
-\item{what}{(Optional). Default to 'phylogeny'. Can be one of \code{c('phylogeny', 'frequency', 'pid', 'asv_length', 'alterations width', 'msa')}}
+\item{figure_dir}{(Optional). Directory where the output will be stored.}
 }
 \value{
 NULL. This function stores in the phylogeny output directory a pdf file for each cluster.
 }
 \description{
-This function plots different aspects of the data.
+This function plots the number of sequences left during all the preprocessing steps.
 }

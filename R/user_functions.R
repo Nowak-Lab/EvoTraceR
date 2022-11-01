@@ -10,18 +10,20 @@ setup_reticulate = function() {
 }
 
 #' This function initializes the EvoTraceR object, by computing the set of Amplicon Sequence Variants.
-#' It calls trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge
+#' It calls \href{http://www.usadellab.org/cms/?page=trimmomatic}{trimmomatic} and \href{https://ccb.jhu.edu/software/FLASH/}{flash} to perform adapters trimming, discard low quality bases and merge
 #' forward and reverse reads.
 #' 
 #' @title initialize_EvoTraceR
 #' 
-#' @examples
+#' @examples 
+#' \dontrun{
 #' input_dir = system.file("extdata", "input", package = "EvoTraceR")
 #' output_dir = system.file("extdata", "output", package = "EvoTraceR")
-#' initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir)
+#' EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir, output_dir = output_dir, trimmomatic_path = '/path/to/trimmomatic.jar', flash_path = '/path/to/flash_bin_directory')
+#' }
 #' 
 #' @param output_dir (Required). Path to the directory where all output files will be stored. 
-#' This function will output  the \code{.csv} \code{quality_track_reads.csv}, containing a track of the number of sequences during the 
+#' This function will output  the file \code{quality_track_reads.csv}, containing a track of the number of sequences during the 
 #' different steps.
 #' 
 #' @param input_dir Path to the directory containing \code{.fastq} files for forward and reverse reads.
@@ -55,15 +57,13 @@ setup_reticulate = function() {
 #' @rawNamespace import(dplyr, except = count)
 #' @importFrom cli cli_alert_info
 #' @importFrom utils write.csv read.csv unzip untar
-# @importFrom grDevices cairo_pdf
 #' @importFrom stringr str_remove_all str_replace
 initialize_EvoTraceR = function(output_dir,
                                 trimmomatic_path,
                                 flash_path,
                                 input_dir = NULL,
                                 map_file_sample = NULL,
-                                sample_order = 'alphabetical',
-                                ...) {
+                                sample_order = 'alphabetical') {
   # Check that the user inserted the correct parameters
   if (is.null(input_dir) ) {
     stop('Please provide a directory containing fastqs')
@@ -128,8 +128,8 @@ initialize_EvoTraceR = function(output_dir,
                                     sample.names = sample.names,
                                     output_dir = output_dir,
                                     trimmomatic_path = trimmomatic_path,
-                                    flash_path = flash_path,
-                                    ...)
+                                    flash_path = flash_path
+                                    )
   
   #seqtab.nochim = align_output$seqtab.nochim
   EvoTraceR_object$preprocessing$track = align_output$track
@@ -158,28 +158,33 @@ initialize_EvoTraceR = function(output_dir,
 }
 
 #' This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
-#' First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
+#' First, it pools together those sequences characterized by a Hamming distance equals or lower than 2, summing their counts. To perform this step, EvoTraceR uses the
+#' sequence clusering agorithm impemented in the python package \href{https://umi-tools.readthedocs.io/en/latest/QUICK_START.html}{UMI-tools}
 #' Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
-#' in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
+#' in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis.
 #' (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-#' Next it pools together those sequences that differ by one another only by substitutions, summing their counts, and after this it removes
-#' those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}
-#' Finally it performs filtering of the sequences based on their flanking sequances.
+#' After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
+#' it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
+#' it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.
+#' Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
+#' those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
+#' Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
+#' dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
 #'
-#' Then, it computes different statistics for the final ASVS, storing:
+#' Then, using the CPM it computes different statistics for the final ASVS, storing:
 #'  the relative frequency of all ASVs in each sample. 
 #'  the relative frequency of each ASV in the samples.
-#'  the counts for each ASV normalized to the counts of the sample with maximum frequency
+#'  the counts for each ASV normalized to the counts of the sample with maximum frequency.
 #'  the frequency of the different ASVs in each sample.
 #'  
 #' @title ASV_analysis
 #' 
 #' @examples
-#' data(revo_initialized)
-#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
-#' revo_initialized$output_directory = output_dir
-#' revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized, )
-#' 
+#' \dontrun{
+#' data(EvoTraceR_object)
+#' EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
+#' }
+#'
 #' @param EvoTraceR_object (Required). Object of class EvoTraceR, result of the function \code{initialize_EvoTraceR}
 #' @param ref_name String indicating the ID of the reference sequence used in the experiment. Default is 'BC10v0',
 #' @param ref_seq String indicating the reference sequence used in the experimenti. Default is 'TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC',
@@ -200,7 +205,7 @@ initialize_EvoTraceR = function(output_dir,
 #' together with the previous one, are used to construct the substitution matrix used by the function \code{pairwiseAlignment}.
 #' @param pwa_type (Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 #' For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation} 
-#' 
+#' @param cleaning_window (Optional). Deafult is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).
 #'
 #' @return  The EvoTraceR object passed as a parameter with the following new fields:
 #' \itemize{
@@ -215,10 +220,10 @@ initialize_EvoTraceR = function(output_dir,
 #' 
 #' \item \code{asv_df_percentages}: dataframe with six columns. \code{asv_names} is the name of the ASV.
 #' \code{sample} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
-#' \code{count}: total counts for a specific ASV in a specific sample;
-#' \code{perc_in_sample}: counts normalized to the total counts in the corresponding sample;
-#' \code{perc_asv}: counts normalized to the total counts for the corresponding ASV;
-#' \code{perc_fold_to_max}: counts normalized to the maximum counts observed for the corresponding ASV in a sample.
+#' \code{count}: total counts per million for a specific ASV in a specific sample;
+#' \code{perc_in_sample}: CPM normalized to the total counts in the corresponding sample;
+#' \code{perc_asv}: CPM normalized to the total counts for the corresponding ASV;
+#' \code{perc_fold_to_max}: CPM normalized to the maximum counts observed for the corresponding ASV in a sample.
 #' 
 #' \item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
 #' \item \code{sample_totalcounts}: for each sample, total counts and number of distinct ASVs detected.
@@ -263,6 +268,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 #' @import foreach
+#' @importFrom purrr map
 asv_analysis = function(EvoTraceR_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
@@ -365,9 +371,7 @@ asv_analysis = function(EvoTraceR_object,
     tibble(seqtab_df) %>% mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>% arrange(-asv_total_freq) %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
-  seqtab_df_clean_nmbc <- seqtab_df_clean_asv %>% filter(asv_names == barcodes_info$ref_name)
-  #[stringr::str_detect(string = seqtab_df_clean_asv$seq_names, pattern = "NMBC"),]
-  
+  seqtab_df_clean_nmbc <- seqtab_df_clean_asv %>% filter(asv_names == barcodes_info$ref_name)  
   
   # skip NMBC
   seqtab_df_clean_asv <-
@@ -413,8 +417,6 @@ asv_analysis = function(EvoTraceR_object,
   
   norm_seqtab_df_clean_asv = seqtab_df_clean_asv
   EvoTraceR_object$clean_asv_dataframe_nonnorm = seqtab_df_clean_asv
-  # norm_seqtab_df_clean_asv[,sample_columns] = sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-  #                                                   EvoTraceR_object$preprocessing$track[sample_columns,'input'], '/') 
   
   norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
                                                            EvoTraceR_object$preprocessing$track[sample_columns,'input'], '/') * 1e6, as.integer)
@@ -441,17 +443,17 @@ asv_analysis = function(EvoTraceR_object,
 }
 
 #' This function considers the pairwise alignment output performed with \code{asv_analysis} and computes the overall frequency in each 
-#' sample of each mutation in each barcode position.
+#' sample of each mutation in every barcode position.
 #' 
 #' @title analyse_mutations
 #' 
 #' @examples 
-#' data(revo_analyzed)
-#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
-#' revo_analyzed$output_directory = output_dir
-#' revo_msa = analyse_mutations(revo_analyzed)
+#' \dontrun{
+#' data(EvoTraceR_analyzed)
+#' EvoTraceR_object = analyse_mutations(EvoTraceR_object)
+#' }
 #' 
-#' @param EvoTraceR_object EvoTraceR object on which we want to perform msa.
+#' @param EvoTraceR_object EvoTraceR object.
 #' 
 #' @return EvoTraceR object with the field \code{alignment}, updated with 
 #' \code{mutations_df}: dataframe containing for each position in each ASV the corresponding mutation state and the frequency of that mutation in all sequences.
@@ -481,18 +483,15 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
   
 }
 
-#' This function reconstructs the phylogenetic tree using the Cassiopeia's suite. 
+#' This function reconstructs the phylogenetic tree using the \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia} suite. 
 #' It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
-#' based on the most common mutation at each iteration.
+#' based on the most common mutation at each iteration. Note that this requires installing cassiopeia in the anaconda/virtual enviroment used by reticulate.
 #' 
 #' @title infer_phylogeny
 #' 
 #' @examples 
 #' \dontrun{
-#' data(revo_msa)
-#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
-#' revo_msa$output_directory = output_dir
-#' revo_phyl = infer_phylogeny(revo_msa)
+#' EvoTraceR_object = infer_phylogeny(EvoTraceR_object)
 #' }
 #' 
 #' @param EvoTraceR_object (Required)
@@ -513,7 +512,6 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 #' @export infer_phylogeny
 #' @import reticulate
 #' @importFrom scales comma
-# @importFrom TreeTools RootTree
 #' @importFrom ggtree fortify
 # @importFrom dynamicTreeCut cutreeDynamic
 # @importFrom ape cophenetic.phylo bind.tree drop.tip
@@ -570,10 +568,7 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
 #' 
 #' @examples
 #' \dontrun{
-#' data(revo_phyl)
-#' output_dir = system.file("extdata", "output", package = "EvoTraceR")
-#' revo_phyl$output_directory = output_dir
-#' summary_plot = create_df_summary(revo_phyl)
+#' EvoTraceR_object = create_df_summary(EvoTraceR_object)
 #' }
 #' 
 #' @param EvoTraceR_object (Required).

@@ -59,74 +59,35 @@ together with the previous one, are used to construct the substitution matrix us
 
 \item{pwa_type}{(Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation}}
-}
-\value{
-The EvoTraceR object passed as a parameter with the following new fields:
-\itemize{
-\item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
-sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
-aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
-to their total counts. 
-\item \code{reference}: Info about the reference sequence used for the current analysis.
 
- \item \code{statistics}: another list with the following sub-fields: 
-\itemize{
-
-\item \code{asv_df_percentages}: dataframe with six columns. \code{asv_names} is the name of the ASV.
-\code{sample} is the sample identifier (e.g. ID of an organ or, in case of longitudinal data, of the timepoint);
-\code{count}: total counts for a specific ASV in a specific sample;
-\code{perc_in_sample}: counts normalized to the total counts in the corresponding sample;
-\code{perc_asv}: counts normalized to the total counts for the corresponding ASV;
-\code{perc_fold_to_max}: counts normalized to the maximum counts observed for the corresponding ASV in a sample.
-
-\item \code{asv_totalCounts}: for each ASV, total counts and number of samples in which it was detected.
-\item \code{sample_totalcounts}: for each sample, total counts and number of distinct ASVs detected.
-\item \code{asv_diversity_persample}: measures of clonal richness and measures of heterogeneity computed for each sample based on the ASVs detected.
-\item \code{asv_persample_frequency}: counts for each ASV in each sample.
-\item \code{asv_persample_detection}: binary matrix indicating whether a sequence has been detected in the corresponding sample.
-\item \code{asv_toBarcode_similarity}: edit distance, percentage similarity and alignment score of each ASV compared to the original barcode.
-\item \code{all_asv_statistics}: all the statistics computed on each ASV grouped together in the same tibble.
-}
-\item \code{alignment}, another list with the following fields:
-\itemize{
-\item \code{Binary_mutation_matrix}: binary matrix encoding the presence/absence of a mutation in an ASV.
-\item \code{asv_barcode_alignment}: tibble where each line corresponds to a position in a ASV, and the columns encode the following information:
-\itemize{
-\item asv_names: name of the ASV
-\item sample: sample identifier
-\item position_bc260: position of the alteration in the original barcode. Note that insertions
-are assigned to the position that coincides with their beginning.
-\item alt: type of alteration. wt = Wild Type (i.e. non-mutated position). sub = substitution. del = deletion. ins = insertion.
-\item{ref_asv}, \item{read_asv}: respectively, the reference nucleotide observed in the original barcode and the one observed on the sequence.
-}
-\item \code{mutations_coordinates}: dataframe containing a list of all mutations, with their start and end position.
-\item \code{ASV_alterations_width}: dataframe containing the number of nucleotides affected by each type of mutation in each ASV.
-}
-}
-This function saves the figure \code{asv_filtering_freq.pdf}, which is a barplot indicating the change in the number of sequences 
-during all the processing steps.
+\item{cleaning_window}{(Optional). Deafult is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).}
 }
 \description{
 This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
-First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
+First, it pools together those sequences characterized by a Hamming distance equals or lower than 2, summing their counts. To perform this step, EvoTraceR uses the
+sequence clusering agorithm impemented in the python package \href{https://umi-tools.readthedocs.io/en/latest/QUICK_START.html}{UMI-tools}
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
-in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
+in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis.
 (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-Next it pools together those sequences that differ by one another only by substitutions, summing their counts, and after this it removes
-those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}
-Finally it performs filtering of the sequences based on their flanking sequances.
+After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
+it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
+it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.
+Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
+those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
+Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
+dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
 }
 \details{
-Then, it computes different statistics for the final ASVS, storing:
+Then, using the CPM it computes different statistics for the final ASVS, storing:
  the relative frequency of all ASVs in each sample. 
  the relative frequency of each ASV in the samples.
- the counts for each ASV normalized to the counts of the sample with maximum frequency
+ the counts for each ASV normalized to the counts of the sample with maximum frequency.
  the frequency of the different ASVs in each sample.
 }
 \examples{
-data(revo_initialized)
-output_dir = system.file("extdata", "output", package = "EvoTraceR")
-revo_initialized$output_directory = output_dir
-revo_analyzed = asv_analysis(EvoTraceR_object = revo_initialized, )
+\dontrun{
+data(EvoTraceR_object)
+EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
+}
 
 }

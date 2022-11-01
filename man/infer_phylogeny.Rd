@@ -14,27 +14,14 @@ Can be one of c('del', 'del_ins'). The first
 corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
 and insertions are considered.}
 }
-\value{
-EvoTraceR object with a new field called phylogeny, that stores:
- \itemize{
- \item \code{mutations_in_phylogeny}: string indicating which mutations were used for phylogeny reconstruction.
- \item \code{tree}: dataframe storing the tree returned b y Cassiopeia. This dataframe has a column "group" that indicates
- the clonal population to which the node belongs to (a clonal population is a cluster returned by Cassiopeia).
- \item \code{tree_phylo}: \code{phylo} object containing the tree returned by Cassiopeia.
- \item \code{tree_uncollapsed}: \code{phylo} object containing the tree returned by Cassiopeia prior to the collapsing of mutationless edges.
- }
-}
 \description{
-This function reconstructs the phylogenetic tree using the Cassiopeia's suite. 
+This function reconstructs the phylogenetic tree using the \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia} suite. 
 It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
-based on the most common mutation at each iteration.
+based on the most common mutation at each iteration. Note that this requires installing cassiopeia in the anaconda/virtual enviroment used by reticulate.
 }
 \examples{
 \dontrun{
-data(revo_msa)
-output_dir = system.file("extdata", "output", package = "EvoTraceR")
-revo_msa$output_directory = output_dir
-revo_phyl = infer_phylogeny(revo_msa)
+EvoTraceR_object = infer_phylogeny(EvoTraceR_object)
 }
 
 }

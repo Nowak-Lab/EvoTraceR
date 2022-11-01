@@ -6,13 +6,15 @@ output: html_document
 ## Setup the environement
 
 *EvoTraceR* is the computational tool inside the project EboBC. After performing EvoBC experiments in the lab, this tool can be exploited to perform the analysis of Amplicon Sequence Variants. 
-It uses the algorithm dada2 to identify all ASVs, then performs multi-sequence alignment to identify mutations and finally performs the phylogeny reconstruction.
 In order to perform the analysis, there are multiple functions that perform the different steps of the analysis pipeline. 
 The first step initializes the EvoTraceR object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis. 
 
 
 ```{r}
 library("EvoTraceR")
+# Run in case reticulate was setup manually:
+# library(reticulate)
+# reticulate::use_condaenv('EvoTraceR_enviroment')
 ```
 
 The initialization function computes the set of Amplicon Sequence Variants.
@@ -26,6 +28,8 @@ In order for EvoTraceR to associate each fastq pair to its sample users have two
 one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case EvoTraceR will consider as sample ID the second field separated by the underscore. 
 The second option is to provide a list that associates each filename (without the suffix _R1 and _R2) to the corresponding sample. For example, if we have forward and reverse files named file1_R1.fastq and file1_R2.fastq that correspond to organ PRL (code for Prostate Left), than the parameter should be set as: map_file_sample = c("file1" = "PRL")). 
 
+Users can skip the initialization step for this vignette, as the output has been pre-computed and can be loaded by calling data(EvoTraceR_initialized). 
+
 ```{r}
 input_dir = system.file("extdata", "input", package = "EvoTraceR")
 output_dir = system.file("extdata", "output", package = "EvoTraceR")
@@ -38,7 +42,6 @@ EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir,
                                         output_dir = output_dir, 
                                         trimmomatic_path = '~/Trimmomatic 0.xx/trimmomatic-0.xx.jar',
                                         flash_path = '~/*/FLASH-x.x.x/flash')
-names(EvoTraceR_object)
 ```
 
 During the above computation, all unique sequences from each sample have been identify. In the next steps these sequences will be cleaned.
@@ -50,14 +53,20 @@ First, it pools together those sequences characterized by a Hamming distance equ
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
 in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
 (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
-Next it pools together those sequences that differ by one another only by substitutions, summing their counts, and after this it removes
-those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}
-Finally it performs filtering of the sequences based on their flanking sequances.
-Then, it computes different statistics for the final ASVS, storing:
+After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
+it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
+it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.
+Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
+those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
+Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
+dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+Then, using the CPM it computes different statistics for the final ASVS, storing:
 the relative frequency of all ASVs in each sample. 
 the relative frequency of each ASV in the samples.
-the counts for each ASV normalized to the counts of the sample with maximum frequency
+the counts for each ASV normalized to the counts of the sample with maximum frequency.
 the frequency of the different ASVs in each sample.
+
+Users can skip this step for this vignette, as the output has been pre-computed and can be loaded by calling data(EvoTraceR_analyzed). 
 
 ```{r}
 EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
@@ -73,14 +82,13 @@ aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) accordi
 to their total counts. 
 reference: Info about the reference sequence used for the current analysis. 
 statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity. 
-alignemnt: is a new list containing the result of the alignment step. It contains two fields:  msa_stringset is the output of multiple sequence alignemnt performed by muscle; asv_barcode_alignment is a tibble
-where each line corresponds to a nucleotide in each ASV with the corresponding sample in which it was found, and it indicates whether the nucletide is mutated and the type of alteration.
+alignment: is a new list containing the result of the alignment step. 
 
 ```{r}
 EvoTraceR_object = analyse_mutations(EvoTraceR_object)
 ```
 
-After alignment, EvoTraceR identifies, for each position in the original reference, the number of alterations found on the different ASVs. The final result is shown in figure gghist_del_sub_ins_perc.pdf which indicates for each position the frequency of the different mutations in each sample.
+After alignment, EvoTraceR identifies, for each position in the original reference, the number of alterations found on the different ASVs. 
 This computation stores the result in a new field mutations_df. 
 
 ```{r eval=FALSE}
@@ -95,3 +103,7 @@ EvoTraceR_object = create_df_summary(EvoTraceR_object)
 ```
 
 Finally, this function combines in one dataframe all the data that have been computed for the phylogenetic analysis.
+
+```{r eval=FALSE}
+EvoTraceR_object = create_df_summary(EvoTraceR_object)
+```

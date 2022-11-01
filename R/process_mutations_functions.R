@@ -40,10 +40,6 @@ mutation_coordinate_matrix = function(tidy_alignment, barcode_name) {
   
   mut_df$mut_id = paste0(mut_df$mutation_type, "_", mut_df$start, "_", mut_df$n_nucleotides, "nts")
   
-  # assign BC10 variant (for plotting purposes)
-  # mut_df <- tibble::tibble(mut_df) %>%
-  #   dplyr::add_row(seq_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
-  
   return(mut_df)
 }
 
@@ -98,70 +94,6 @@ tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
     select(-c(tmp_col))
   
   return(tidy_alignment_full_new)
-  # #valid_positions = mapply(paste, coordinates$seq_names, coordinates$positions, coordinates$mutation_type)
-  # # In case of cleaned deletions, we need to re-create a tibble where each row corresponds
-  # # to a position in each ASV. This tibble already exists for non-cleaned mutations
-  # # and now we want to replace its column "alt" with the status of each nucleotide 
-  # # in case we consider cleaned deletions and/or insertions.
-  # # Insertions and substitutions are characterized by only one position, so in order to create the tidy 
-  # # alignment tibble we start by removing them from the cleaned dataframe, and then we re-insert them. 
-  # 
-  # # cleaned_sub = filter(cleaned_df, mutation_type =='sub')
-  # cleaned_ins = filter(cleaned_df, mutation_type =='i')
-  # cleaned_del = filter(cleaned_df, mutation_type == 'd')
-  # # Non dovrebbe servire, io assegno la mutazione smooothed prima in base a se trovo una
-  # # delezione cleaned. Poi, a tutti gli altri nucleotidi, se compaiono tra inserzioni o
-  # # sotituzioni cleaned allora gli assegno il tipo
-  # #del_sub_ins_df = filter(del_sub_ins_df, alt == 'del') 
-  # 
-  # to_plot_df = list()
-  # 
-  # # prova = tidy_alignment_full %>% group_by(seq_names) %>% 
-  # #   mutate(alt = ifelse(any((dplyr::filter(cleaned_del, seq_names == seq_names) %>% pull(start)) <= position_bc260 &
-  # #                             (dplyr::filter(cleaned_del, seq_names == seq_names) %>% pull(end)) >= position_bc260) &
-  # #                         alt != 'i',
-  # #         "d", 'w')) %>%
-  # #       mutate(alt = 
-  # #                ifelse(alt == 'i' & 
-  # #                         position_bc260 %in% 
-  # #                         (cleaned_ins %>% filter(seq_names == asv) %>% pull(start)),
-  # #                       'i', alt
-  # #                ))
-  # 
-  # to_plot_df = foreach::foreach(asv = unique(as.character(cleaned_df$seq_names)), .combine=rbind) %do% {
-  #   #for (asv in unique(as.character(cleaned_df$seq_names))) {
-  #   tmp_cleaned_del = dplyr::filter(cleaned_del, seq_names == asv)
-  #   # Remove insertinons from tidy alignment, as they are a duplicated position
-  #   # of a wildtype. We remove them and then add to the tidy dataframe the cleaned insertions positions.
-  #   tmp_tidy = dplyr::filter(tidy_alignment_full, seq_names == asv & alt != 'i')
-  #   tmp_tidy_ins = dplyr::filter(tidy_alignment_full, seq_names == asv & alt == 'i')
-  #   tmp_cleaned_ins = dplyr::filter(cleaned_ins, seq_names == asv) 
-  #   #tmp_cleaned_sub = dplyr::filter(cleaned_sub, seq_names == asv) 
-  #   
-  #   tmp_tidy$alt <- ifelse(sapply(tmp_tidy$position_bc260, function(p) 
-  #     any(tmp_cleaned_del$start <= p & tmp_cleaned_del$end >= p)),
-  #     "d", 'w')
-  #   
-  #   # tmp_tidy = ungroup(tmp_tidy) %>% 
-  #   #   mutate(alt = ifelse(position_bc260 %in% tmp_cleaned_sub$start, 'sub', alt))
-  #   
-  #   tmp_tidy =tmp_tidy %>%  bind_rows(tmp_tidy_ins %>% filter(position_bc260 %in% tmp_cleaned_ins$start))
-  #   
-  #   # tmp_tidy = ungroup(tmp_tidy) %>% 
-  #   #   mutate(alt = ifelse(position_bc260 %in% tmp_smoothed_ins$start, 'ins', 
-  #   #                                ifelse(position_bc260 %in% tmp_smoothed_sub$start, 'sub', alt)))
-  #   
-  #   #to_plot_df[[asv]] = 
-  #   tmp_tidy
-  # }
-  # # Add back barcode
-  # #for (asv in setdiff(tidy_alignment_full$seq_names, names(to_plot_df))) {
-  # tmp_tidy = dplyr::filter(tidy_alignment_full, seq_names == barcode)
-  # 
-  # #to_plot_df[[barcode]] = tmp_tidy
-  # #}
-  # to_plot_df = dplyr::bind_rows(to_plot_df, tmp_tidy)
-  # return(to_plot_df)
 }
 
 

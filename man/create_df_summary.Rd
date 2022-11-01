@@ -18,10 +18,7 @@ This function combines in one dataframe all the data that have been computed for
 }
 \examples{
 \dontrun{
-data(revo_phyl)
-output_dir = system.file("extdata", "output", package = "EvoTraceR")
-revo_phyl$output_directory = output_dir
-summary_plot = create_df_summary(revo_phyl)
+EvoTraceR_object = create_df_summary(EvoTraceR_object)
 }
 
 }

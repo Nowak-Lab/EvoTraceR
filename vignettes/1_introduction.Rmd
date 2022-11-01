@@ -31,27 +31,39 @@ if (!require("Biostrings")) BiocManager::install("Biostrings")
 if (!require("benthos")) install.packages("benthos")
 if (!require("lemon")) install.packages("lemon")
 if (!require("scales")) install.packages("scales")
-# if (!require("ggmsa")) devtools::install_github("YuLab-SMU/ggmsa")
 if (!require("utils")) install.packages("utils")
 if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
 if (!require("ggtree")) BiocManager::install("ggtree")
-if (!require("TreeTools")) install.packages('TreeTools')
-if (!require('ade4')) install.packages('ade4')
 if (!require('foreach')) install.packages('foreach')
 if (!require('reticulate')) install.packages('reticulate')
 
-# install devtools library and EvoTraceR
-
+Users should also have a virtual enviroment (created for example thorugh anaconda), where the python dependencies are installed.
+In case users want this to be taken care of automatically, they can unload reticulate (in case it was already loaded) prior to installing EvoTraceR. Otherwise, they can setup an anaconda enviroment where all dependencies ahve been manually installed.
+The dependencies are the following:
+Numpy version 1.21.5
+Numba
+Cassiopeia-lineage
+umi_tools
+```{r eval=FALSE}
+# Run only if reticulate has been manually setup:
+# library(reticulate)
+# reticulate::use_condaenv('EvoTraceR_enviroment')
+# Install EvoTraceR
 devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master")
 ```
 
+
 In order to handle fastq files with forward and reverse reads, EvoTraceR uses trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge
 forward and reverse reads. In order to use such packages, users should install [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) and [flash]{https://ccb.jhu.edu/software/FLASH/}.
-
 ```{r eval=FALSE}
 # load EvoTraceR library
 library("EvoTraceR")
+```
+
+Finally, in case reticulate is setpup automatically through the install process, users need to call the following function to finish setup and then restart R. 
+```{r eval=FALSE}
+setup_reticulate()
 ```
 
 ## Debug

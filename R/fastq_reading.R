@@ -5,11 +5,10 @@ alignment_pipeline = function(fnFs,
                               map_file_sample,
                               sample.names,
                               trimmomatic_path,
-                              flash_path,
-                              ...) {
+                              flash_path
+                              ) {
   fnFs <- gsub(" ", "\ ", fnFs)
   fnRs <- gsub(" ", "\ ", fnRs)
-  dots = list(...)
   # Make directories for the filtered fastqs and (optionally) for figures
   if (!dir.exists(output_dir)) dir.create(output_dir, recursive = T)
 
@@ -22,12 +21,6 @@ alignment_pipeline = function(fnFs,
   if (!dir.exists(trimmed_dir)) dir.create(trimmed_dir, recursive = T)
   if (!dir.exists(flash_input_dir)) dir.create(flash_input_dir, recursive = T)
   if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
-  
-  # output_dir = file.path(output_dir, "preprocessing_figures")
-  # if (!dir.exists(figure_dir)) dir.create(figure_dir, recursive = T)
-  
-  # output_dir_files = file.path(output_dir, "preprocessing_files")
-  
   
   # filter and trim
   cli::cli_alert_info('Filtering and trimming')
