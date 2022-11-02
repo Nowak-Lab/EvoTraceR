@@ -29,8 +29,7 @@
 ## http://bioconductor.org/developers/how-to/git/
 on:
   push:
-    branches:
-      - development
+    branches: [main, master]
 
 name: check-development
 
@@ -138,11 +137,11 @@ jobs:
           sudo apt-get install libfribidi-dev
           sudo apt-get install texlive-fonts-extra
           sudo apt-get install -y libproj-dev
-      - uses: r-lib/actions/setup-tinytex@master
+      - uses: r-lib/actions/setup-tinytex@v2
 
-      - uses: r-lib/actions/setup-r@master
+      - uses: r-lib/actions/setup-r@v2
       
-      - uses: r-lib/actions/setup-pandoc@master
+      - uses: r-lib/actions/setup-pandoc@v2
 
       - name: Install latex packages
         run: |
@@ -361,8 +360,8 @@ jobs:
       matrix:
         config:
           ## Comment/Un-comment in case you also want to run other versions
-          - {os: windows-latest}
-          - {os: macOS-latest}
+          - {os: windows-latest, r: 'release'}
+          - {os: macOS-latest, r: 'release'}
           # - {os: ubuntu-16.04, rspm: "https://packagemanager.rstudio.com/cran/__linux__/xenial/latest"}
 
     env:
@@ -375,7 +374,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup R from r-lib
-        uses: r-lib/actions/setup-r@master
+        uses: r-lib/actions/setup-r@v2
         with:
           r-version: 4.1.0 #${{ needs.R-CMD-check-bioc.outputs.rversion }}
 
@@ -383,7 +382,7 @@ jobs:
         uses: r-lib/actions/setup-pandoc@master
 
       - name: Setup tinytex from r-lib
-        uses: r-lib/actions/setup-tinytex@master
+        uses: r-lib/actions/setup-tinytex@v2
 
       - name: Install latex packages
         run: |
