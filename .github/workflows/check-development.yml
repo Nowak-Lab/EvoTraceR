@@ -29,7 +29,8 @@
 ## http://bioconductor.org/developers/how-to/git/
 on:
   push:
-    branches: [main, master]
+    branches: 
+      - development
 
 name: check-development
 
