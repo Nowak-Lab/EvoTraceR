@@ -1,14 +1,4 @@
-#' This function plots the number of sequences left during all the preprocessing steps.
-#' 
-#' @title seq_filtering_plot
-#' 
-#' @param EvoTraceR_object (Required).
-#' @param figure_dir (Optional). Directory where the output will be stored.
-#' 
-#' @return NULL. This function stores in the phylogeny output directory a pdf file for each cluster.
-#' 
-#' @export seq_filtering_plot
-#' 
+
 seq_filtering_plot = function(EvoTraceR_object, figure_dir = EvoTraceR_object$output_directory) {
   figure_dir = paste0(figure_dir, '/asv_analysis/')
   if (!dir.exists(figure_dir)) {dir.create(figure_dir)}
