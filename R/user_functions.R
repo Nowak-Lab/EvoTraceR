@@ -389,11 +389,11 @@ asv_analysis = function(EvoTraceR_object,
     arrange(-asv_total_freq) #%>%
 
   # Recompute tidy alignment matrix, mutations coordinates and binary mutation matrix.
-  tidy_alignment_clean = tidy_alignment %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>% 
+  tidy_alignment_clean = tidy_alignment %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>% 
     select(-c(seq_names))
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix  %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix  %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
     select(-c(seq_names))
-  binary_mutation_matrix = binary_mutation_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names)) %>%
+  binary_mutation_matrix = binary_mutation_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
     tibble::column_to_rownames("asv_names") %>% select(-c(seq_names))
   
   bc_mut = as.list(rep(0, ncol(binary_mutation_matrix)))

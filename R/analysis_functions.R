@@ -178,7 +178,7 @@ asv_collapsing = function(seqtab,
   # Join the binary matrix with the sequences dataframe, in order to have counts
   mutations = unique(coord_cleaned$mut_id)
   binary_matrix$seq_names = rownames(binary_matrix) 
-  seqtab_collapsed = binary_matrix %>% dplyr::left_join(seqtab) %>% filter(!is.na(totalCounts))
+  seqtab_collapsed = binary_matrix %>% dplyr::left_join(seqtab, by = 'seq_names') %>% filter(!is.na(totalCounts))
   # Collapse sequences that have the same cleaned mutations
   seqtab_collapsed = seqtab_collapsed %>% group_by(across(all_of(mutations))) %>% 
     summarize(consensus_seq = seq[which.max(totalCounts)], #compute_consensus_sequence(seq, sum_counts), 
