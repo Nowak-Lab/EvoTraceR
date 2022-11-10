@@ -10,7 +10,7 @@ In order to perform the analysis, there are multiple functions that perform the 
 The first step initializes the EvoTraceR object, which is a list that gets populated step-by-step with multiple fields containing the result of the analysis. 
 
 
-```{r}
+```{r eval=FALSE}
 library("EvoTraceR")
 # Run in case reticulate was setup manually:
 # library(reticulate)
@@ -30,14 +30,14 @@ The second option is to provide a list that associates each filename (without th
 
 Users can skip the initialization step for this vignette, as the output has been pre-computed and can be loaded by calling data(EvoTraceR_initialized). 
 
-```{r}
+```{r eval=FALSE}
 input_dir = system.file("extdata", "input", package = "EvoTraceR")
 output_dir = system.file("extdata", "output", package = "EvoTraceR")
 ```
 
 We can now perform the initialization. 
 
-```{r}
+```{r eval=FALSE}
 EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir, 
                                         output_dir = output_dir, 
                                         trimmomatic_path = '~/Trimmomatic 0.xx/trimmomatic-0.xx.jar',
@@ -68,7 +68,7 @@ the frequency of the different ASVs in each sample.
 
 Users can skip this step for this vignette, as the output has been pre-computed and can be loaded by calling data(EvoTraceR_analyzed). 
 
-```{r}
+```{r eval=FALSE}
 EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
 names(EvoTraceR_object)
 ```
@@ -84,7 +84,7 @@ reference: Info about the reference sequence used for the current analysis.
 statistics: is a new list that contains all the results of the computation (see the manual for a detailed explanation). Among its fileds there are asv_df_percentages, which contains the normalized counts, and asv_diversity_perSample which contains the measures of clonal heterpgeneity. 
 alignment: is a new list containing the result of the alignment step. 
 
-```{r}
+```{r eval=FALSE}
 EvoTraceR_object = analyse_mutations(EvoTraceR_object)
 ```
 

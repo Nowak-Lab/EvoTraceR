@@ -20,7 +20,6 @@ Imports:
     cli,
     Biostrings,
     benthos,
-    lemon,
     scales,
     utils,
     tidyr,

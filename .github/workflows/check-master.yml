@@ -164,7 +164,7 @@ jobs:
           install.packages("cli")
           BiocManager::install("Biostrings")
           install.packages("benthos")
-          install.packages("lemon")
+          # install.packages("lemon")
           install.packages("scales")
           install.packages("proj4")
           install.packages("ggalt")

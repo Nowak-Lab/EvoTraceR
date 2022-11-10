@@ -256,7 +256,7 @@ initialize_EvoTraceR = function(output_dir,
 #'
 #' @importFrom Biostrings pairwiseAlignment pid nedit score nucleotideSubstitutionMatrix DNAStringSet
 #' @importFrom benthos total_abundance species_richness margalef rygg simpson hpie hill1 hill2 shannon
-#' @importFrom lemon coord_capped_cart facet_rep_grid
+# @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom scales comma
 #' @importFrom utils write.csv
 #' @importFrom stringr str_detect
@@ -466,7 +466,7 @@ asv_analysis = function(EvoTraceR_object,
 # @importFrom muscle muscle
 #' @importFrom Biostrings DNAStringSet writeXStringSet DNAMultipleAlignment
 # @importFrom ggmsa tidy_msa 
-#' @importFrom lemon coord_capped_cart facet_rep_grid
+# @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom utils write.csv
 #' @importFrom forcats fct_relevel
 # @importFrom grDevices cairo_pdf
@@ -517,7 +517,7 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 # @importFrom ape cophenetic.phylo bind.tree drop.tip
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
-#' @import lemon
+# @import lemon
 infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   
   if (! (mutations_use %in% c('del', 'del_ins'))) {

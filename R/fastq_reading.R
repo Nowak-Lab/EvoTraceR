@@ -100,7 +100,7 @@ alignment_pipeline = function(fnFs,
     xlab("Sequence Length") +
     ylab("Sequence count") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
-    lemon::coord_capped_cart(left="both", bottom="both") +
+    #lemon::coord_capped_cart(left="both", bottom="both") +
     geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
     barplot_nowaklab_theme() 
   
