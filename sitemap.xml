@@ -22,7 +22,16 @@
     <loc>/index.html</loc>
   </url>
   <url>
+    <loc>/reference/EvoTraceR_object.html</loc>
+  </url>
+  <url>
+    <loc>/reference/analyse_mutations.html</loc>
+  </url>
+  <url>
     <loc>/reference/asv_analysis.html</loc>
+  </url>
+  <url>
+    <loc>/reference/create_df_summary.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
@@ -31,24 +40,9 @@
     <loc>/reference/infer_phylogeny.html</loc>
   </url>
   <url>
-    <loc>/reference/initialize_REvoBC.html</loc>
+    <loc>/reference/initialize_EvoTraceR.html</loc>
   </url>
   <url>
-    <loc>/reference/perform_msa.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot_summary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/revo_analyzed.html</loc>
-  </url>
-  <url>
-    <loc>/reference/revo_initialized.html</loc>
-  </url>
-  <url>
-    <loc>/reference/revo_msa.html</loc>
-  </url>
-  <url>
-    <loc>/reference/revo_phyl.html</loc>
+    <loc>/reference/setup_reticulate.html</loc>
   </url>
 </urlset>
