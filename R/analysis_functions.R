@@ -111,26 +111,37 @@ asv_collapsing = function(seqtab,
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   
-  mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
+  total_seq <- length(seqtab$seq_names)
+  batch_size <- if(total_seq < 200) 1 else 100
+  batched_dnastringset <- c()
+
+  for(i in seq(1, total_seq, batch_size)) {
+    batch_start <- i 
+    batch_end <- if(i + batch_size - 1 > total_seq) total_seq else i + batch_size - 1
+    batched_dnastringset <- c(batched_dnastringset, dnastringset[batch_start:batch_end])
+  }
+
+  cli::cli_alert_info('Computing pairwise alignment')
+  result <- mclapply(batched_dnastringset, function(dna_j) {
+    mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
                                         pattern = dnastringset, 
                                         substitutionMatrix = mx_crispr,
                                         gapOpening = pwa_gapOpening,
                                         gapExtension = pwa_gapExtension,
                                         type = 'global')
-  cli::cli_alert_info('Computing pattern alignment')
-  aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
-  cli::cli_alert_info('Computing subject alignment')
-  aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
+    aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
+    aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
+    out_row = foreach::foreach(i = seq(1, length(dna_j)), .combine=rbind) %do% {
   
-  
-  cli::cli_alert_info('Computing tidy alignment for cleaning')
-  alignment_tidy_ref_alt <- foreach::foreach(i = seq(1, length(mpwa)), .combine=rbind) %do% {
-  
-    data.frame("seq_names" = rownames(aligned_sequences)[i], #names(postaligned_seqs)[1], #names(dnastringset)[i],#
-               "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], #strsplit(aligned_sequence, split='')[[1]],#
-               "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]],#strsplit(aligned_reference, split='')[[1]], #
-               "position" = seq(1, nchar(aligned_reference$x[i])))#seq(1, nchar(aligned_reference))) #
-  }
+      data.frame("seq_names" = rownames(aligned_sequences)[i], 
+                 "read_asv" = strsplit(aligned_sequences$x[i], split='')[[1]], 
+                 "ref_asv" = strsplit(aligned_reference$x[i], split='')[[1]],
+                 "position" = seq(1, nchar(aligned_reference$x[i])))
+    }
+  })
+
+  alignment_tidy_ref_alt = bind_rows(result)
+
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
   
   

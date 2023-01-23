@@ -36,8 +36,9 @@ if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
 if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require('foreach')) install.packages('foreach')
+if (!require('parallel')) install.packages('parallel')
 if (!require('reticulate')) install.packages('reticulate')
-
+```
 Users should also have a virtual enviroment (created for example thorugh anaconda), where the python dependencies are installed.
 In case users want this to be taken care of automatically, they can unload reticulate (in case it was already loaded) prior to installing EvoTraceR. Otherwise, they can setup an anaconda enviroment where all dependencies ahve been manually installed.
 The dependencies are the following:
@@ -50,7 +51,7 @@ umi_tools
 # library(reticulate)
 # reticulate::use_condaenv('EvoTraceR_enviroment')
 # Install EvoTraceR
-devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master")
+devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master") #, auth_token="<github-generated-auth-token>")
 ```
 
 
@@ -61,7 +62,7 @@ forward and reverse reads. In order to use such packages, users should install [
 library("EvoTraceR")
 ```
 
-Finally, in case reticulate is setpup automatically through the install process, users need to call the following function to finish setup and then restart R. 
+Finally, in case reticulate is setup automatically through the install process, users need to call the following function to finish setup and then restart R. 
 ```{r eval=FALSE}
 setup_reticulate()
 ```
