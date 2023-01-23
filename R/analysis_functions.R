@@ -122,6 +122,7 @@ asv_collapsing = function(seqtab,
   }
 
   cli::cli_alert_info('Computing pairwise alignment')
+  options(mc.cores=detectCores()-1)
   result <- mclapply(batched_dnastringset, function(dna_j) {
     mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
                                         pattern = dnastringset, 
@@ -141,6 +142,8 @@ asv_collapsing = function(seqtab,
   })
 
   alignment_tidy_ref_alt = bind_rows(result)
+  
+  cli::cli_alert_info('Finish pairwise alignment')
 
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
   
