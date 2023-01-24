@@ -66,13 +66,9 @@ the relative frequency of each ASV in the samples.
 the counts for each ASV normalized to the counts of the sample with maximum frequency.
 the frequency of the different ASVs in each sample.
 
-Update mc.cores options to set specific number of cores to use for parallelizing the pairwise sequence 
-alignment. The default recommended number of cores is one less than the total number of cores on the system. 
-
 Users can skip this step for this vignette, as the output has been pre-computed and can be loaded by calling data(EvoTraceR_analyzed). 
 
 ```{r eval=FALSE}
-options(mc.cores=detectCores()-1)
 EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
 names(EvoTraceR_object)
 ```
