@@ -285,7 +285,8 @@ asv_analysis = function(EvoTraceR_object,
                         pwa_match = 15,
                         pwa_mismatch = -4,
                         pwa_type = 'global',
-                        cleaning_window = c(3,3)
+                        cleaning_window = c(3,3),
+                        batch_size = 100
 ) {
   
   barcodes_info = list(
@@ -327,7 +328,8 @@ asv_analysis = function(EvoTraceR_object,
                                    sample_columns,
                                    barcodes_info$ref_name,
                                    cut_sites = barcodes_info$ref_cut_sites,
-                                   cleaning_window)
+                                   cleaning_window,
+                                   batch_size)
   
   seqtab_df = collapse_result$seqtab_df
   tidy_alignment = collapse_result$tidy_alignment

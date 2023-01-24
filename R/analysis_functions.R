@@ -104,7 +104,8 @@ asv_collapsing = function(seqtab,
                           pwa_gapExtension, sample.names,
                           barcode_name,
                           cut_sites,
-                          cleaning_window = c(3,3)) {
+                          cleaning_window = c(3,3),
+                          batch_size) {
   
   dnastringset <- Biostrings::DNAStringSet(seqtab$seq) 
   names(dnastringset) <- seqtab$seq_names
@@ -112,7 +113,7 @@ asv_collapsing = function(seqtab,
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
 
   total_seq <- length(seqtab$seq_names)
-  batch_size <- if(total_seq < 200) 1 else 100
+  batch_size <- if(total_seq < batch_size * 2) 1 else batch_size
   batched_dnastringset <- c()
 
   for(i in seq(1, total_seq, batch_size)) {
