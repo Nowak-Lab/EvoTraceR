@@ -34,7 +34,8 @@ Imports:
     ape,
     foreach,
     purrr,
-    reticulate
+    reticulate,
+    parallel
 Suggests:
     BiocGenerics,
     BiocStyle,

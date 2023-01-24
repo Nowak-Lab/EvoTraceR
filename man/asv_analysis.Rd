@@ -21,7 +21,8 @@ asv_analysis(
   pwa_match = 15,
   pwa_mismatch = -4,
   pwa_type = "global",
-  cleaning_window = c(3, 3)
+  cleaning_window = c(3, 3),
+  batch_size = 100
 )
 }
 \arguments{

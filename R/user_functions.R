@@ -269,6 +269,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @import tibble
 #' @import foreach
 #' @importFrom purrr map
+#' @import parallel
 asv_analysis = function(EvoTraceR_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
@@ -286,7 +287,8 @@ asv_analysis = function(EvoTraceR_object,
                         pwa_mismatch = -4,
                         pwa_type = 'global',
                         cleaning_window = c(3,3),
-                        batch_size = 100
+                        batch_size = 100,
+			cores = parallel::detectCores()
 ) {
   
   barcodes_info = list(
@@ -329,7 +331,8 @@ asv_analysis = function(EvoTraceR_object,
                                    barcodes_info$ref_name,
                                    cut_sites = barcodes_info$ref_cut_sites,
                                    cleaning_window,
-                                   batch_size)
+                                   batch_size,
+				   cores)
   
   seqtab_df = collapse_result$seqtab_df
   tidy_alignment = collapse_result$tidy_alignment
