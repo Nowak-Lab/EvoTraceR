@@ -110,7 +110,7 @@ asv_collapsing = function(seqtab,
   names(dnastringset) <- seqtab$seq_names
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
-  
+
   total_seq <- length(seqtab$seq_names)
   batch_size <- if(total_seq < 200) 1 else 100
   batched_dnastringset <- c()
@@ -122,10 +122,9 @@ asv_collapsing = function(seqtab,
   }
 
   cli::cli_alert_info('Computing pairwise alignment')
-  options(mc.cores=detectCores()-1)
   result <- mclapply(batched_dnastringset, function(dna_j) {
     mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
-                                        pattern = dnastringset, 
+                                        pattern = dna_j, 
                                         substitutionMatrix = mx_crispr,
                                         gapOpening = pwa_gapOpening,
                                         gapExtension = pwa_gapExtension,
@@ -143,11 +142,7 @@ asv_collapsing = function(seqtab,
 
   alignment_tidy_ref_alt = bind_rows(result)
   
-  cli::cli_alert_info('Finish pairwise alignment')
-
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
-  
-  
   
   # Assign Alterations types; wt - wild type, del - deletions, ins - insertion, sub - substitution
   # In cases where ref_asv == "-" & read_asv == "-", then the alteration type is set to ins_smwr 
