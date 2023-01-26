@@ -1,4 +1,4 @@
-merge_hamming = function(counts, sample_columns) {
+merge_hamming = function(counts, sample_columns, cores) {
   pd = reticulate::import('pandas')
   network = reticulate::import('umi_tools.network')
   builtins <- import_builtins()
@@ -6,9 +6,9 @@ merge_hamming = function(counts, sample_columns) {
   counts = counts %>% mutate(length = nchar(seq)) #%>% mutate(length = as.integer(length))
   
   df = data.frame()
-  
+ 
   #organ = 'PRL'
-  for (organ in sample_columns) {
+  df_organs <- mclapply(sample_columns, function(organ) {
     counts_organ = counts %>% dplyr::select(all_of(c('seq', organ, 'seq_names', 'length'))) %>%
       filter(get(organ) > 0)
     
@@ -44,20 +44,20 @@ merge_hamming = function(counts, sample_columns) {
       
       df_organ = bind_rows(df_organ, tmp)
     }
-    
-    if (nrow(df) == 0) {
-      df = df_organ
-    } else {
-      df = dplyr::full_join(df, df_organ, by = 'seq')
-    }
-    
+
+    out_row = df_organ
+  }, mc.cores = cores)
+
+  df = as.data.frame(df_organs[1])
+  for(i in seq(2, length(df_organs)))
+  {
+    df <- dplyr::full_join(df, as.data.frame(df_organs[i]), by = 'seq')
   }
   
   df = df %>% replace(is.na(.), 0) %>%
     left_join(counts %>% select(seq, seq_names), by = 'seq')
   
   return(df)
-  
 }
 
 

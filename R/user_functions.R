@@ -311,7 +311,7 @@ asv_analysis = function(EvoTraceR_object,
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   cli::cli_alert_info('Merging sequences based on Hamming distance')
-  seqtab_df = merge_hamming(seqtab_df, sample_columns)
+  seqtab_df = merge_hamming(seqtab_df, sample_columns, cores)
   
   hamming_filter = nrow(seqtab_df)
   
