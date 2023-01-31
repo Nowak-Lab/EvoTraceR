@@ -105,5 +105,6 @@ EvoTraceR_object = create_df_summary(EvoTraceR_object)
 Finally, this function combines in one dataframe all the data that have been computed for the phylogenetic analysis.
 
 ```{r eval=FALSE}
-EvoTraceR_object = create_df_summary(EvoTraceR_object)
+save(EvoTraceR_object, file="./data/EvoTraceR_object.RData")
 ```
+Save EvoTraceR_object
