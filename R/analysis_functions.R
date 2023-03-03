@@ -157,17 +157,21 @@ asv_collapsing = function(seqtab,
   
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
-    mutate(position_bc260 = ifelse(ref_asv == "-", NA, position)) %>% # add "bc260" scale
     group_by(seq_names) %>%
-    mutate(position_bc260 = data.table::nafill(position_bc260, "locf")) %>% # fill NA with consecutive numbers
-    mutate(position_bc260 = tidyr::replace_na(position_bc260, 0)) %>% #locf doesn't fill NAs that are at the beginning of the sequence
+    mutate(insertion_shift = cumsum(ifelse(ref_asv == '-', 1, 0)))
+
+  alignment_tidy_ref_alt <-
+    alignment_tidy_ref_alt %>%
+    group_by(seq_names) %>%
+    mutate(position_bc260 = ifelse(read_asv == '-', NA, position - insertion_shift))
+    
+  alignment_tidy_ref_alt <-
+    alignment_tidy_ref_alt %>%
+    group_by(seq_names) %>%
+    mutate(position_bc260 = data.table::nafill(position_bc260, "locf")) %>% 
+    mutate(position_bc260 = tidyr::replace_na(position_bc260, 1)) %>%
     dplyr::select(seq_names,  position, position_bc260, ref_asv, read_asv, alt)#,  sample, perc_in_sample,)  
-  
-  alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% group_by(seq_names) %>%
-    mutate(position_bc260 = ifelse(position_bc260 == 0, position_bc260, position_bc260 - min(position_bc260[position_bc260 != 0]))) %>%
-    mutate(position_bc260 = as.numeric(as.character(factor(x = position_bc260, levels = unique(position_bc260),
-                                                           labels = seq_along(unique(position_bc260))))))
-  
+
   coord = mutation_coordinate_matrix(alignment_tidy_ref_alt, barcode_name)
   no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
   no_indels = seqtab %>% filter(seq_names %in% no_indels)
