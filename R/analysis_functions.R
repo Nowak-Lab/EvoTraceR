@@ -156,7 +156,7 @@ asv_collapsing = function(seqtab,
     mutate(alt = ifelse(ref_asv == "-" & read_asv == "-", "ins_smwr", alt)) 
   
   # calculate each row's shift based on prior insertions
-  # deletion and substitution set to last observed position before mutation
+  # deletions are set to the last observed position before mutation
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
@@ -165,7 +165,7 @@ asv_collapsing = function(seqtab,
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
-    mutate(position_bc260 = ifelse(alt == 'd' | alt == 's', NA, position - insertion_shift))
+    mutate(position_bc260 = ifelse(alt == 'd', NA, position - insertion_shift))
     
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
