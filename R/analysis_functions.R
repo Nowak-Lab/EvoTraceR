@@ -165,7 +165,7 @@ asv_collapsing = function(seqtab,
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
-    mutate(position_bc260 = ifelse(alt == 'd', NA, position - insertion_shift))
+    mutate(position_bc260 = position - insertion_shift)
     
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
