@@ -160,18 +160,12 @@ asv_collapsing = function(seqtab,
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
-    mutate(insertion_shift = cumsum(ifelse(ref_asv == '-', 1, 0)))
-
-  alignment_tidy_ref_alt <-
-    alignment_tidy_ref_alt %>%
-    group_by(seq_names) %>%
-    mutate(position_bc260 = position - insertion_shift)
+    mutate(insertion_shift = cumsum(ifelse(alt == 'i', 1, 0)))
     
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
-    mutate(position_bc260 = data.table::nafill(position_bc260, "locf")) %>% 
-    mutate(position_bc260 = tidyr::replace_na(position_bc260, 1)) %>%
+    mutate(position_bc260 = ifelse(alt == 'd', position - insertion_shift - 1, position - insertion_shift)) %>%
     dplyr::select(seq_names,  position, position_bc260, ref_asv, read_asv, alt)#,  sample, perc_in_sample,)  
 
   coord = mutation_coordinate_matrix(alignment_tidy_ref_alt, barcode_name)
