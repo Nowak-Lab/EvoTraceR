@@ -165,9 +165,11 @@ asv_collapsing = function(seqtab,
   alignment_tidy_ref_alt <-
     alignment_tidy_ref_alt %>%
     group_by(seq_names) %>%
-    mutate(position_bc260 = ifelse(alt == 'd', position - insertion_shift - 1, position - insertion_shift)) %>%
+    #mutate(position_bc260 = ifelse(alt == 'd', position - insertion_shift - 1, position - insertion_shift)) %>%
+    mutate(position_bc260 = ifelse(alt == 'i' & (position - insertion_shift) == 0,1,position - insertion_shift)) %>%
     dplyr::select(seq_names,  position, position_bc260, ref_asv, read_asv, alt)#,  sample, perc_in_sample,)  
 
+	
   coord = mutation_coordinate_matrix(alignment_tidy_ref_alt, barcode_name)
   no_indels =  setdiff(seqtab$seq_names, coord$seq_names)
   no_indels = seqtab %>% filter(seq_names %in% no_indels)
