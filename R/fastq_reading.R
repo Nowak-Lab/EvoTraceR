@@ -86,7 +86,7 @@ alignment_pipeline = function(fnFs,
                                        format = "d", flag = "0")) # -1 to start 00 with no changes sequence
   
   df = df %>% filter(!is.na(seq) & !stringr::str_detect(seq, 'N'))
-  
+  df = as.data.frame(df)
   rownames(df) = df$seq
   
   seq_lengths = data.frame(seq = df$seq,
