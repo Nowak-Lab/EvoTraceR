@@ -95,19 +95,19 @@ alignment_pipeline = function(fnFs,
     ggplot2::ggplot(data=seq_lengths, aes(x = length)) + 
     geom_histogram(binwidth = 1, fill = '#B484A9') +
     scale_x_continuous(labels=scales::comma, 
-                       breaks=c(1, seq(26, 520, 26)),
-                       limits=c(0, 520)) +
+                       breaks=c(1, seq(26, max(seq_lengths$length), 26)),
+                       limits=c(0, max(seq_lengths$length))) +
     xlab("Sequence Length") +
     ylab("Sequence count") +
     theme(panel.border=element_blank(), axis.line = element_line()) +
     #lemon::coord_capped_cart(left="both", bottom="both") +
-    geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
+    #geom_vline(xintercept=260, linetype="dotted", size=0.25, col="#84B48F") +
     barplot_nowaklab_theme() 
   
-  ggsave(filename=file.path(figure_dir, 'asv_length_freq.pdf'), 
+  suppressWarnings(ggsave(filename=file.path(figure_dir, 'asv_length_freq.pdf'), 
          plot=hist_seq_count, 
          #device=grDevices::cairo_pdf, 
-         width=25, height=5, units = "cm") #17.5 for 4x
+         width=25, height=5, units = "cm")) #17.5 for 4x
   
   # Save as Data csv
   utils::write.csv(track_reads, file.path(fastq_dir, "fastq_summary.csv"), quote = FALSE)
@@ -167,8 +167,8 @@ adjust_seqtab = function(seqtab.nochim, map_file_sample) {
   seqtab_df$seq_names = paste0("SEQ", formatC(c(1:(dim(seqtab_df)[1])), width = nchar(trunc(dim(seqtab_df)[1])), format = "d", flag = "0")) # -1 to start 00 with no changes sequence
   rownames(seqtab_df) = seqtab_df$seq
   
-
-  return(tibble::tibble(seqtab_df))
+  return(seqtab_df)
+  #return(tibble::tibble(seqtab_df))
 }
 
 
