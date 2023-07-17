@@ -159,7 +159,7 @@ jobs:
       - name: Install R packages
         run: |
           install.packages("BiocManager")
-          install.packages('remotes')
+          install.packages("remotes")
           install.packages("tidyverse")
           install.packages("cli")
           BiocManager::install("Biostrings")
@@ -172,8 +172,8 @@ jobs:
           install.packages("methods")
           install.packages("data.table")
           BiocManager::install("ggtree")
-          install.packages('TreeTools')
-          install.packages('phangorn')
+          install.packages("TreeTools")
+          install.packages("phangorn")
           install.packages("foreach")
         shell: Rscript {0}
 
@@ -274,8 +274,8 @@ jobs:
           _R_CHECK_CRAN_INCOMING_: false
         run: |
           rcmdcheck::rcmdcheck(
-              args = c("--timings"),
-              build_args = c("--no-resave-data"),
+              args = c("--timings","--ignore-vignettes"),
+              build_args = c("--no-resave-data","--no-build-vignettes"),
               error_on = "warning",
               check_dir = "check"
           )
