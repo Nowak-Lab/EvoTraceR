@@ -7,12 +7,12 @@
 asv_analysis(
   EvoTraceR_object,
   ref_name = "BC10v0",
-  ref_seq =
-    "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
+ 
+    ref_seq = "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
   ref_flank_left = "^TCTAC",
   ref_flank_right = "CCCGTGGATC$",
   flanking_filtering = "right",
-  ref_cut_sites = c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
+  ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251),
   ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
   output_figures = TRUE,
   asv_count_cutoff = 2,
@@ -22,7 +22,8 @@ asv_analysis(
   pwa_mismatch = -4,
   pwa_type = "global",
   cleaning_window = c(3, 3),
-  batch_size = 100
+  batch_size = 100,
+  cores = parallel::detectCores()
 )
 }
 \arguments{
@@ -45,11 +46,11 @@ Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{ref_border_sites}{c(26, 52, 78, 104, 130, 156, 182, 208, 234).}
 
-\item{output_figures}{(Optional). Deafult TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
+\item{output_figures}{(Optional). Default TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
 \item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
 
-\item{pwa_gapOpening}{(Optional). Delafult is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
+\item{pwa_gapOpening}{(Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
 
 \item{pwa_gapExtension}{(Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description). Default is 0.}
 
@@ -61,7 +62,11 @@ together with the previous one, are used to construct the substitution matrix us
 \item{pwa_type}{(Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
 For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation}}
 
-\item{cleaning_window}{(Optional). Deafult is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).}
+\item{cleaning_window}{(Optional). Default is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).}
+
+\item{batch_size}{(Optional). Default is 100. Number of batches to split reads into for parallel execution of \code{pairwiseAlignment}. This parameter can be tuned together with the cores parameter to optimize the speed of alignment.}
+
+\item{cores}{(Optional). Default is parallel::detectCores(). Number of cores to use for pairwise alignment.}
 }
 \value{
 The EvoTraceR object passed as a parameter with the following new fields:
