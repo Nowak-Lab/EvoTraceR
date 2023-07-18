@@ -92,7 +92,7 @@
 <h2 id="setup-the-environement">Setup the environement<a class="anchor" aria-label="anchor" href="#setup-the-environement"></a>
 </h2>
 <p><em>EvoTraceR</em> is the computational tool inside the project
-EboBC. After performing EvoBC experiments in the lab, this tool can be
+EvoBC. After performing EvoBC experiments in the lab, this tool can be
 exploited to perform the analysis of Amplicon Sequence Variants. In
 order to perform the analysis, there are multiple functions that perform
 the different steps of the analysis pipeline. The first step initializes
@@ -115,8 +115,8 @@ provide any additional parameter for dada2 functions. trimmomatic_path:
 Local path to the executable of Trimmomatic. flash_path. Local path to
 the executable of . Important: each fastq file pair (forward and
 reverse) must be associated to the sample on which the experiment was
-performed. The sample can be either the organ of the moouse or the an ID
-for the timepoint in case longitudinal data is provided. In order for
+performed. The sample can be either the organ of the mouse or an ID for
+the timepoint in case longitudinal data is provided. In order for
 EvoTraceR to associate each fastq pair to its sample users have two
 options: one is to name the fastq following this pattern:
 FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX
@@ -141,7 +141,7 @@ data(EvoTraceR_initialized).</p>
 <span>                                        trimmomatic_path <span class="op">=</span> <span class="st">'~/Trimmomatic 0.xx/trimmomatic-0.xx.jar'</span>,</span>
 <span>                                        flash_path <span class="op">=</span> <span class="st">'~/*/FLASH-x.x.x/flash'</span><span class="op">)</span></span></code></pre></div>
 <p>During the above computation, all unique sequences from each sample
-have been identify. In the next steps these sequences will be
+have been identified. In the next steps these sequences will be
 cleaned.</p>
 </div>
 <div class="section level2">
@@ -158,9 +158,9 @@ identifying all indels (insertions are identified by their start
 position and number of nucleoides inserted, while deletions are
 identified by their start and end position), it removes the ones that
 are too small and don’t span any cut site: to perform this filter, it
-exapnds the start and end position by the number of bases specified in
+expands the start and end position by the number of bases specified in
 the parameter , it counts the number of cut sites spanned after the
-expantion and it removes those that span 0 sites. Next, it pools
+expansion and it removes those that span 0 sites. Next, it pools
 together those sequences that differ by one another only by
 substitutions, summing their counts, and then it removes those sequences
 showing a frequency lower than the threshold specified in parameter .
@@ -188,9 +188,9 @@ aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.)
 according to their total counts. reference: Info about the reference
 sequence used for the current analysis. statistics: is a new list that
 contains all the results of the computation (see the manual for a
-detailed explanation). Among its fileds there are asv_df_percentages,
+detailed explanation). Among its fields there are asv_df_percentages,
 which contains the normalized counts, and asv_diversity_perSample which
-contains the measures of clonal heterpgeneity. alignment: is a new list
+contains the measures of clonal heterogeneity. alignment: is a new list
 containing the result of the alignment step.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">EvoTraceR_object</span> <span class="op">=</span> <span class="fu"><a href="../reference/analyse_mutations.html">analyse_mutations</a></span><span class="op">(</span><span class="va">EvoTraceR_object</span><span class="op">)</span></span></code></pre></div>
@@ -209,7 +209,8 @@ each iteration.</p>
 <p>Finally, this function combines in one dataframe all the data that
 have been computed for the phylogenetic analysis.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">EvoTraceR_object</span> <span class="op">=</span> <span class="fu"><a href="../reference/create_df_summary.html">create_df_summary</a></span><span class="op">(</span><span class="va">EvoTraceR_object</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/save.html" class="external-link">save</a></span><span class="op">(</span><span class="va">EvoTraceR_object</span>, file<span class="op">=</span><span class="st">"./data/EvoTraceR_object.RData"</span><span class="op">)</span></span></code></pre></div>
+<p>Save EvoTraceR_object</p>
 </div>
   </div>
 
