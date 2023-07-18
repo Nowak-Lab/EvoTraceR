@@ -82,12 +82,92 @@
 </h1></div>
 <p><a href="https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-master" class="external-link"><img src="https://github.com/Nowak-Lab/EvoTraceR/workflows/check-master/badge.svg" alt="Actions Status"></a> <a href="https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-development" class="external-link"><img src="https://github.com/Nowak-Lab/EvoTraceR/workflows/check-development/badge.svg" alt="Actions Status"></a></p>
 <p><em>EvoTraceR</em> is an R package to analyse sequencing amplicon data from CRISPR-Cas9 recorder lineage tracing experiments. The package takes in paired-end FASTQ files from one to many tissues. The sequenced amplicon can contain one to many Cas9 cut sites. <em>EvoTraceR</em> trims and merges reads, collapses duplicates, calls mutations and infers a tree using <a href="https://github.com/YosefLab/Cassiopeia" class="external-link">Cassiopeia</a>. The package outputs the inferred tree of relationships between Amplicon Sequence Variants (ASVs) as well as summary plots and tables of mutations.</p>
-<p>Please feel free to contact us with feedback: Dawid Nowak, dgn2001 at med.cornell.edu or Armin Scheben, ascheben at cshl.edu.</p>
+<div class="figure">
+<img src="articles/figures/evotracer_pipeline_concept.png" alt=""><p class="caption">EvoTraceR pipeline concept</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://devtools.r-lib.org/" class="external-link">devtools</a></span><span class="op">)</span></span>
 <span><span class="fu">install_github</span><span class="op">(</span><span class="st">"Nowak-Lab/EvoTraceR"</span><span class="op">)</span></span></code></pre>
+<p><em>EvoTraceR</em> can also be installed with the above method in a <code>conda</code> environment. Based on our experience, a clean environment installed with <code>r-base</code> and <code>r-essentials</code> from the <code>conda-forge</code> channel works well.</p>
+</div>
+<div class="section level2">
+<h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
+</h2>
+<ul>
+<li><a href="https://ccb.jhu.edu/software/FLASH/" class="external-link">flash</a></li>
+<li><a href="http://www.usadellab.org/cms/?page=trimmomatic" class="external-link">trimmomatic</a></li>
+</ul>
+<p>Binaries for these dependencies can be downloaded via the links above. All other dependencies are handled by <code>devtools</code> during the package installation.</p>
+</div>
+<div class="section level2">
+<h2 id="usage-example">Usage example<a class="anchor" aria-label="anchor" href="#usage-example"></a>
+</h2>
+<p>An empirical toy dataset is available to test <em>EvoTraceR</em>. The sequences were generated from a single mouse <code>MMUS1495</code> and taken from cancer populations in four tissues (labelled <code>PRL</code>,<code>RBL</code>,<code>LVR</code>,<code>LVM</code>). The CRISPR-Cas9 recorder design was designated <code>BC10v0</code>. The naming scheme for the FASTQ files was thus <code>MMUS1469_PRL_BC10v0_MG_120419</code>. Note that <em>EvoTraceR</em> expects similar input file names with tissue labels in the same position of the naming scheme.</p>
+<p>To get started with the analysis, we provide the directory containing the input FASTQ files. We also provide an output directory and the paths to the <code>trimmomatic</code> and <code>flash</code> binaries on our system (adjust these paths as needed for your system). Then we preprocess our input data with the <code>initialize_EvoTraceR</code> function.</p>
+<pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Nowak-Lab/EvoTraceR" class="external-link">EvoTraceR</a></span><span class="op">)</span></span>
+<span><span class="va">input_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"input"</span>, package <span class="op">=</span> <span class="st">"EvoTraceR"</span><span class="op">)</span></span>
+<span><span class="va">output_dir</span> <span class="op">&lt;-</span> <span class="st">"example_output"</span></span>
+<span><span class="va">trimmomatic_path</span> <span class="op">&lt;-</span> <span class="st">"/my/path/trimmomatic.jar"</span></span>
+<span><span class="va">flash_path</span> <span class="op">&lt;-</span> <span class="st">"/my/path/flash"</span></span>
+<span></span>
+<span><span class="va">EvoTraceR_object</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/initialize_EvoTraceR.html">initialize_EvoTraceR</a></span><span class="op">(</span></span>
+<span>    input_dir <span class="op">=</span> <span class="va">input_dir</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="va">output_dir</span>,</span>
+<span>    map_file_sample <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    trimmomatic_path <span class="op">=</span> <span class="va">trimmomatic_path</span>,</span>
+<span>    flash_path <span class="op">=</span> <span class="va">flash_path</span><span class="op">)</span></span></code></pre>
+<p>Now that the FASTQ data has been cleaned and the paired reads merged, we align the merged reads to the reference and call indels. To do this, we use the <code>asv_analysis</code> function and provide our unedited template sequence as the <code>ref_seq</code> and the expected flanking sequences. We also provide the 1-based reference sequence coordinates of the expected Cas9 cut sites and the borders between individual target regions. This information is used to filter sequences with unexpected mutation patterns. For additional options on alignment parameters, parallelization and more, see the documentation.</p>
+<pre><code><span><span class="va">EvoTraceR_object</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/asv_analysis.html">asv_analysis</a></span><span class="op">(</span>EvoTraceR_object <span class="op">=</span> <span class="va">EvoTraceR_object</span>,</span>
+<span>               ref_name <span class="op">=</span> <span class="st">"BC10v0"</span>,</span>
+<span>               ref_seq <span class="op">=</span> <span class="st">"TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC"</span>,</span>
+<span>               ref_flank_left <span class="op">=</span> <span class="st">"^TCTAC"</span>,</span>
+<span>               ref_flank_right <span class="op">=</span> <span class="st">"CCCGTGGATC$"</span>,</span>
+<span>               ref_cut_sites <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">17</span>, <span class="fl">43</span>, <span class="fl">69</span>, <span class="fl">95</span>, <span class="fl">121</span>, <span class="fl">147</span>, <span class="fl">173</span>, <span class="fl">199</span>, <span class="fl">225</span>, <span class="fl">251</span><span class="op">)</span>, <span class="co"># cut sites for Cas9 based on "ref_seq"</span></span>
+<span>               ref_border_sites <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">26</span>, <span class="fl">52</span>, <span class="fl">78</span>, <span class="fl">104</span>, <span class="fl">130</span>, <span class="fl">156</span>, <span class="fl">182</span>, <span class="fl">208</span>, <span class="fl">234</span><span class="op">)</span> <span class="co"># border for marking site (guide=20, PAM=3, spacer=3) = 26 x bp</span></span>
+<span>               <span class="op">)</span></span></code></pre>
+<p>Finally, we process the mutations, infer a tree and output summaries of the results.</p>
+<pre><code><span><span class="va">EvoTraceR_object</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/analyse_mutations.html">analyse_mutations</a></span><span class="op">(</span>EvoTraceR_object <span class="op">=</span> <span class="va">EvoTraceR_object</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">EvoTraceR_object</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/infer_phylogeny.html">infer_phylogeny</a></span><span class="op">(</span>EvoTraceR_object <span class="op">=</span> <span class="va">EvoTraceR_object</span>, mutations_use <span class="op">=</span> <span class="st">"del_ins"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">EvoTraceR_object</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/create_df_summary.html">create_df_summary</a></span><span class="op">(</span><span class="va">EvoTraceR_object</span><span class="op">)</span></span></code></pre>
+</div>
+<div class="section level2">
+<h2 id="output-files">Output files<a class="anchor" aria-label="anchor" href="#output-files"></a>
+</h2>
+<p>After running the example analysis, the following output files will be generated.</p>
+<pre><code>example_output/
+|-- asv_analysis
+|   |-- asv_filtering_freq.pdf
+|   `-- asv_length_freq.pdf
+|-- fastq_analysis
+|   |-- fastq_flash_merged
+|   |-- fastq_summary.csv
+|   `-- fastq_trimmed
+`-- phylogeny_analysis
+    `-- phylogeny_del_ins
+        |-- asv_stat.csv
+        |-- tree_all_clones.csv
+        `-- tree_all_clones.newick</code></pre>
+<p>The two key files for most follow-up analyses are as follows.</p>
+<ul>
+<li>
+<code>asv_stat.csv</code>: Summary of all of detected amplicon sequence variants (ASVs) and mutations in the input FASTQ files</li>
+<li>
+<code>tree_all_clones.newick</code>: Tree of the phylogenetic relationships between ASVs based on the detected mutations</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="contact">Contact<a class="anchor" aria-label="anchor" href="#contact"></a>
+</h2>
+<p>Please feel free to contact us with feedback: Dawid Nowak, dgn2001 at med.cornell.edu or Armin Scheben, ascheben at cshl.edu.</p>
 </div>
 </div>
   </div>
