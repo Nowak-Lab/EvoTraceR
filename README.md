@@ -4,7 +4,7 @@ EvoTraceR
 [![Actions Status](https://github.com/Nowak-Lab/EvoTraceR/workflows/check-master/badge.svg)](https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-master)
 [![Actions Status](https://github.com/Nowak-Lab/EvoTraceR/workflows/check-development/badge.svg)](https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-development)
 
-*EvoTraceR* is an R package to analyse sequencing amplicon data from CRISPR-Cas9 recorder lineage tracing experiments. The package takes in paired-end FASTQ files from one to many tissues. The sequenced amplicon can contain one to many Cas9 cut sites. *EvoTraceR* trims and merges reads, collapses duplicates, calls mutations and infers a tree using [Cassiopeia](https://github.com/YosefLab/Cassiopeia). The package outputs the inferred tree of relationships between Amplicon Sequence Variants (ASVs) as well as summary plots and tables of mutations.
+*EvoTraceR* is an R package to analyse sequencing amplicon data from CRISPR-Cas9 recorder lineage tracing experiments. The package takes in paired-end FASTQ files from one to many tissues. The sequenced amplicon can contain one to many Cas9 cut sites. *EvoTraceR* trims and merges reads, collapses duplicates, calls mutations and infers a tree. The package outputs the inferred tree of relationships between Amplicon Sequence Variants (ASVs) as well as summary plots and tables of mutations.
 
 ![EvoTraceR pipeline concept](vignettes/figures/evotracer_pipeline_concept.png)
 
@@ -49,7 +49,6 @@ EvoTraceR_object <-
     map_file_sample = NULL,
     trimmomatic_path = trimmomatic_path,
     flash_path = flash_path)
-
 ```
 
 Now that the FASTQ data has been cleaned and the paired reads merged, we align the merged reads to the reference and call indels. To do this, we use the `asv_analysis` function and provide our unedited template sequence as the `ref_seq` and the expected flanking sequences. We also provide the 1-based reference sequence coordinates of the expected Cas9 cut sites and the borders between individual target regions. This information is used to filter sequences with unexpected mutation patterns. For additional options on alignment parameters, parallelization and more, see the documentation.
