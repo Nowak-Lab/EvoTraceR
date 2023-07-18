@@ -21,8 +21,8 @@ The initialization function computes the set of Amplicon Sequence Variants.
 It calls trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge forward and reverse reads.
 The main parameters for the initialization are the directory where the output will be stored and one of the following: 
 input directory: in this case users have the fastq files and want to perform the whole analysis using EvoTraceR. In this case they need to provide the path to the folder containing the fastq (which may be compressed), and then they can provide any additional parameter for dada2 functions. 
-trimmomatic_path: Local path to the executable of Trimmomatic. 
-flash_path. Local path to the executable of \code{Flash}.
+trimmomatic_path: Local path to the executable of *Trimmomatic*. 
+flash_path. Local path to the executable of *Flash*.
 Important: each fastq file pair (forward and reverse) must be associated to the sample on which the experiment was performed. The sample can be either the organ of the mouse or an ID for the timepoint in case longitudinal data is provided. 
 In order for EvoTraceR to associate each fastq pair to its sample users have two options: 
 one is to name the fastq following this pattern: FILEPREFIX_SAMPLE_FILESUFFIX_RX.fastq, where FILEPREFIX and FILESUFFIX can be any string (without the "_" character). In this case EvoTraceR will consider as sample ID the second field separated by the underscore. 
@@ -50,14 +50,14 @@ During the above computation, all unique sequences from each sample have been id
 
 This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
 First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
-Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
-in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis 
+Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function *pairwiseAlignment*
+in package *Biostrings*, aligning each sequence to the original barcode considered in the analysis 
 (See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
 After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
-it removes the ones that are too small and don't span any cut site: to perform this filter, it expands the start and end position by the number of bases specified in the parameter \code{cleaning_window},
+it removes the ones that are too small and don't span any cut site: to perform this filter, it expands the start and end position by the number of bases specified in the parameter *cleaning_window*,
 it counts the number of cut sites spanned after the expansion and it removes those that span 0 sites.
 Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
-those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
+those sequences showing a frequency lower than the threshold specified in parameter *asv_count_cutoff*.
 Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
 dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
 Then, using the CPM it computes different statistics for the final ASVS, storing:
@@ -77,7 +77,7 @@ There are new fields:
 clean_asv_dataframe which contains the counts detected for each ASV after filtering (i.e. after filtering for contamination identification of NMBC). 
 reference is the information on the reference sequence considered for the analysis.
 clean_asv_dataframe: ASV sequences identified post-filtering (contamination removed,
-sequences with a similarity higher than \code{pid_cutoff_nmbc} to the original barcode
+sequences with a similarity higher than *pid_cutoff_nmbc* to the original barcode
 aggregated to it and ASVs named in increasing order (ASV01, ASV02, etc.) according
 to their total counts. 
 reference: Info about the reference sequence used for the current analysis. 
