@@ -1,4 +1,4 @@
-EvoTraceR
+EvoTraceR - Evolutionary lineage Tracing in R
 ================
 
 [![Actions Status](https://github.com/Nowak-Lab/EvoTraceR/workflows/check-master/badge.svg)](https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-master)
@@ -12,12 +12,22 @@ EvoTraceR
 Installation
 --------------
 
+The package can be installed using `devtools`.
+
 ```
 library(devtools)
 install_github("Nowak-Lab/EvoTraceR")
 ```
 
-*EvoTraceR* can also be installed with the above method in a `conda` environment. Based on our experience, a clean environment installed with `r-base` and `r-essentials` from the `conda-forge` channel works well.
+*EvoTraceR* can also be installed with the above method in a `conda` environment. Based on our experience, a clean environment installed with `r-base`, `r-essentials`, and `r-devtools` from the `conda-forge` channel works well.
+
+```
+conda create -n evotracer
+conda install -c conda-forge r-base
+conda install -c conda-forge r-essentials
+conda install -c conda-forge r-devtools
+```
+
 
 Dependencies
 --------------
