@@ -78,7 +78,7 @@
       </header><div class="row">
   <div class="contents col-md-9">
 <div class="section level1">
-<div class="page-header"><h1 id="evotracer">EvoTraceR<a class="anchor" aria-label="anchor" href="#evotracer"></a>
+<div class="page-header"><h1 id="evotracer---evolutionary-lineage-tracing-in-r">EvoTraceR - Evolutionary lineage Tracing in R<a class="anchor" aria-label="anchor" href="#evotracer---evolutionary-lineage-tracing-in-r"></a>
 </h1></div>
 <p><a href="https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-master" class="external-link"><img src="https://github.com/Nowak-Lab/EvoTraceR/workflows/check-master/badge.svg" alt="Actions Status"></a> <a href="https://github.com/Nowak-Lab/EvoTraceR/actions?query=workflow%3Acheck-development" class="external-link"><img src="https://github.com/Nowak-Lab/EvoTraceR/workflows/check-development/badge.svg" alt="Actions Status"></a></p>
 <p><em>EvoTraceR</em> is an R package to analyse sequencing amplicon data from CRISPR-Cas9 recorder lineage tracing experiments. The package takes in paired-end FASTQ files from one to many tissues. The sequenced amplicon can contain one to many Cas9 cut sites. <em>EvoTraceR</em> trims and merges reads, collapses duplicates, calls mutations and infers a tree. The package outputs the inferred tree of relationships between Amplicon Sequence Variants (ASVs) as well as summary plots and tables of mutations.</p>
@@ -88,9 +88,14 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
+<p>The package can be installed using <code>devtools</code>.</p>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://devtools.r-lib.org/" class="external-link">devtools</a></span><span class="op">)</span></span>
 <span><span class="fu">install_github</span><span class="op">(</span><span class="st">"Nowak-Lab/EvoTraceR"</span><span class="op">)</span></span></code></pre>
-<p><em>EvoTraceR</em> can also be installed with the above method in a <code>conda</code> environment. Based on our experience, a clean environment installed with <code>r-base</code> and <code>r-essentials</code> from the <code>conda-forge</code> channel works well.</p>
+<p><em>EvoTraceR</em> can also be installed with the above method in a <code>conda</code> environment. Based on our experience, a clean environment installed with <code>r-base</code>, <code>r-essentials</code>, and <code>r-devtools</code> from the <code>conda-forge</code> channel works well.</p>
+<pre><code>conda create -n evotracer
+conda install -c conda-forge r-base
+conda install -c conda-forge r-essentials
+conda install -c conda-forge r-devtools</code></pre>
 </div>
 <div class="section level2">
 <h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
