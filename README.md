@@ -46,12 +46,11 @@ EvoTraceR_object <-
   initialize_EvoTraceR(
     input_dir = input_dir,
     output_dir = output_dir,
-    map_file_sample = NULL,
     trimmomatic_path = trimmomatic_path,
     flash_path = flash_path)
 ```
 
-Now that the FASTQ data has been cleaned and the paired reads merged, we align the merged reads to the reference and call indels. To do this, we use the `asv_analysis` function and provide our unedited template sequence as the `ref_seq` and the expected flanking sequences. We also provide the 1-based reference sequence coordinates of the expected Cas9 cut sites and the borders between individual target regions. This information is used to filter sequences with unexpected mutation patterns. For additional options on alignment parameters, parallelization and more, see the documentation.
+Now that the FASTQ data has been cleaned and the paired reads merged, we align the merged reads to the reference and call indels. To do this, we use the `asv_analysis` function and provide our unedited template sequence as the `ref_seq` and the expected flanking sequences. We also provide the 1-based reference sequence coordinates of the expected Cas9 cut sites and the borders between individual target regions (e.g., guide=20bp, PAM=3bp, spacer=3bp). This information is used to filter sequences with unexpected mutation patterns. For additional options on alignment parameters, parallelization and more, see the documentation.
 
 ```
 EvoTraceR_object <-
@@ -60,9 +59,8 @@ EvoTraceR_object <-
                ref_seq = "TCTACACGCGCGTTCAACCGAGGAAAACTACACACACGTTCAACCACGGTTTTTTACACACGCATTCAACCACGGACTGCTACACACGCACTCAACCGTGGATATTTACATACTCGTTCAACCGTGGATTGTTACACCCGCGTTCAACCAGGGTCAGATACACCCACGTTCAACCGTGGTACTATACTCGGGCATTCAACCGCGGCTTTCTGCACACGCCTACAACCGCGGAACTATACACGTGCATTCACCCGTGGATC",
                ref_flank_left = "^TCTAC",
                ref_flank_right = "CCCGTGGATC$",
-               ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251), # cut sites for Cas9 based on "ref_seq"
-               ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234) # border for marking site (guide=20, PAM=3, spacer=3) = 26 x bp
-               )
+               ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251),
+               ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234))
 ```
 
 Finally, we process the mutations, infer a tree and output summaries of the results.

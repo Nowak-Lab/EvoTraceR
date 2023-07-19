@@ -67,6 +67,3 @@ Finally, in case reticulate is setup automatically through the install process, 
 setup_reticulate()
 ```
 
-## Debug
-
-Please feel free to contact us if you have problems running our tool at l.patruno@campus.unimib.it. 
