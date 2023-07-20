@@ -7,7 +7,6 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   np = reticulate::import('numpy')
   
   df = reticulate::r_to_py(asv_bin_var)
-  
   cas_tree = cas$data$CassiopeiaTree(character_matrix=df)#, root_sample_name='BC10v0')
   
   vanilla_greedy = cas$solver$VanillaGreedySolver()
@@ -17,10 +16,8 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
   return_list = list(tree_uncollapsed = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T)))
   
   cas_tree$collapse_mutationless_edges(infer_ancestral_characters=T)
-  
   #########################
   edge_dict = cas_tree[["_CassiopeiaTree__network"]][["_adj"]]
-  
   for (e in names(edge_dict)) {
     if (length(edge_dict[[e]]) > 0) {
       subdict = edge_dict[[e]]
@@ -32,21 +29,17 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
       }
     }
   }
-  
   tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
-  
   tree_df = ggtree::fortify(tree, ladderize = T, right=T)
-  
-  tip_order = tree_df %>% filter(!is.na(label)) %>% arrange(desc(y)) %>% pull(label)
+  #write.csv(tree_df,'tree_df_1.csv',quote=FALSE,row.names = FALSE)
+  tip_order = as.data.frame(tree_df) %>% filter(!is.na(label)) %>% arrange(desc(y)) %>% pull(label)
   tree = ape::rotateConstr(tree, constraint = tip_order)
-  
   tree = ggtree::fortify(tree)
   # Take the parent node with the minimum label, which should be the the one to which all subtrees corresponding to clusters
   # are attached to, and then group the clades to assign the clonal populations label.
   mock_root = min(tree$parent) #+ 1
-  clusters_roots = tree %>% filter(parent == mock_root) %>% pull(node)
+  clusters_roots = as.data.frame(tree) %>% filter(parent == mock_root) %>% pull(node)
   tree_df = ggtree::groupClade(tree, .node=clusters_roots)
-  
   tree_df = tree_df %>% mutate(group = as.numeric(group) - 1)
   
   tree_df$group = paste0("CP", formatC(tree_df$group,
@@ -54,14 +47,12 @@ compute_tree_cassiopeia = function(asv_bin_var, barcode) {
                                        format = "d", flag = "0"))
   
   # Re-compute te phylo object so that tips can be easily removed with ape::drop.tip
-  
   tree = ape::read.tree(text=cas_tree$get_newick(record_branch_lengths = T))
   
   tree_df$group = as.factor(tree_df$group)
   
   return_list$tree_collapsed_df = tree_df
   return_list$tree_collapsed_phylo = tree
-  
   return(return_list)
 }
 
