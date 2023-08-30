@@ -23,7 +23,7 @@ mutation_coordinate_matrix = function(tidy_alignment, barcode_name) {
     arrange(seq_names, position_bc260) %>%
     group_by(seq_names) %>% 
     mutate(contig_alt = cumsum(c(1, head(alt, -1) != tail(alt, -1)))) %>%
-    filter(alt!= 'w' & alt != 'ins_smwr' & alt != 's') %>%
+    filter(alt!= 'w' & alt != 'ins_smwr') %>%
     dplyr::rename(mutation_type = alt, ref_seq = ref_asv, alt_seq = read_asv) 
   
   # Now we group alterations first based on the ASV, and then based on the new column contig_alt
