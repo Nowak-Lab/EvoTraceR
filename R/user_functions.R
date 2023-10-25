@@ -537,7 +537,12 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = TRUE)}
   
   asv_bin_var = EvoTraceR_object$alignment$binary_mutation_matrix
-  barcode_var = asv_bin_var[EvoTraceR_object$reference$ref_name,]  
+  barcode_var = asv_bin_var[EvoTraceR_object$reference$ref_name,]
+  if (class(barcode_var) == "numeric") {
+    first_name <- colnames(asv_bin_var)[1]
+    barcode_var <- setNames(data.frame(barcode_var), first_name)
+    rownames(barcode_var) <- EvoTraceR_object$reference$ref_name
+  }
   if (mutations_use == 'del_ins') { 
     
     asv_bin_var = asv_bin_var %>%
