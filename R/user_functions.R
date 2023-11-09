@@ -310,14 +310,20 @@ asv_analysis = function(EvoTraceR_object,
   orgseq <- nrow(seqtab_df)
   seqtab_df_original = seqtab_df
   
+  # get organ list
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   cli::cli_alert_info('Merging sequences based on Hamming distance')
   seqtab_df = merge_hamming(seqtab_df, sample_columns, cores)
   
   hamming_filter = nrow(seqtab_df)
-  
-  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+
+  # for single organ, rowSums is not needed and will throw error
+  if (length(sample_columns) > 1) {
+    seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  } else {
+    seqtab_df$totalCounts = seqtab_df[,sample_columns]
+  }
   #counts_filtering = nrow(seqtab_df)
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
