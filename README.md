@@ -41,7 +41,7 @@ Binaries for these dependencies can be downloaded via the links above. All other
 Usage example
 --------------
 
-A simulated toy dataset is available to test *EvoTraceR*. The sequences were generated from a single simulated mouse `MMUS1495` and taken from cancer populations in four tissues (labelled `PRL` and `HMR`). The CRISPR-Cas9 recorder design was designated `BC10v0`. The naming scheme for the FASTQ files was thus `MMUS1469_PRL_BC10v0_MG_120419`. Note that *EvoTraceR* expects similar input file names with tissue labels in the same position of the naming scheme.
+A simulated toy dataset is available to test *EvoTraceR*. The sequences were generated from a single simulated mouse `MMUS1469` and taken from cancer populations in two tissues (labelled `PRL` and `HMR`). The CRISPR-Cas9 recorder design was designated `BC10v0`. The naming scheme for the FASTQ files was thus `MMUS1469_PRL_BC10v0_MG_120419`. Note that *EvoTraceR* expects similar input file names with tissue labels in the same position of the naming scheme.
 
 To get started with the analysis, we provide the directory containing the input FASTQ files. We also provide an output directory and the paths to the `trimmomatic` and `flash` binaries on our system (adjust these paths as needed for your system). Then we preprocess our input data with the `initialize_EvoTraceR` function.
 
