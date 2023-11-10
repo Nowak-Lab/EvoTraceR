@@ -49,14 +49,15 @@ merge_hamming = function(counts, sample_columns, cores) {
   }, mc.cores = cores)
   
   df = as.data.frame(df_organs[1], check.names=FALSE)
-  for(i in seq(2, length(df_organs)))
-  {
-    df <- dplyr::full_join(df, as.data.frame(df_organs[i], check.names=FALSE), by = 'seq')
+  if (length(df_organs) > 1) {
+    for(i in seq(2, length(df_organs)))
+    {
+      df <- dplyr::full_join(df, as.data.frame(df_organs[i], check.names=FALSE), by = 'seq')
+    }
   }
 
   df = df %>% replace(is.na(.), 0) %>%
     left_join(counts %>% select(seq, seq_names), by = 'seq')
-  
   return(df)
 }
 

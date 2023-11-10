@@ -310,14 +310,20 @@ asv_analysis = function(EvoTraceR_object,
   orgseq <- nrow(seqtab_df)
   seqtab_df_original = seqtab_df
   
+  # get organ list
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   cli::cli_alert_info('Merging sequences based on Hamming distance')
   seqtab_df = merge_hamming(seqtab_df, sample_columns, cores)
   
   hamming_filter = nrow(seqtab_df)
-  
-  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+
+  # for single organ, rowSums is not needed and will throw error
+  if (length(sample_columns) > 1) {
+    seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  } else {
+    seqtab_df$totalCounts = seqtab_df[,sample_columns]
+  }
   #counts_filtering = nrow(seqtab_df)
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
@@ -551,18 +557,14 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   }
   
   asv_bin_var = dplyr::bind_rows(barcode_var, asv_bin_var)
-  
   phyl_result = compute_tree_cassiopeia(asv_bin_var, EvoTraceR_object$reference$ref_name)
-  
   ape::write.tree(phyl_result$tree_collapsed_phylo, #phyl_result$tree_uncollapsed, 
                   file = paste0(output_dir, "/tree_all_clones.newick"),
                   append = FALSE,
                   digits = 10, tree.names = FALSE)
-  
   EvoTraceR_object$phylogeny$tree = phyl_result$tree_collapsed_df
   EvoTraceR_object$phylogeny$tree_uncollapsed = phyl_result$tree_uncollapsed
   EvoTraceR_object$phylogeny$tree_phylo = phyl_result$tree_collapsed_phylo
-  
   write.csv(EvoTraceR_object$phylogeny$tree, file.path(output_dir, "tree_all_clones.csv"))
   
   return(EvoTraceR_object)
@@ -606,11 +608,9 @@ create_df_summary = function(EvoTraceR_object) {
   df_to_plot_final = tibble(merge(df_to_plot_final, 
                                   EvoTraceR_object$alignment$mutations_coordinates,
                                   by.x="asv_names", by.y="asv_names")) %>% dplyr::select(-c(spanned_cutSites))
-  
   df_to_plot_final = tibble(dplyr::right_join(df_to_plot_final,
-                                              EvoTraceR_object$phylogeny$tree %>% filter(isTip) %>% dplyr::select(label, group),
+                                              as.data.frame(EvoTraceR_object$phylogeny$tree) %>% filter(isTip) %>% dplyr::select(label, group),
                                               by=c("asv_names" = "label")))
-  
   output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_analysis/phylogeny_", mut_in_phyl))
   
   if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = TRUE)}  
