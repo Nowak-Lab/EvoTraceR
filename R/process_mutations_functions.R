@@ -78,21 +78,54 @@ coordinate_to_binary = function(mut_df, barcode) {
   
 }
 
-tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
+tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {  
+  cores <- detectCores()
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+
+  start_time <- Sys.time()
   cleaned_df = cleaned_df %>% 
     filter(!is.na(start)) %>% 
     rowwise() %>% mutate(positions = list(seq(start, end)))
-  
+  cat("Time taken for cleaned_df:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
+
+  start_time <- Sys.time()
   paste_fun = function(name, pos, alt_type) paste(name, pos, alt_type)
   valid_positions = unlist(mapply(paste_fun, cleaned_df$seq_names, cleaned_df$positions, cleaned_df$mutation_type))
-  
+  cat("Time taken for valid_positions:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
+
+  start_time <- Sys.time()
   tidy_alignment_full = tidy_alignment_full %>% mutate(tmp_col = paste(seq_names, position_bc260, alt))
-  tidy_alignment_full_new = tidy_alignment_full %>% mutate(alt = ifelse(tmp_col %in% valid_positions, alt, 'w') )
+  cat("Time taken for paste:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
+
+  start_time <- Sys.time()
+  # chunk data.table
+  setDT(tidy_alignment_full)
+  chunk_size <- nrow(tidy_alignment_full) / cores
+  chunks <- split(tidy_alignment_full, rep(1:cores, each=chunk_size))
+  # update alt column on chunks in parallel
+  result_list <- foreach(chunk = chunks, .combine=c) %dopar% {
+    chunk[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
+  }
+  # merge chunks together
+  tidy_alignment_full_new <- rbindlist(result_list)
+  tidy_alignment_full_new <- as.data.frame(tidy_alignment_full_new)
+
+  #tidy_alignment_full_new = tidy_alignment_full %>% mutate(alt = ifelse(tmp_col %in% valid_positions, alt, 'w') )
+  cat("Time taken for chunked alt mutate:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
+
+  start_time <- Sys.time()
   tidy_alignment_full_new = tidy_alignment_full_new %>% 
     filter(seq_names %in% c(barcode, cleaned_df$seq_names))
+  cat("Time taken for filter %in%:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
+
+  start_time <- Sys.time()
   tidy_alignment_full_new = tidy_alignment_full_new %>% filter(!(ref_asv == '-' & alt == 'w')) %>%
     select(-c(tmp_col))
+  cat("Time taken for filter select:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
   
+  stopCluster(cl)
+
   return(tidy_alignment_full_new)
 }
 
