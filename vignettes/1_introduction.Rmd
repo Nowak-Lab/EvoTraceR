@@ -36,6 +36,7 @@ if (!require("methods")) install.packages("methods")
 if (!require("data.table")) install.packages("data.table")
 if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require('foreach')) install.packages('foreach')
+if (!require('doParallel')) install.packages('doParallel')
 if (!require('parallel')) install.packages('parallel')
 if (!require('reticulate')) install.packages('reticulate')
 ```
@@ -51,8 +52,10 @@ umi_tools
 # library(reticulate)
 # reticulate::use_condaenv('EvoTraceR_enviroment')
 # Install EvoTraceR
-devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master") #, auth_token="<github-generated-auth-token>")
+#devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master") #, auth_token="<github-generated-auth-token>")
+devtools::load_all(".")
 ```
+
 
 
 In order to handle fastq files with forward and reverse reads, EvoTraceR uses trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge

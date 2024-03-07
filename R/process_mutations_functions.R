@@ -119,15 +119,15 @@ tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
   start_time <- Sys.time()
   # chunk data.table
   setDT(tidy_alignment_full)
+  #tidy_alignment_full[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
   chunk_size <- nrow(tidy_alignment_full) / cores
   chunks <- split(tidy_alignment_full, rep(1:cores, each=chunk_size))
   # update alt column on chunks in parallel
-  result_list <- foreach(chunk = chunks, .combine=c) %dopar% {
+  tidy_alignment_full_new <- foreach(chunk = chunks, .combine=function(...) rbindlist(list(...)), .multicombine=TRUE, .packages="data.table") %dopar% {
     chunk[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
+    return(chunk)
   }
-  # merge chunks together
-  tidy_alignment_full_new <- rbindlist(result_list)
-  tidy_alignment_full_new <- as.data.frame(tidy_alignment_full_new)
+  tidy_alignment_full_new <- as.data.frame(tidy_alignment_full)
 
   #tidy_alignment_full_new = tidy_alignment_full %>% mutate(alt = ifelse(tmp_col %in% valid_positions, alt, 'w') )
   cat("Time taken for chunked alt mutate:", as.numeric(difftime(Sys.time(), start_time)), "seconds\n")
