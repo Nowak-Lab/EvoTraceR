@@ -84,13 +84,14 @@ coordinate_to_binary = function(mut_df, barcode) {
   result <- rbindlist(result_list, fill=TRUE)
 
   # sum freqs for rows with matching asv_names that existed in multiple chunks
-  sum_freq = function(x) if(all(is.na(x))) 0L else sum(x, na.rm = TRUE)
+  sum_freq = function(x) sum(x, na.rm = TRUE)
   mut_df_wide <- result[, if (.N > 1) lapply(.SD, sum_freq) else .SD, by = asv_names]
 
   mut_df_wide <- as_tibble(mut_df_wide)
 
   mut_df_wide <- tibble::column_to_rownames(mut_df_wide, var = "asv_names")
-  
+
+  mut_df_wide[is.na(mut_df_wide)] <- 0
   mut_df_wide[mut_df_wide >= 1] = 1
   
   # Add row to binary mutation matrix corresponding to the original barcode (i.e. all mutations = 0)
