@@ -113,7 +113,6 @@ asv_collapsing = function(seqtab,
   names(dnastringset) <- seqtab$seq_names
   
   mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
-
   total_seq <- length(seqtab$seq_names)
   batch_size <- if(total_seq < batch_size * 2) 1 else batch_size
   batched_dnastringset <- c()
@@ -142,7 +141,6 @@ asv_collapsing = function(seqtab,
                  "position" = seq(1, nchar(aligned_reference$x[i])))
     }
   }, mc.cores = cores)
-
   alignment_tidy_ref_alt = bind_rows(result)
   
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
@@ -188,7 +186,6 @@ asv_collapsing = function(seqtab,
                                   left_right_window = cleaning_window)
   coord_cleaned = coord_cleaned %>% mutate(asv_names = seq_names)
   binary_matrix = coordinate_to_binary(coord_cleaned, barcode_name)
-  
   # Join the binary matrix with the sequences dataframe, in order to have counts
   mutations = unique(coord_cleaned$mut_id)
   binary_matrix$seq_names = rownames(binary_matrix) 
@@ -210,7 +207,6 @@ asv_collapsing = function(seqtab,
   clean_tidy_alignment = tidy_alignment_cleaned(alignment_tidy_ref_alt, 
                                                 coord_cleaned, 
                                                 no_indels %>% pull(seq_names))
-  
   return(list(seqtab_df = seqtab_collapsed, tidy_alignment = clean_tidy_alignment,
               mutations_coordinates = coord_cleaned %>% select(-c(asv_names)), binary_matrix = binary_matrix))
 }

@@ -341,7 +341,6 @@ asv_analysis = function(EvoTraceR_object,
                                    cleaning_window,
                                    batch_size,
 				   cores)
-  
   seqtab_df = collapse_result$seqtab_df
   tidy_alignment = collapse_result$tidy_alignment
   endseq_filter <- nrow(seqtab_df)
@@ -357,7 +356,6 @@ asv_analysis = function(EvoTraceR_object,
   counts_filtering = nrow(seqtab_df)
   
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
-  
   tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
   cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
   binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% seqtab_df$seq_names) #[seqtab_df$seq_names,]
