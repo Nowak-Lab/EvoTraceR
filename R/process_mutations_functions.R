@@ -64,21 +64,25 @@ clean_mutations = function(mut_df, orange_lines, left_right_window = c(3,3)) {
 coordinate_to_binary = function(mut_df, barcode) {
   mut_df = plyr::count(mut_df, vars = c("asv_names", "mut_id"))
 
+  cores <- detectCores()
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+
   setDT(mut_df)
-  chunk_size <- 10000
+  n <- nrow(mut_df)
+  chunk_size <- 100000
+  chunk_indices <- split(seq_len(n), ceiling(seq_len(n)/chunk_size))
   result_list <- list()
 
-  for (i in seq(1, nrow(mut_df), by = chunk_size)) {
-    chunk <- mut_df[i:min(i + chunk_size - 1, nrow(mut_df)), ]
+  result <- foreach(chunk_indices = chunk_indices, .combine = 'rbindlist', .packages = 'data.table') %dopar% {
+    chunk <- df[chunk_indices, ]
     chunk_wide <- dcast(chunk, asv_names ~ mut_id, value.var = "freq")
-    result_list[[length(result_list) + 1]] <- chunk_wide
+    return(chunk_wide)
   }
 
-  # Merge the pivoted chunks
-  final_result <- rbindlist(result_list, fill = TRUE)
   # sum freqs for rows with matching asv_names that existed in multiple chunks
   sum_freq = function(x) if(all(is.na(x))) 0L else sum(x, na.rm = TRUE)
-  mut_df_wide <- final_result[, lapply(.SD, sum_freq), by = asv_names]
+  mut_df_wide <- result[, if (.N > 1) lapply(.SD, sum_freq) else .SD, by = asv_names]
 
   mut_df_wide <- as.data.frame(mut_df_wide)
 
@@ -91,6 +95,8 @@ coordinate_to_binary = function(mut_df, barcode) {
   names(bc_mut) = colnames(mut_df_wide)
   mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = barcode),
                                  mut_df_wide)
+
+  stopCluster(cl)
   
   return(mut_df_wide)
   
@@ -108,11 +114,17 @@ tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
   paste_fun = function(name, pos, alt_type) paste(name, pos, alt_type)
   valid_positions = unlist(mapply(paste_fun, cleaned_df$seq_names, cleaned_df$positions, cleaned_df$mutation_type))
 
+  print("valid pos created")
+
   tidy_alignment_full = tidy_alignment_full %>% mutate(tmp_col = paste(seq_names, position_bc260, alt))
+
+  print("finish paste")
 
   setDT(tidy_alignment_full)
   tidy_alignment_full[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
   tidy_alignment_full_new <- as.data.frame(tidy_alignment_full)
+
+  print("finish in place valid pos compare")
 
   tidy_alignment_full_new = tidy_alignment_full_new %>% 
     filter(seq_names %in% c(barcode, cleaned_df$seq_names))
