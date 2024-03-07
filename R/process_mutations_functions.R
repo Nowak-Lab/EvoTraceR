@@ -74,17 +74,20 @@ coordinate_to_binary = function(mut_df, barcode) {
   chunk_indices <- split(seq_len(n), ceiling(seq_len(n)/chunk_size))
   result_list <- list()
 
-  result <- foreach(chunk_indices = chunk_indices, .combine = 'rbindlist', .packages = 'data.table') %dopar% {
-    chunk <- df[chunk_indices, ]
+  result_list <- foreach(chunk_indices = chunk_indices, .packages = 'data.table') %dopar% {
+    chunk <- mut_df[chunk_indices, ]
     chunk_wide <- dcast(chunk, asv_names ~ mut_id, value.var = "freq")
     return(chunk_wide)
   }
+
+  # merge results
+  result <- rbindlist(result_list, fill=TRUE)
 
   # sum freqs for rows with matching asv_names that existed in multiple chunks
   sum_freq = function(x) if(all(is.na(x))) 0L else sum(x, na.rm = TRUE)
   mut_df_wide <- result[, if (.N > 1) lapply(.SD, sum_freq) else .SD, by = asv_names]
 
-  mut_df_wide <- as.data.frame(mut_df_wide)
+  mut_df_wide <- as_tibble(mut_df_wide)
 
   mut_df_wide <- tibble::column_to_rownames(mut_df_wide, var = "asv_names")
   
