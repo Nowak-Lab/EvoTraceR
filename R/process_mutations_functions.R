@@ -62,9 +62,34 @@ clean_mutations = function(mut_df, orange_lines, left_right_window = c(3,3)) {
 }
 
 coordinate_to_binary = function(mut_df, barcode) {
-  mut_df_wide = plyr::count(mut_df, vars = c("asv_names", "mut_id")) %>% 
-    pivot_wider(names_from = mut_id, values_from = freq) %>% tibble::column_to_rownames("asv_names")
-  
+  mut_df = plyr::count(mut_df, vars = c("asv_names", "mut_id"))
+
+  cores <- detectCores()
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+
+  setDT(mut_df)
+  n <- nrow(mut_df)
+  chunk_size <- 100000
+  chunk_indices <- split(seq_len(n), ceiling(seq_len(n)/chunk_size))
+  result_list <- list()
+
+  result_list <- foreach(chunk_indices = chunk_indices, .packages = 'data.table') %dopar% {
+    chunk <- mut_df[chunk_indices, ]
+    chunk_wide <- dcast(chunk, asv_names ~ mut_id, value.var = "freq")
+    return(chunk_wide)
+  }
+
+  # merge results
+  result <- rbindlist(result_list, fill=TRUE)
+  # sum freqs for rows with matching asv_names that existed in multiple chunks
+  sum_freq = function(x) sum(x, na.rm = TRUE)
+  mut_df_wide <- result[, if (.N > 1) lapply(.SD, sum_freq) else .SD, by = asv_names]
+
+  mut_df_wide <- as_tibble(mut_df_wide)
+
+  mut_df_wide <- tibble::column_to_rownames(mut_df_wide, var = "asv_names")
+
   mut_df_wide[is.na(mut_df_wide)] <- 0
   mut_df_wide[mut_df_wide >= 1] = 1
   
@@ -73,26 +98,39 @@ coordinate_to_binary = function(mut_df, barcode) {
   names(bc_mut) = colnames(mut_df_wide)
   mut_df_wide = dplyr::bind_rows(data.frame(bc_mut, row.names = barcode),
                                  mut_df_wide)
+
+  stopCluster(cl)
   
   return(mut_df_wide)
   
 }
 
-tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
+tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {  
+  cores <- detectCores()
+  cl <- makeCluster(cores)
+  registerDoParallel(cl)
+
   cleaned_df = cleaned_df %>% 
     filter(!is.na(start)) %>% 
     rowwise() %>% mutate(positions = list(seq(start, end)))
-  
+
   paste_fun = function(name, pos, alt_type) paste(name, pos, alt_type)
   valid_positions = unlist(mapply(paste_fun, cleaned_df$seq_names, cleaned_df$positions, cleaned_df$mutation_type))
-  
+
   tidy_alignment_full = tidy_alignment_full %>% mutate(tmp_col = paste(seq_names, position_bc260, alt))
-  tidy_alignment_full_new = tidy_alignment_full %>% mutate(alt = ifelse(tmp_col %in% valid_positions, alt, 'w') )
+
+  setDT(tidy_alignment_full)
+  tidy_alignment_full[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
+  tidy_alignment_full_new <- as.data.frame(tidy_alignment_full)
+
   tidy_alignment_full_new = tidy_alignment_full_new %>% 
     filter(seq_names %in% c(barcode, cleaned_df$seq_names))
+
   tidy_alignment_full_new = tidy_alignment_full_new %>% filter(!(ref_asv == '-' & alt == 'w')) %>%
     select(-c(tmp_col))
   
+  stopCluster(cl)
+
   return(tidy_alignment_full_new)
 }
 
