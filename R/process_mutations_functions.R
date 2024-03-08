@@ -70,7 +70,7 @@ coordinate_to_binary = function(mut_df, barcode) {
 
   setDT(mut_df)
   n <- nrow(mut_df)
-  chunk_size <- 100000
+  chunk_size <- 1000
   chunk_indices <- split(seq_len(n), ceiling(seq_len(n)/chunk_size))
   result_list <- list()
 
