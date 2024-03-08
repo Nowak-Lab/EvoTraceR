@@ -82,7 +82,6 @@ coordinate_to_binary = function(mut_df, barcode) {
 
   # merge results
   result <- rbindlist(result_list, fill=TRUE)
-
   # sum freqs for rows with matching asv_names that existed in multiple chunks
   sum_freq = function(x) sum(x, na.rm = TRUE)
   mut_df_wide <- result[, if (.N > 1) lapply(.SD, sum_freq) else .SD, by = asv_names]
@@ -118,17 +117,11 @@ tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {
   paste_fun = function(name, pos, alt_type) paste(name, pos, alt_type)
   valid_positions = unlist(mapply(paste_fun, cleaned_df$seq_names, cleaned_df$positions, cleaned_df$mutation_type))
 
-  print("valid pos created")
-
   tidy_alignment_full = tidy_alignment_full %>% mutate(tmp_col = paste(seq_names, position_bc260, alt))
-
-  print("finish paste")
 
   setDT(tidy_alignment_full)
   tidy_alignment_full[, alt := fifelse(tmp_col %in% valid_positions, alt, 'w')]
   tidy_alignment_full_new <- as.data.frame(tidy_alignment_full)
-
-  print("finish in place valid pos compare")
 
   tidy_alignment_full_new = tidy_alignment_full_new %>% 
     filter(seq_names %in% c(barcode, cleaned_df$seq_names))
