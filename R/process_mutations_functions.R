@@ -66,7 +66,7 @@ coordinate_to_binary = function(mut_df, barcode) {
 
   cores <- detectCores()
   cl <- makeCluster(cores)
-  registerDoParallel(cl)
+  doParallel::registerDoParallel(cl)
 
   setDT(mut_df)
   n <- nrow(mut_df)
@@ -108,7 +108,7 @@ coordinate_to_binary = function(mut_df, barcode) {
 tidy_alignment_cleaned = function(tidy_alignment_full, cleaned_df, barcode) {  
   cores <- detectCores()
   cl <- makeCluster(cores)
-  registerDoParallel(cl)
+  doParallel::registerDoParallel(cl)
 
   cleaned_df = cleaned_df %>% 
     filter(!is.na(start)) %>% 
