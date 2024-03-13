@@ -39,7 +39,8 @@ Imports:
     foreach,
     purrr,
     reticulate,
-    parallel
+    parallel,
+    doParallel
 Suggests:
     BiocGenerics,
     BiocStyle,

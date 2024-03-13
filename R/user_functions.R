@@ -272,6 +272,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @import foreach
 #' @importFrom purrr map
 #' @import parallel
+#' @importFrom doParallel registerDoParallel 
 asv_analysis = function(EvoTraceR_object,
                         #barcode = 'BC10v0',
                         ref_name = 'BC10v0',
