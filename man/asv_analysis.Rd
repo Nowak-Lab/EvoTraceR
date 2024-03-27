@@ -15,7 +15,7 @@ asv_analysis(
   ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251),
   ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
   output_figures = TRUE,
-  asv_count_cutoff = 2,
+  asv_count_cutoff = 20000,
   pwa_gapOpening = -25,
   pwa_gapExtension = 0,
   pwa_match = 15,
@@ -48,7 +48,7 @@ Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{output_figures}{(Optional). Default TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
-\item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.}
+\item{asv_count_cutoff}{(Optional). Default to 20000. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.}
 
 \item{pwa_gapOpening}{(Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
 
@@ -124,10 +124,10 @@ in package \code{Biostrings}, aligning each sequence to the original barcode con
 After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
 it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
 it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.
-Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
-those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
-Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
-dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+Next, it pools together those sequences that differ by one another only by substitutions.
+Then it computes the normalized counts of each ASV in each sample, dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+After normalization, counts are summed in each ASV, and those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff} are removed.
+Finally, it performs filtering of the sequences based on their flanking sequences.
 }
 \details{
 Then, using the CPM it computes different statistics for the final ASVS, storing:
