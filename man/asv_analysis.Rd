@@ -15,7 +15,7 @@ asv_analysis(
   ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251),
   ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
   output_figures = TRUE,
-  asv_count_cutoff = 20000,
+  asv_count_cutoff = 2,
   pwa_gapOpening = -25,
   pwa_gapExtension = 0,
   pwa_match = 15,
@@ -48,7 +48,7 @@ Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{output_figures}{(Optional). Default TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.}
 
-\item{asv_count_cutoff}{(Optional). Default to 20000. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.}
+\item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.}
 
 \item{pwa_gapOpening}{(Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
 

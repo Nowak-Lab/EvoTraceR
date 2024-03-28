@@ -197,7 +197,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @param ref_cut_sites Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
 #' @param ref_border_sites c(26, 52, 78, 104, 130, 156, 182, 208, 234).
 #' @param output_figures (Optional). Default TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
-#' @param asv_count_cutoff (Optional). Default to 20000. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.
+#' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.
 #' @param pwa_gapOpening (Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
 #' @param pwa_gapExtension (Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description). Default is 0.
 #' @param pwa_mismatch (Optional). Default is -4. Parameter indicating the penalty for mismatch events during pairwise alignment with \code{Biostrings}.
@@ -283,7 +283,7 @@ asv_analysis = function(EvoTraceR_object,
                         ref_cut_sites = c(17, 43, 69, 95, 121, 147, 173, 199, 225, 251), # cut sites for Cas9 based on "ref_seq" 
                         ref_border_sites = c(1, 26, 52, 78, 104, 130, 156, 182, 208, 234),
                         output_figures = TRUE,
-                        asv_count_cutoff = 20000,
+                        asv_count_cutoff = 2,
                         pwa_gapOpening = -25,
                         pwa_gapExtension = 0,
                         pwa_match = 15,
