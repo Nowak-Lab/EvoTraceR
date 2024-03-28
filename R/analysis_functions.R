@@ -218,7 +218,7 @@ asv_collapsing = function(seqtab,
 # 
 # EvoTraceR_object where the statistics on ASV will be computed. 
 # sample. List of the column names containing the organs/days.
-# asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
+# asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be in Counts Per Million (CPM)
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
 asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, nmbc) {
   seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe

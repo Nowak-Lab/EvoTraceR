@@ -166,10 +166,10 @@ initialize_EvoTraceR = function(output_dir,
 #' After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
 #' it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
 #' it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.
-#' Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
-#' those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff}.
-#' Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
-#' dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+#' Next, it pools together those sequences that differ by one another only by substitutions.
+#' Then it computes the normalized counts of each ASV in each sample, dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+#' After normalization, counts are summed in each ASV, and those sequences showing a frequency lower than the threshold specified in parameter \code{asv_count_cutoff} are removed.
+#' Finally, it performs filtering of the sequences based on their flanking sequences.
 #'
 #' Then, using the CPM it computes different statistics for the final ASVS, storing:
 #'  the relative frequency of all ASVs in each sample. 
@@ -197,7 +197,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @param ref_cut_sites Positions in the reference sequence of the cutting sites. Default is c(17, 42, 68, 94, 120, 146, 171, 198, 224, 251),
 #' @param ref_border_sites c(26, 52, 78, 104, 130, 156, 182, 208, 234).
 #' @param output_figures (Optional). Default TRUE: Boolean indicating whether a user whishes to store a figure indicating the number of ASV tracked during the different steps of the analysis.
-#' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts for an ASV to be considered in the statistics.
+#' @param asv_count_cutoff (Optional). Default to 2. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.
 #' @param pwa_gapOpening (Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).
 #' @param pwa_gapExtension (Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description). Default is 0.
 #' @param pwa_mismatch (Optional). Default is -4. Parameter indicating the penalty for mismatch events during pairwise alignment with \code{Biostrings}.
@@ -349,63 +349,72 @@ asv_analysis = function(EvoTraceR_object,
   cleaned_coordinate_matrix = collapse_result$mutations_coordinates
   binary_mutation_matrix = collapse_result$binary_matrix
   
-  seqtab_df = seqtab_df %>% rowwise() %>% 
+  EvoTraceR_object$seqtab_dataframe_nonnorm = seqtab_df
+  # normalization step
+  norm_seqtab_df = seqtab_df
+  norm_seqtab_df[,sample_columns] = sapply(sweep(norm_seqtab_df[, sample_columns], 2, 
+                                                EvoTraceR_object$preprocessing$track[sample_columns,'input'], '/') * 1e6, as.integer)  
+
+  EvoTraceR_object$seqtab_dataframe_norm = norm_seqtab_df
+
+  norm_seqtab_df = norm_seqtab_df %>% rowwise() %>% 
     mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
     ungroup()
-  seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
-  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
-  counts_filtering = nrow(seqtab_df)
+  norm_seqtab_df = norm_seqtab_df[rowSums(norm_seqtab_df[,sample_columns]) > 0,]
+  norm_seqtab_df$totalCounts = rowSums(norm_seqtab_df[,sample_columns])
+  counts_filtering = nrow(norm_seqtab_df)
   
-  seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
-  tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
-  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% seqtab_df$seq_names) #[seqtab_df$seq_names,]
+  norm_seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = norm_seqtab_df, flanking_filtering = flanking_filtering)
+  tidy_alignment = tidy_alignment %>% filter(seq_names %in% norm_seqtab_df$seq_names)
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names)
+  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names) #[norm_seqtab_df$seq_names,]
   binary_mutation_matrix = binary_mutation_matrix %>% select_if(~ !is.numeric(.) || sum(.) != 0)
-  flanking_filtering = nrow(seqtab_df)
+  flanking_filtering = nrow(norm_seqtab_df)
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   # In case no original barcode is found then insert it with 0 counts
-  if (sum(seqtab_df$seq == barcodes_info$ref_seq) == 0){
+  if (sum(norm_seqtab_df$seq == barcodes_info$ref_seq) == 0){
     
-    seqtab_df = seqtab_df %>% dplyr::add_row(seq_names = barcodes_info$ref_name, 
+    norm_seqtab_df = norm_seqtab_df %>% dplyr::add_row(seq_names = barcodes_info$ref_name, 
                                              seq = barcodes_info$ref_seq)
-    seqtab_df[seqtab_df$seq_names == barcodes_info$ref_name, sample_columns] = 0 
+    norm_seqtab_df[norm_seqtab_df$seq_names == barcodes_info$ref_name, sample_columns] = 0 
     
   } else {
-    barcode_seqname = as.character(seqtab_df[seqtab_df$seq == barcodes_info$ref_seq, "seq_names"])
-    seqtab_df[seqtab_df$seq_names == barcode_seqname, "seq_names"] = paste0(barcodes_info$ref_name, '')#".NMBC")
+    barcode_seqname = as.character(norm_seqtab_df[norm_seqtab_df$seq == barcodes_info$ref_seq, "seq_names"])
+    norm_seqtab_df[norm_seqtab_df$seq_names == barcode_seqname, "seq_names"] = paste0(barcodes_info$ref_name, '')#".NMBC")
     tidy_alignment[tidy_alignment$seq_names == barcode_seqname, 'seq_names'] = barcodes_info$ref_name
   }
   
   
   # Now sort ASV by total frequency and assign an ASV ID
-  seqtab_df_clean_asv <-
-    tibble(seqtab_df) %>% mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>% arrange(-asv_total_freq) %>%
+  norm_seqtab_df_clean_asv <-
+    tibble(norm_seqtab_df) %>% mutate(asv_total_freq = rowSums(across(where(is.numeric)))) %>% arrange(-asv_total_freq) %>%
     mutate(asv_names = seq_names)
   # Find Row for NMBC
-  seqtab_df_clean_nmbc <- seqtab_df_clean_asv %>% filter(asv_names == barcodes_info$ref_name)  
+  norm_seqtab_df_clean_nmbc <- norm_seqtab_df_clean_asv %>% filter(asv_names == barcodes_info$ref_name)  
   
   # skip NMBC
-  seqtab_df_clean_asv <-
-    seqtab_df_clean_asv %>% filter(seq_names != barcodes_info$ref_name)
+  norm_seqtab_df_clean_asv <-
+    norm_seqtab_df_clean_asv %>% filter(seq_names != barcodes_info$ref_name)
 
   # create ASV count
-  seqtab_df_clean_asv$asv_names <- paste0("ASV", 
-                                          formatC(c(1:nrow(seqtab_df_clean_asv)), 
-                                                  width = nchar(trunc(nrow(seqtab_df_clean_asv))), 
+  norm_seqtab_df_clean_asv$asv_names <- paste0("ASV", 
+                                          formatC(c(1:nrow(norm_seqtab_df_clean_asv)), 
+                                                  width = nchar(trunc(nrow(norm_seqtab_df_clean_asv))), 
                                                   format = "d", flag = "0")) # -1 to start 00 with no changes sequence
-  # add back row with "seqtab_df_perf_match"  
-  seqtab_df_clean_asv <-
-    seqtab_df_clean_asv %>%
-    add_row(seqtab_df_clean_nmbc) %>%
+  
+  # add back row with "norm_seqtab_df_perf_match"  
+  norm_seqtab_df_clean_asv <-
+    norm_seqtab_df_clean_asv %>%
+    add_row(norm_seqtab_df_clean_nmbc) %>%
     arrange(-asv_total_freq) #%>%
 
   # Recompute tidy alignment matrix, mutations coordinates and binary mutation matrix.
-  tidy_alignment_clean = tidy_alignment %>% ungroup() %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>% 
+  tidy_alignment_clean = tidy_alignment %>% ungroup() %>% left_join(norm_seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>% 
     select(-c(seq_names))
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix  %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix  %>% left_join(norm_seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
     select(-c(seq_names))
-  binary_mutation_matrix = binary_mutation_matrix %>% left_join(seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
+  binary_mutation_matrix = binary_mutation_matrix %>% left_join(norm_seqtab_df_clean_asv %>% select(seq_names, asv_names), by = 'seq_names') %>%
     tibble::column_to_rownames("asv_names") %>% select(-c(seq_names))
   
   bc_mut = as.list(rep(0, ncol(binary_mutation_matrix)))
@@ -413,32 +422,19 @@ asv_analysis = function(EvoTraceR_object,
   binary_mutation_matrix = dplyr::bind_rows(data.frame(bc_mut, row.names = barcodes_info$ref_name),
                                             binary_mutation_matrix)
   
-  seqtab_df_clean_asv = seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
+  norm_seqtab_df_clean_asv = norm_seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
   # final number of ASVs for analysis
-  clean_asv <- nrow(seqtab_df_clean_asv)
+  clean_asv <- nrow(norm_seqtab_df_clean_asv)
   
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
   
   cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%
     dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
   
-  EvoTraceR_object$clean_asv_dataframe = seqtab_df_clean_asv
   EvoTraceR_object$alignment$asv_barcode_alignment = tidy_alignment_clean
   EvoTraceR_object$alignment$mutations_coordinates = cleaned_coordinate_matrix
   
-  
-  norm_seqtab_df_clean_asv = seqtab_df_clean_asv
-  EvoTraceR_object$clean_asv_dataframe_nonnorm = seqtab_df_clean_asv
-  
-  norm_seqtab_df_clean_asv[,sample_columns] = sapply(sweep(norm_seqtab_df_clean_asv[, sample_columns], 2, 
-                                                           EvoTraceR_object$preprocessing$track[sample_columns,'input'], '/') * 1e6, as.integer)
-  
-  norm_seqtab_df_clean_asv[sample_columns] = norm_seqtab_df_clean_asv[sample_columns]
-  
-  
-  
   EvoTraceR_object$clean_asv_dataframe = norm_seqtab_df_clean_asv
-  
 
   EvoTraceR_object = asv_statistics(EvoTraceR_object, 
                                     sample_columns, 
