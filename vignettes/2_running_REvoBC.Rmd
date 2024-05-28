@@ -51,8 +51,8 @@ During the above computation, all unique sequences from each sample have been id
 This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
 First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function *pairwiseAlignment*
-in package *Biostrings*, aligning each sequence to the original barcode considered in the analysis 
-(See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
+in package *pwalign*, aligning each sequence to the original barcode considered in the analysis 
+(See the pwalign documentation \href{https://bioconductor.org/packages/release/bioc/html/pwalign.html}{here} for more details).
 After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
 it removes the ones that are too small and don't span any cut site: to perform this filter, it expands the start and end position by the number of bases specified in the parameter *cleaning_window*,
 it counts the number of cut sites spanned after the expansion and it removes those that span 0 sites.

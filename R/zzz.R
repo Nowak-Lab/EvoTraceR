@@ -5,4 +5,12 @@
                            "asv_names", "asv_total_freq", "cons_bin", "day_organ", "name", "perc_in_sample",
                            "position", "position_bc260", "read_asv", "ref_asv", "seq_names", "width",
                            "alt_bin", "condition", "seq_end", "seq_n", "seq_start", "sum_perc", "total_counts"))
+
+  bioc_version <- BiocManager::version()
+  if (bioc_version >= "3.19") {
+    if (!requireNamespace("pwalign", quietly = TRUE)) {
+      BiocManager::install("pwalign")
+    }
+    library(pwalign)
+  }
 }

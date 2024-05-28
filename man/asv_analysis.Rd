@@ -50,17 +50,17 @@ Must be one of c('left', 'right', 'both', 'either'), default is 'both'}
 
 \item{asv_count_cutoff}{(Optional). Default to 2. Minimum number of counts in Counts Per Million (CPM) for an ASV to be considered in the statistics.}
 
-\item{pwa_gapOpening}{(Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description).}
+\item{pwa_gapOpening}{(Optional). Default is -25. Parameter \code{gapOpening} passed to \code{pairwiseAlignment} from \code{pwalign} (See description).}
 
-\item{pwa_gapExtension}{(Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{Biostrings} (See description). Default is 0.}
+\item{pwa_gapExtension}{(Optional). Default is 0. Parameter \code{gapExtension} passed to \code{pairwiseAlignment} from \code{pwalign} (See description). Default is 0.}
 
-\item{pwa_match}{(Optional). Default is 15. Parameter indicating the score for matches during pairwise alignment with \code{Biostrings}. This parameter,
+\item{pwa_match}{(Optional). Default is 15. Parameter indicating the score for matches during pairwise alignment with \code{pwalign}. This parameter,
 together with the previous one, are used to construct the substitution matrix used by the function \code{pairwiseAlignment}.}
 
-\item{pwa_mismatch}{(Optional). Default is -4. Parameter indicating the penalty for mismatch events during pairwise alignment with \code{Biostrings}.}
+\item{pwa_mismatch}{(Optional). Default is -4. Parameter indicating the penalty for mismatch events during pairwise alignment with \code{pwalign}.}
 
 \item{pwa_type}{(Optional). Parameter indicating the type of pairwise alignment. Must be one of One of "global", "local", "overlap", "global-local", and "local-global".
-For more details see \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{original documentation}}
+For more details see \href{https://bioconductor.org/packages/release/bioc/html/pwalign.html}{original documentation}}
 
 \item{cleaning_window}{(Optional). Default is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).}
 
@@ -119,8 +119,8 @@ This function performs the analysis on ASV sequences identified by the previous 
 First, it pools together those sequences characterized by a Hamming distance equals or lower than 2, summing their counts. To perform this step, EvoTraceR uses the
 sequence clusering agorithm impemented in the python package \href{https://umi-tools.readthedocs.io/en/latest/QUICK_START.html}{UMI-tools}
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function \code{pairwiseAlignment}
-in package \code{Biostrings}, aligning each sequence to the original barcode considered in the analysis.
-(See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
+in package \code{pwalign}, aligning each sequence to the original barcode considered in the analysis.
+(See the pwalign documentation \href{https://bioconductor.org/packages/release/bioc/html/pwalign.html}{here} for more details).
 After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
 it removes the ones that are too small and don't span any cut site: to perform this filter, it exapnds the start and end position by the number of bases specified in the parameter \code{cleaning_window},
 it counts the number of cut sites spanned after the expantion and it removes those that span 0 sites.

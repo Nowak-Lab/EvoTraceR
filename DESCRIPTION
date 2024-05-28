@@ -45,7 +45,8 @@ Suggests:
     BiocGenerics,
     BiocStyle,
     testthat,
-    knitr
+    knitr,
+    pwalign (>= 1.0.0)
 Name:
     EvoTraceR
 Description:
@@ -59,5 +60,5 @@ biocViews:
     BiomedicalInformatics,
     SingleCell,
     SomaticMutation
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
