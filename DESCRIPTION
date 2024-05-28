@@ -62,3 +62,4 @@ biocViews:
     SomaticMutation
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
+Additional_repositories: https://bioconductor.org/packages/release/bioc
