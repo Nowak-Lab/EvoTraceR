@@ -257,6 +257,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @export asv_analysis
 #'
 #' @importFrom Biostrings DNAStringSet
+#' @importFrom pwalign pairwiseAlignment pid nedit score nucleotideSubstitutionMatrix alignedSubject alignedPattern
 #' @importFrom benthos total_abundance species_richness margalef rygg simpson hpie hill1 hill2 shannon
 # @importFrom lemon coord_capped_cart facet_rep_grid
 #' @importFrom scales comma
