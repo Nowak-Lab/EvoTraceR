@@ -162,6 +162,7 @@ jobs:
           install.packages("tidyverse")
           install.packages("cli")
           BiocManager::install("Biostrings")
+          BiocManager::install("pwalign")
           install.packages("benthos")
           # install.packages("lemon")
           install.packages("scales")
