@@ -6,10 +6,11 @@
                            "position", "position_bc260", "read_asv", "ref_asv", "seq_names", "width",
                            "alt_bin", "condition", "seq_end", "seq_n", "seq_start", "sum_perc", "total_counts"))
     
-  if (packageVersion("Biostrings") > "2.70.0") {
-    if (!requireNamespace("BiocManager", quietly = TRUE)) {
-      install.packages("BiocManager")
-    }
+  if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+  }
+
+  if (BiocManager::version() >= "3.19") {
     if (!requireNamespace("pwalign", quietly = TRUE)) {
       BiocManager::install("pwalign")
     }
