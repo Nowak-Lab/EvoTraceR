@@ -112,12 +112,7 @@ asv_collapsing = function(seqtab,
   dnastringset <- Biostrings::DNAStringSet(seqtab$seq) 
   names(dnastringset) <- seqtab$seq_names
   
-  nucleotideSubstitutionMatrix <- get_pwalign_nt_sub_matrix_func()
-  pairwiseAlignment <- get_pwalign_func()
-  alignedSubject <- get_pwalign_subject_func()
-  alignedPattern <- get_pwalign_pattern_func()
-
-  mx_crispr <- nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
+  mx_crispr <- pwalign::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   total_seq <- length(seqtab$seq_names)
   batch_size <- if(total_seq < batch_size * 2) 1 else batch_size
   batched_dnastringset <- c()
@@ -130,14 +125,14 @@ asv_collapsing = function(seqtab,
 
   cli::cli_alert_info('Computing pairwise alignment')
   result <- parallel::mclapply(batched_dnastringset, function(dna_j) {
-    mpwa <- pairwiseAlignment(subject = barcode, 
+    mpwa <- pwalign::pairwiseAlignment(subject = barcode, 
                                    pattern = dna_j, 
                                    substitutionMatrix = mx_crispr,
                                    gapOpening = pwa_gapOpening,
                                    gapExtension = pwa_gapExtension,
                                    type = 'global')
-    aligned_sequences = as.data.frame(alignedPattern(mpwa))
-    aligned_reference = as.data.frame(alignedSubject(mpwa))
+    aligned_sequences = as.data.frame(pwalign::alignedPattern(mpwa))
+    aligned_reference = as.data.frame(pwalign::alignedSubject(mpwa))
     out_row = foreach::foreach(i = seq(1, length(dna_j)), .combine=rbind) %do% {
   
       data.frame("seq_names" = rownames(aligned_sequences)[i], 
@@ -226,11 +221,7 @@ asv_collapsing = function(seqtab,
 # asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be in Counts Per Million (CPM)
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
 asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, nmbc) {
-  pairwiseAlignment <- get_pwalign_func()
-  pwalign_nedit <- get_pwalign_nedit_func()
-  pwalign_pid <- get_pwalign_pid_func()
-  pwalign_score <- get_pwalign_score_func()
-
+  
   seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe
   
   seqtab_df_clean_asv_long <-
@@ -353,15 +344,15 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
+  pwa <- pwalign::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
                            pattern = df_to_plot_perf_match$seq,
                            type="global", gapOpening = 20, gapExtension = 1)
   
-  df_to_plot_perf_match$pid <- pwalign_pid(pwa)
+  df_to_plot_perf_match$pid <- pwalign::pid(pwa)
   # nedit = Computes the Levenshtein edit distance of the alignments
-  df_to_plot_perf_match$nedit <- pwalign_nedit(pwa)
+  df_to_plot_perf_match$nedit <- pwalign::nedit(pwa)
   # score = Extracts the pairwise sequence alignment scores
-  df_to_plot_perf_match$alignment_score <- pwalign_score(pwa)
+  df_to_plot_perf_match$alignment_score <- pwalign::score(pwa)
   
   EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   

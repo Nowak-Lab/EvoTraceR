@@ -327,8 +327,7 @@ asv_analysis = function(EvoTraceR_object,
   }
   #counts_filtering = nrow(seqtab_df)
   
-  nucleotideSubstitutionMatrix <- get_pwalign_nt_sub_matrix_func()
-  mx_crispr <- nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
+  mx_crispr <- pwalign::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   ###### COLLAPSING
   # Collapse sequences that differ only by substitutions.
   collapse_result = asv_collapsing(seqtab_df, 
