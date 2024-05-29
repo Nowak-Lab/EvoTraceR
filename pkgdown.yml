@@ -1,8 +1,8 @@
 pandoc: 3.1.11
-pkgdown: 2.0.7.9000
-pkgdown_sha: 676cf1dce39e4dc5aa1bcb671b1e14e992589a0a
+pkgdown: 2.0.9.9000
+pkgdown_sha: 67d41103b3580cab93d9ca29488b1370c050b1cd
 articles:
   1_introduction: 1_introduction.html
   2_running_REvoBC: 2_running_REvoBC.html
-last_built: 2024-03-28T17:27Z
+last_built: 2024-05-29T20:02Z
 

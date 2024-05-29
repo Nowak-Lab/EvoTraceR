@@ -19,8 +19,6 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
-    
-
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -36,7 +34,6 @@
         <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.0</span>
       </span>
     </div>
-
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
 <li>
@@ -45,7 +42,6 @@
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
-     
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
@@ -62,7 +58,6 @@
 <li>
   <a href="https://github.com/Nowak-Lab/EvoTraceR/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
-     
   </a>
 </li>
       </ul>
@@ -72,23 +67,14 @@
 <!--/.container -->
 </div>
 <!--/.navbar -->
-
-      
-
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Running EvoTraceR</h1>
-            
-      
-      <small class="dont-index">Source: <a href="https://github.com/Nowak-Lab/EvoTraceR/blob/HEAD/vignettes/2_running_REvoBC.Rmd" class="external-link"><code>vignettes/2_running_REvoBC.Rmd</code></a></small>
+                        <small class="dont-index">Source: <a href="https://github.com/Nowak-Lab/EvoTraceR/blob/HEAD/vignettes/2_running_REvoBC.Rmd" class="external-link"><code>vignettes/2_running_REvoBC.Rmd</code></a></small>
       <div class="hidden name"><code>2_running_REvoBC.Rmd</code></div>
-
     </div>
-
-    
-    
-<div class="section level2">
+        <div class="section level2">
 <h2 id="setup-the-environement">Setup the environement<a class="anchor" aria-label="anchor" href="#setup-the-environement"></a>
 </h2>
 <p><em>EvoTraceR</em> is the computational tool inside the project
@@ -152,9 +138,9 @@ the previous steps and aligns them to the reference sequence. First, it
 pools together those sequences characterized by a Hamming distance
 equals or lower than 2. Then it performs pairwise alignment using
 Needleman-Wunsch global alignment algorithm implemented in function
-<em>pairwiseAlignment</em> in package <em>Biostrings</em>, aligning each
+<em>pairwiseAlignment</em> in package <em>pwalign</em>, aligning each
 sequence to the original barcode considered in the analysis (See the
-Biostrings documentation for more details). After identifying all indels
+pwalign documentation for more details). After identifying all indels
 (insertions are identified by their start position and number of
 nucleoides inserted, while deletions are identified by their start and
 end position), it removes the ones that are too small and don’t span any
@@ -216,34 +202,20 @@ have been computed for the phylogenetic analysis.</p>
 <p>Save EvoTraceR_object</p>
 </div>
   </div>
-
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
         <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
     </nav>
 </div>
-
 </div>
-
-
-
       <footer><div class="copyright">
   <p></p>
 <p>Developed by Lucrezia Patruno, Daniele Ramazzotti, Armin Scheben, Stephen Staklinski, Rebecca Hassett, Dawid Nowak.</p>
 </div>
-
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.9000.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.9.9000.</p>
 </div>
-
       </footer>
 </div>
-
-  
-
-
-  
-
   </body>
 </html>
