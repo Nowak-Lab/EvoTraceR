@@ -1,48 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/articles/1_introduction.html</loc>
-  </url>
-  <url>
-    <loc>/articles/2_running_REvoBC.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/EvoTraceR_object.html</loc>
-  </url>
-  <url>
-    <loc>/reference/analyse_mutations.html</loc>
-  </url>
-  <url>
-    <loc>/reference/asv_analysis.html</loc>
-  </url>
-  <url>
-    <loc>/reference/create_df_summary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/infer_phylogeny.html</loc>
-  </url>
-  <url>
-    <loc>/reference/initialize_EvoTraceR.html</loc>
-  </url>
-  <url>
-    <loc>/reference/setup_reticulate.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/articles/1_introduction.html</loc></url>
+<url><loc>/articles/2_running_REvoBC.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/EvoTraceR_object.html</loc></url>
+<url><loc>/reference/analyse_mutations.html</loc></url>
+<url><loc>/reference/asv_analysis.html</loc></url>
+<url><loc>/reference/create_df_summary.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/infer_phylogeny.html</loc></url>
+<url><loc>/reference/initialize_EvoTraceR.html</loc></url>
+<url><loc>/reference/setup_reticulate.html</loc></url>
 </urlset>
+
