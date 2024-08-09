@@ -360,3 +360,46 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   
   return(EvoTraceR_object)
 }
+
+# Function description here
+build_character_matrix <- function(binary_matrix, cut_sites) {
+  muts <- names(binary_matrix)
+  asvs <- row.names(binary_matrix)
+
+  # map mutations to nearest sites
+  site_mut_map <- setNames(vector("list", length(cut_sites)), cut_sites)
+  muts %>%
+    map(~ {
+      mut_start_idx <- as.numeric(regmatches(.x, regexec("_([0-9]+)_", .x))[1][2])
+      nearest_site <- cut_sites[which.min(abs(cut_sites - mut_start_idx))]
+      site_mut_map[[nearest_site]] <- c(site_mut_map[[nearest_site]], .x)
+    })
+
+  site_mut_list <- site_mut_map[cut_sites]
+  mut_profile_map <- list()
+  character_matrix <- data.frame(matrix(ncol=length(cut_sites), nrow=length(asvs)))
+  num_muts = 1
+
+  # process each asv and site combination
+  process_asv_site <- function(asv, site, muts_at_site) {
+    columns_checked <- names(binary_matrix[asv, muts_at_site])[binary_matrix[asv, muts_at_site] == 1]
+    if (length(columns_checked) == 0) {
+      mut_profile_id <- 0
+    } else {
+      mut_profile <- paste(sort(columns_checked), collapse = ",")
+      if (!(mut_profile %in% names(mut_profile_map))) {
+        mut_profile_map[[mut_profile]] <- num_muts
+        num_muts <<- num_muts + 1
+      }
+      mut_profile_id <- mut_profile_map[[mut_profile]]
+    }
+    return(mut_profile_id)
+  }
+
+  for (site in cut_sites)
+  {
+    muts_at_site <- site_mut_list[[site]]
+    character_matrix[, site] <- sapply(rownames(character_matrix), function(asv) process_asv_site(asv, site, muts_at_site))
+  }
+
+}

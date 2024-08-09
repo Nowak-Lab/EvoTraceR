@@ -428,9 +428,11 @@ asv_analysis = function(EvoTraceR_object,
   clean_asv <- nrow(norm_seqtab_df_clean_asv)
   
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
-  figur_dir = EvoTraceR_object$output_directory
-  paste0(figure_dir, '/asv_analysis/')
+  figure_dir = EvoTraceR_object$output_directory
+  figure_dir <- paste0(figure_dir, '/asv_analysis/')
   write.csv(binary_mutation_matrix, file=file.path(figure_dir, "binary_mutation_matrix.csv"))
+
+  build_character_matrix(binary_mutation_matrix, cut_sites)
 
   cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%
     dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
