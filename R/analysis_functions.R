@@ -384,20 +384,24 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
 
   # map mutations to nearest sites by its starting index
   site_mut_map <- setNames(vector("list", length(cut_sites)), cut_sites)
-  muts %>%
-    map(~ {
-      mut_start_idx <- as.numeric(regmatches(.x, regexec("_([0-9]+)_", .x))[1][2])
-      nearest_site <- cut_sites[which.min(abs(cut_sites - mut_start_idx))]
-      site_mut_map[[nearest_site]] <- c(site_mut_map[[nearest_site]], .x)
-    })
-  site_mut_list <- site_mut_map[cut_sites]
 
+  site_mut_map <- purrr::reduce(muts, function(acc, mut) {
+    mut_start_idx <- regmatches(mut, regexec("_([0-9]+)_", mut))[[1]][2]
+    nearest_site <- as.character(cut_sites[which.min(abs(cut_sites - as.numeric(mut_start_idx)))])
+    acc[[nearest_site]] <- c(acc[[nearest_site]], mut)
+    acc
+  }, .init = site_mut_map)
+
+  cut_sites <- unlist(lapply(cut_sites, as.character))
   mut_profile_map <- list()
+  
   character_matrix <- data.frame(matrix(ncol=length(cut_sites), nrow=length(asvs)))
+  colnames(character_matrix) <- cut_sites
+  rownames(character_matrix) <- asvs
   num_muts = 1
 
   # process each asv and site combination by setting the mutation profile and
-  # updating the dictionary of mapping unique keys to mutation profiles 
+  # updating the dictionary for mapping unique keys to mutation profiles 
   process_asv_site <- function(asv, site, muts_at_site) {
     columns_checked <- names(binary_matrix[asv, muts_at_site])[binary_matrix[asv, muts_at_site] == 1]
     if (length(columns_checked) == 0) {
@@ -405,7 +409,7 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
     } else {
       mut_profile <- paste(sort(columns_checked), collapse = ",")
       if (!(mut_profile %in% names(mut_profile_map))) {
-        mut_profile_map[[mut_profile]] <- num_muts
+        mut_profile_map[[mut_profile]] <<- num_muts
         num_muts <<- num_muts + 1
       }
       mut_profile_id <- mut_profile_map[[mut_profile]]
@@ -415,7 +419,7 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
 
   for (site in cut_sites)
   {
-    muts_at_site <- site_mut_list[[site]]
+    muts_at_site <- site_mut_map[[site]]
     character_matrix[, site] <- sapply(rownames(character_matrix), function(asv) process_asv_site(asv, site, muts_at_site))
   }
 
@@ -423,7 +427,8 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
   ## filter to only mut_profiles with deletions
   del_profile_map <- mut_profile_map[sapply(names(mut_profile_map), function(name) grepl("d", name))]
   ## create map of deletion mutation key to the range it affects
-  del_range_map <- sapply(del_profile_map, function(mut) {
+  ### TODO: fix issue with del_range_map calculation, it is mapping the mut profile to NAs
+  del_range_map <- sapply(names(del_profile_map), function(mut) {
     entries <- unlist(strsplit(mut, ","))
     filtered_entry <- grep("^d_", entries, value = TRUE)
     del_range <- as.numeric(gsub(".*_(\\d+)nt$", "\\1", filtered_entry))

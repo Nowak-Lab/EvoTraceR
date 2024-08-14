@@ -271,7 +271,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 #' @import tibble
 #' @import foreach
-#' @importFrom purrr map
+#' @importFrom purrr map reduce
 #' @import parallel
 #' @importFrom doParallel registerDoParallel 
 asv_analysis = function(EvoTraceR_object,
@@ -432,7 +432,9 @@ asv_analysis = function(EvoTraceR_object,
   figure_dir <- paste0(figure_dir, '/asv_analysis/')
   write.csv(binary_mutation_matrix, file=file.path(figure_dir, "binary_mutation_matrix.csv"))
 
-  build_character_matrix(binary_mutation_matrix, cut_sites)
+  result <- build_character_matrix(binary_mutation_matrix, ref_cut_sites)
+  character_matrix <- result$character_matrix
+  mut_profile_map <- result$mut_profile_map
 
   cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%
     dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
