@@ -361,18 +361,28 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   return(EvoTraceR_object)
 }
 
-update_row <- function(row, del_range_map, cut_sites) {
+set_missing_data <- function(row, del_range_map, sites) {
   # convert row to vector
   row <- unlist(row) 
 
-  for (i in seq_along(row)) {
+  updated_row <- row
+  indices <- seq_along(row)
+  for (i in indices) {
     if (row[i] %in% names(del_range_map)) {
-      range <- del_range_map[[row[i]]]
-      row[(i + 1):length(row)] <- ifelse((i + 1):length(row) + range > cut_sites[(i + 1):length(row)], -1, row[(i + 1):length(row)])
+      range <- del_range_map[[as.character(row[i])]]
+      if ((i + 1) <= length(row)) {
+        updated_row[(i + 1):length(row)] <- 
+          ifelse(
+            as.numeric(sites[i]) + range > as.numeric(sites[(i + 1):length(row)]), 
+            -1, 
+            updated_row[(i + 1):length(row)]
+          )
+      }
     }
   }
 
-  return(row)
+  names(updated_row) <- sites
+  return(updated_row)
 }
 
 # Convert binary ASVxMutation matrix to ASVxSite matrix
@@ -384,7 +394,6 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
 
   # map mutations to nearest sites by its starting index
   site_mut_map <- setNames(vector("list", length(cut_sites)), cut_sites)
-
   site_mut_map <- purrr::reduce(muts, function(acc, mut) {
     mut_start_idx <- regmatches(mut, regexec("_([0-9]+)_", mut))[[1]][2]
     nearest_site <- as.character(cut_sites[which.min(abs(cut_sites - as.numeric(mut_start_idx)))])
@@ -394,14 +403,16 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
 
   cut_sites <- unlist(lapply(cut_sites, as.character))
   mut_profile_map <- list()
+  del_range_map <- list()
   
   character_matrix <- data.frame(matrix(ncol=length(cut_sites), nrow=length(asvs)))
   colnames(character_matrix) <- cut_sites
   rownames(character_matrix) <- asvs
-  num_muts = 1
+  mut_key = 1
 
   # process each asv and site combination by setting the mutation profile and
-  # updating the dictionary for mapping unique keys to mutation profiles 
+  # updating the dictionary for mapping unique keys to mutation profiles and 
+  # deletion range (for deletions only)
   process_asv_site <- function(asv, site, muts_at_site) {
     columns_checked <- names(binary_matrix[asv, muts_at_site])[binary_matrix[asv, muts_at_site] == 1]
     if (length(columns_checked) == 0) {
@@ -409,8 +420,16 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
     } else {
       mut_profile <- paste(sort(columns_checked), collapse = ",")
       if (!(mut_profile %in% names(mut_profile_map))) {
-        mut_profile_map[[mut_profile]] <<- num_muts
-        num_muts <<- num_muts + 1
+        mut_profile_map[[mut_profile]] <<- mut_key
+        # track range of deletions
+        mut_profiles <- unlist(strsplit(mut_profile, ","))
+        filtered_del_profiles <- grep("^d_", mut_profiles, value = TRUE)
+        if(length(filtered_del_profiles) > 0) {
+          del_range <- as.numeric(gsub(".*_(\\d+)nts$", "\\1", filtered_del_profiles))
+          del_range_map[[as.character(mut_key)]] <<- del_range
+        }
+        # update mut key
+        mut_key <<- mut_key + 1
       }
       mut_profile_id <- mut_profile_map[[mut_profile]]
     }
@@ -424,26 +443,17 @@ build_character_matrix <- function(binary_matrix, cut_sites) {
   }
 
   # set missing sites to -1 for long deletions
-  ## filter to only mut_profiles with deletions
-  del_profile_map <- mut_profile_map[sapply(names(mut_profile_map), function(name) grepl("d", name))]
-  ## create map of deletion mutation key to the range it affects
-  ### TODO: fix issue with del_range_map calculation, it is mapping the mut profile to NAs
-  del_range_map <- sapply(names(del_profile_map), function(mut) {
-    entries <- unlist(strsplit(mut, ","))
-    filtered_entry <- grep("^d_", entries, value = TRUE)
-    del_range <- as.numeric(gsub(".*_(\\d+)nt$", "\\1", filtered_entry))
-    del_range
-  })
-
-  character_matrix <- character_matrix %>%
-    rowwise() %>%
-    mutate(across(dplyr::everything(), ~ update_row(dplyr::c_across(dplyr::everything()), del_range_map, cut_sites))) %>%
-    ungroup()
+  character_matrix <- t(apply(character_matrix, 1, function(row) {
+    updated_row <- set_missing_data(row, del_range_map, cut_sites)
+    return(updated_row)
+  }))
+  character_matrix <- as.data.frame(character_matrix)
+  colnames(character_matrix) <- cut_sites 
 
   # flip dictionary to form unique key -> mutation profile
-  updated_mut_profile_map <- setNames(names(mut_profile_map), unlist(mut_profile_map))
+  mut_profile_map <- setNames(names(mut_profile_map), unlist(mut_profile_map))
 
-  return(list(character_matrix=character_matrix, mut_profile_map=updated_mut_profile_map))
+  return(list(character_matrix=character_matrix, mut_profile_map=mut_profile_map))
 }
 
 

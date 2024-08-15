@@ -435,6 +435,10 @@ asv_analysis = function(EvoTraceR_object,
   result <- build_character_matrix(binary_mutation_matrix, ref_cut_sites)
   character_matrix <- result$character_matrix
   mut_profile_map <- result$mut_profile_map
+  EvoTraceR_object$alignment$character_matrix = character_matrix
+  EvoTraceR_object$alignment$mutation_profile_map = mut_profile_map
+  write.csv(character_matrix, file=file.path(figure_dir, "character_matrix.csv"))
+  write.csv(mut_profile_map, file=file.path(figure_dir, "mutation_profile_map.csv"))
 
   cleaned_coordinate_matrix <- tibble::tibble(cleaned_coordinate_matrix) %>%
     dplyr::add_row(asv_names  = EvoTraceR_object$reference$ref_name, mutation_type = 'w', n_nucleotides = 0)
