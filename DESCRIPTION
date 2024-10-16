@@ -1,5 +1,5 @@
 Package: EvoTraceR
-Version: 1.0.0
+Version: 1.0.1
 Date: 2023-01-09
 Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
@@ -9,7 +9,7 @@ Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@ca
             person("Rebecca", "Hassett", role=c("aut")),
             person("Dawid","Nowak",role=c("aut"),email="dgn2001@med.cornell.edu"))
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.4.0)
 Config/reticulate:
   list(
     packages = list(
@@ -23,6 +23,7 @@ Imports:
     dplyr,
     cli,
     Biostrings,
+    pwalign,
     benthos,
     scales,
     utils,
@@ -39,12 +40,13 @@ Imports:
     foreach,
     purrr,
     reticulate,
-    parallel
+    parallel,
+    doParallel
 Suggests:
     BiocGenerics,
     BiocStyle,
     testthat,
-    knitr
+    knitr,
 Name:
     EvoTraceR
 Description:
@@ -58,5 +60,6 @@ biocViews:
     BiomedicalInformatics,
     SingleCell,
     SomaticMutation
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
+Additional_repositories: https://bioconductor.org/packages/release/bioc

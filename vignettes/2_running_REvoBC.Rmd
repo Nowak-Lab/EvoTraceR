@@ -51,15 +51,15 @@ During the above computation, all unique sequences from each sample have been id
 This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
 First, it pools together those sequences characterized by a Hamming distance equals or lower than 2. 
 Then it performs pairwise alignment using Needleman-Wunsch global alignment algorithm implemented in function *pairwiseAlignment*
-in package *Biostrings*, aligning each sequence to the original barcode considered in the analysis 
-(See the Biostrings documentation \href{https://www.rdocumentation.org/packages/Biostrings/versions/2.40.2/topics/pairwiseAlignment}{here} for more details).
+in package *pwalign*, aligning each sequence to the original barcode considered in the analysis 
+(See the pwalign documentation \href{https://bioconductor.org/packages/release/bioc/html/pwalign.html}{here} for more details).
 After identifying all indels (insertions are identified by their start position and number of nucleoides inserted, while deletions are identified by their start and end position),
 it removes the ones that are too small and don't span any cut site: to perform this filter, it expands the start and end position by the number of bases specified in the parameter *cleaning_window*,
 it counts the number of cut sites spanned after the expansion and it removes those that span 0 sites.
-Next, it pools together those sequences that differ by one another only by substitutions, summing their counts, and then it removes
-those sequences showing a frequency lower than the threshold specified in parameter *asv_count_cutoff*.
-Next, it performs filtering of the sequences based on their flanking sequences and finally it computes the normalized counts of each ASV in each sample,
-dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+Next, it pools together those sequences that differ by one another only by substitutions.
+Then it computes the normalized counts of each ASV in each sample, dividing each count by the total number of sequences for each sample and multiplying by 1e6, yelding Counts Per Million (CPM).
+After normalization, counts are summed in each ASV, and those sequences showing a frequency lower than the threshold specified in parameter *asv_count_cutoff* are removed.
+Finally, it performs filtering of the sequences based on their flanking sequences.
 Then, using the CPM it computes different statistics for the final ASVS, storing:
 the relative frequency of all ASVs in each sample. 
 the relative frequency of each ASV in the samples.

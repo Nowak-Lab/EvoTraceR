@@ -112,8 +112,7 @@ asv_collapsing = function(seqtab,
   dnastringset <- Biostrings::DNAStringSet(seqtab$seq) 
   names(dnastringset) <- seqtab$seq_names
   
-  mx_crispr <- Biostrings::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
-
+  mx_crispr <- pwalign::nucleotideSubstitutionMatrix(match = pwa_match, mismatch = pwa_mismatch, baseOnly = TRUE)
   total_seq <- length(seqtab$seq_names)
   batch_size <- if(total_seq < batch_size * 2) 1 else batch_size
   batched_dnastringset <- c()
@@ -126,14 +125,14 @@ asv_collapsing = function(seqtab,
 
   cli::cli_alert_info('Computing pairwise alignment')
   result <- parallel::mclapply(batched_dnastringset, function(dna_j) {
-    mpwa <- Biostrings::pairwiseAlignment(subject = barcode, 
-                                        pattern = dna_j, 
-                                        substitutionMatrix = mx_crispr,
-                                        gapOpening = pwa_gapOpening,
-                                        gapExtension = pwa_gapExtension,
-                                        type = 'global')
-    aligned_sequences = as.data.frame(Biostrings::alignedPattern(mpwa))
-    aligned_reference = as.data.frame(Biostrings::alignedSubject(mpwa))
+    mpwa <- pwalign::pairwiseAlignment(subject = barcode, 
+                                   pattern = dna_j, 
+                                   substitutionMatrix = mx_crispr,
+                                   gapOpening = pwa_gapOpening,
+                                   gapExtension = pwa_gapExtension,
+                                   type = 'global')
+    aligned_sequences = as.data.frame(pwalign::alignedPattern(mpwa))
+    aligned_reference = as.data.frame(pwalign::alignedSubject(mpwa))
     out_row = foreach::foreach(i = seq(1, length(dna_j)), .combine=rbind) %do% {
   
       data.frame("seq_names" = rownames(aligned_sequences)[i], 
@@ -142,7 +141,6 @@ asv_collapsing = function(seqtab,
                  "position" = seq(1, nchar(aligned_reference$x[i])))
     }
   }, mc.cores = cores)
-
   alignment_tidy_ref_alt = bind_rows(result)
   
   alignment_tidy_ref_alt = alignment_tidy_ref_alt %>% arrange(position, seq_names)
@@ -188,7 +186,6 @@ asv_collapsing = function(seqtab,
                                   left_right_window = cleaning_window)
   coord_cleaned = coord_cleaned %>% mutate(asv_names = seq_names)
   binary_matrix = coordinate_to_binary(coord_cleaned, barcode_name)
-  
   # Join the binary matrix with the sequences dataframe, in order to have counts
   mutations = unique(coord_cleaned$mut_id)
   binary_matrix$seq_names = rownames(binary_matrix) 
@@ -210,7 +207,6 @@ asv_collapsing = function(seqtab,
   clean_tidy_alignment = tidy_alignment_cleaned(alignment_tidy_ref_alt, 
                                                 coord_cleaned, 
                                                 no_indels %>% pull(seq_names))
-  
   return(list(seqtab_df = seqtab_collapsed, tidy_alignment = clean_tidy_alignment,
               mutations_coordinates = coord_cleaned %>% select(-c(asv_names)), binary_matrix = binary_matrix))
 }
@@ -222,9 +218,10 @@ asv_collapsing = function(seqtab,
 # 
 # EvoTraceR_object where the statistics on ASV will be computed. 
 # sample. List of the column names containing the organs/days.
-# asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be 
+# asv_count_cutoff. Cutoff on the minimum number of counts for an ASV to be in Counts Per Million (CPM)
 # pwa. Object resulted from the pairwise alignment performed on the ASVs.
 asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, nmbc) {
+  
   seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe
   
   seqtab_df_clean_asv_long <-
@@ -347,15 +344,15 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   # Count length of barcode seq
   df_to_plot_perf_match$seq_n <- nchar(df_to_plot_perf_match$seq)
   
-  pwa <- Biostrings::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
-                                       pattern = df_to_plot_perf_match$seq,
-                                       type="global", gapOpening = 20, gapExtension = 1)
+  pwa <- pwalign::pairwiseAlignment(subject = EvoTraceR_object$reference$ref_seq, #df_to_plot_perf_match[stringr::str_detect(df_to_plot_perf_match$asv_names,'ORG|NMBC'),'seq']),
+                           pattern = df_to_plot_perf_match$seq,
+                           type="global", gapOpening = 20, gapExtension = 1)
   
-  df_to_plot_perf_match$pid <- Biostrings::pid(pwa)
+  df_to_plot_perf_match$pid <- pwalign::pid(pwa)
   # nedit = Computes the Levenshtein edit distance of the alignments
-  df_to_plot_perf_match$nedit <- Biostrings::nedit(pwa)
+  df_to_plot_perf_match$nedit <- pwalign::nedit(pwa)
   # score = Extracts the pairwise sequence alignment scores
-  df_to_plot_perf_match$alignment_score <- Biostrings::score(pwa)
+  df_to_plot_perf_match$alignment_score <- pwalign::score(pwa)
   
   EvoTraceR_object$statistics$asv_toBarcode_similarity = df_to_plot_perf_match[c('asv_names','seq', 'pid', 'nedit', 'alignment_score')]
   
@@ -363,3 +360,100 @@ asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, n
   
   return(EvoTraceR_object)
 }
+
+set_missing_data <- function(row, del_range_map, sites) {
+  # convert row to vector
+  row <- unlist(row) 
+
+  updated_row <- row
+  indices <- seq_along(row)
+  for (i in indices) {
+    if (row[i] %in% names(del_range_map)) {
+      range <- del_range_map[[as.character(row[i])]]
+      if ((i + 1) <= length(row)) {
+        updated_row[(i + 1):length(row)] <- 
+          ifelse(
+            as.numeric(sites[i]) + range > as.numeric(sites[(i + 1):length(row)]), 
+            -1, 
+            updated_row[(i + 1):length(row)]
+          )
+      }
+    }
+  }
+
+  names(updated_row) <- sites
+  return(updated_row)
+}
+
+# Convert binary ASVxMutation matrix to ASVxSite matrix
+# unedited sites set to 0, edited sites set to unique mutation profile from 1 to N, 
+# missing sites from long deletions set to -1
+build_character_matrix <- function(binary_matrix, cut_sites) {
+  muts <- names(binary_matrix)
+  asvs <- row.names(binary_matrix)
+
+  # map mutations to nearest sites by its starting index
+  site_mut_map <- setNames(vector("list", length(cut_sites)), cut_sites)
+  site_mut_map <- purrr::reduce(muts, function(acc, mut) {
+    mut_start_idx <- regmatches(mut, regexec("_([0-9]+)_", mut))[[1]][2]
+    nearest_site <- as.character(cut_sites[which.min(abs(cut_sites - as.numeric(mut_start_idx)))])
+    acc[[nearest_site]] <- c(acc[[nearest_site]], mut)
+    acc
+  }, .init = site_mut_map)
+
+  cut_sites <- unlist(lapply(cut_sites, as.character))
+  mut_profile_map <- list()
+  del_range_map <- list()
+  
+  character_matrix <- data.frame(matrix(ncol=length(cut_sites), nrow=length(asvs)))
+  colnames(character_matrix) <- cut_sites
+  rownames(character_matrix) <- asvs
+  mut_key = 1
+
+  # process each asv and site combination by setting the mutation profile and
+  # updating the dictionary for mapping unique keys to mutation profiles and 
+  # deletion range (for deletions only)
+  process_asv_site <- function(asv, site, muts_at_site) {
+    columns_checked <- names(binary_matrix[asv, muts_at_site])[binary_matrix[asv, muts_at_site] == 1]
+    if (length(columns_checked) == 0) {
+      mut_profile_id <- 0
+    } else {
+      mut_profile <- paste(sort(columns_checked), collapse = ",")
+      if (!(mut_profile %in% names(mut_profile_map))) {
+        mut_profile_map[[mut_profile]] <<- mut_key
+        # track range of deletions
+        mut_profiles <- unlist(strsplit(mut_profile, ","))
+        filtered_del_profiles <- grep("^d_", mut_profiles, value = TRUE)
+        if(length(filtered_del_profiles) > 0) {
+          del_range <- as.numeric(gsub(".*_(\\d+)nts$", "\\1", filtered_del_profiles))
+          del_range_map[[as.character(mut_key)]] <<- del_range
+        }
+        # update mut key
+        mut_key <<- mut_key + 1
+      }
+      mut_profile_id <- mut_profile_map[[mut_profile]]
+    }
+    return(mut_profile_id)
+  }
+
+  for (site in cut_sites)
+  {
+    muts_at_site <- site_mut_map[[site]]
+    character_matrix[, site] <- sapply(rownames(character_matrix), function(asv) process_asv_site(asv, site, muts_at_site))
+  }
+
+  # set missing sites to -1 for long deletions
+  character_matrix <- t(apply(character_matrix, 1, function(row) {
+    updated_row <- set_missing_data(row, del_range_map, cut_sites)
+    return(updated_row)
+  }))
+  character_matrix <- as.data.frame(character_matrix)
+  colnames(character_matrix) <- cut_sites 
+
+  # flip dictionary to form unique key -> mutation profile
+  mut_profile_map <- setNames(names(mut_profile_map), unlist(mut_profile_map))
+
+  return(list(character_matrix=character_matrix, mut_profile_map=mut_profile_map))
+}
+
+
