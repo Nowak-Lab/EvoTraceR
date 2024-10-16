@@ -364,23 +364,14 @@ asv_analysis = function(EvoTraceR_object,
   norm_seqtab_df = norm_seqtab_df %>% rowwise() %>% 
     mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
     ungroup()
-  norm_seqtab_df = norm_seqtab_df[rowSums(norm_seqtab_df[,sample_columns]) > 0,]
-  norm_seqtab_df$totalCounts = rowSums(norm_seqtab_df[,sample_columns])
-  counts_filtering = nrow(norm_seqtab_df)
+  seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
+  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  counts_filtering = nrow(seqtab_df)
   
-<<<<<<< HEAD
   tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
   cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
   binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% seqtab_df$seq_names) #[seqtab_df$seq_names,]
   binary_mutation_matrix = binary_mutation_matrix %>% select_if(~ !is.numeric(.) || sum(.) != 0)
-=======
-  norm_seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = norm_seqtab_df, flanking_filtering = flanking_filtering)
-  tidy_alignment = tidy_alignment %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names) #[norm_seqtab_df$seq_names,]
-  binary_mutation_matrix = binary_mutation_matrix %>% select_if(~ !is.numeric(.) || sum(.) != 0)
-  flanking_filtering = nrow(norm_seqtab_df)
->>>>>>> master
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   # In case no original barcode is found then insert it with 0 counts
