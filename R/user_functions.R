@@ -153,8 +153,10 @@ initialize_EvoTraceR = function(output_dir,
     }
   }
   EvoTraceR_object$sample_order = sample_order
-  return(EvoTraceR_object)
   
+  # insert version from DESCRIPTION into the object
+  EvoTraceR$version = as.character(read.dcf('DESCRIPTION')[['Version']])
+  return(EvoTraceR_object)
 }
 
 #' This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
