@@ -4,7 +4,7 @@ seq_filtering_plot = function(EvoTraceR_object, figure_dir = EvoTraceR_object$ou
   if (!dir.exists(figure_dir)) {dir.create(figure_dir)}
   track_data = EvoTraceR_object$preprocessing$seq_filters
 
-  track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Hamming Merging", "Substitutions Merging", "Frequency Filter", "Flanking Seq. Filter",  "Final ASVs")))
+  track_data <- dplyr::mutate(track_data, name = fct_relevel(name, c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging", "Frequency Filter",  "Final ASVs")))
   track_data$num_names <- paste0(track_data$num, " x ASVs") # numbers of ASV included on the top of bar  
   
   # calculate percent change from previous filter
