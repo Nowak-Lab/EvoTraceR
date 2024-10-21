@@ -461,8 +461,8 @@ asv_analysis = function(EvoTraceR_object,
                                     asv_count_cutoff,
                                     nmbc = barcodes_info$ref_name)
   
-  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Substitutions Merging",  "Frequency Filter", "Flanking Seq. Filter", "Final ASVs")), 
-                                                  num=c(orgseq, hamming_filter, endseq_filter, counts_filtering, flanking_filtering, clean_asv))
+  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging",  "Frequency Filter", "Final ASVs")), 
+                                                  num=c(orgseq, hamming_filter, flanking_filtering, endseq_filter, counts_filtering, clean_asv))
   
   seq_filtering_plot(EvoTraceR_object)
 
