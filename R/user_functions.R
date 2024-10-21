@@ -153,8 +153,15 @@ initialize_EvoTraceR = function(output_dir,
     }
   }
   EvoTraceR_object$sample_order = sample_order
-  return(EvoTraceR_object)
   
+  EvoTraceR_object$version <- tryCatch({
+    as.character(packageVersion("EvoTraceR"))
+  }, error = function(e) {
+    # Fallback: return NA or a custom message when package version is not found
+    message("Package version not found. Ensure the package is installed.")
+    NA
+  })
+  return(EvoTraceR_object)
 }
 
 #' This function performs the analysis on ASV sequences identified by the previous steps and aligns them to the reference sequence.
@@ -320,6 +327,9 @@ asv_analysis = function(EvoTraceR_object,
   
   hamming_filter = nrow(seqtab_df)
 
+  seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
+  flanking_filtering = nrow(seqtab_df)
+
   # for single organ, rowSums is not needed and will throw error
   if (length(sample_columns) > 1) {
     seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
@@ -361,16 +371,14 @@ asv_analysis = function(EvoTraceR_object,
   norm_seqtab_df = norm_seqtab_df %>% rowwise() %>% 
     mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
     ungroup()
-  norm_seqtab_df = norm_seqtab_df[rowSums(norm_seqtab_df[,sample_columns]) > 0,]
-  norm_seqtab_df$totalCounts = rowSums(norm_seqtab_df[,sample_columns])
-  counts_filtering = nrow(norm_seqtab_df)
+  seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
+  seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
+  counts_filtering = nrow(seqtab_df)
   
-  norm_seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = norm_seqtab_df, flanking_filtering = flanking_filtering)
-  tidy_alignment = tidy_alignment %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% norm_seqtab_df$seq_names) #[norm_seqtab_df$seq_names,]
+  tidy_alignment = tidy_alignment %>% filter(seq_names %in% seqtab_df$seq_names)
+  cleaned_coordinate_matrix = cleaned_coordinate_matrix %>% filter(seq_names %in% seqtab_df$seq_names)
+  binary_mutation_matrix = binary_mutation_matrix %>% filter(seq_names %in% seqtab_df$seq_names) #[seqtab_df$seq_names,]
   binary_mutation_matrix = binary_mutation_matrix %>% select_if(~ !is.numeric(.) || sum(.) != 0)
-  flanking_filtering = nrow(norm_seqtab_df)
   
   # Replace the seq-name for those sequences that match exactly one of the original barcodes.
   # In case no original barcode is found then insert it with 0 counts
@@ -453,8 +461,8 @@ asv_analysis = function(EvoTraceR_object,
                                     asv_count_cutoff,
                                     nmbc = barcodes_info$ref_name)
   
-  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Substitutions Merging",  "Frequency Filter", "Flanking Seq. Filter", "Final ASVs")), 
-                                                  num=c(orgseq, hamming_filter, endseq_filter, counts_filtering, flanking_filtering, clean_asv))
+  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging",  "Frequency Filter", "Final ASVs")), 
+                                                  num=c(orgseq, hamming_filter, flanking_filtering, endseq_filter, counts_filtering, clean_asv))
   
   seq_filtering_plot(EvoTraceR_object)
 
