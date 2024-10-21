@@ -154,9 +154,8 @@ initialize_EvoTraceR = function(output_dir,
   }
   EvoTraceR_object$sample_order = sample_order
   
-  # insert version from DESCRIPTION into the object
   EvoTraceR_object$version <- tryCatch({
-    as.character(packageVersion("YourPackageName"))
+    as.character(packageVersion("EvoTraceR"))
   }, error = function(e) {
     # Fallback: return NA or a custom message when package version is not found
     message("Package version not found. Ensure the package is installed.")
