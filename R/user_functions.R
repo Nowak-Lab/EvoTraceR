@@ -368,9 +368,10 @@ asv_analysis = function(EvoTraceR_object,
 
   EvoTraceR_object$seqtab_dataframe_norm = norm_seqtab_df
 
-  norm_seqtab_df = norm_seqtab_df %>% rowwise() %>% 
-    mutate_if(is.numeric, function (x) if (x <= asv_count_cutoff) return(as.integer(0)) else (return(x))) %>%
-    ungroup()
+  norm_seqtab_df = norm_seqtab_df %>%
+      rowwise() %>%
+      filter(all(across(where(is.numeric), ~ . > asv_count_cutoff))) %>%
+      ungroup()
   seqtab_df = seqtab_df[rowSums(seqtab_df[,sample_columns]) > 0,]
   seqtab_df$totalCounts = rowSums(seqtab_df[,sample_columns])
   counts_filtering = nrow(seqtab_df)
