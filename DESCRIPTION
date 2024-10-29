@@ -1,5 +1,5 @@
 Package: EvoTraceR
-Version: 1.0.2
+Version: 1.0.3
 Date: 2023-01-09
 Title: EvoTraceR
 Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@campus.unimib.it"),
@@ -7,6 +7,7 @@ Authors@R: c(person("Lucrezia","Patruno",role=c("cre","aut"),email="l.patruno@ca
             person("Armin", "Scheben", role=c("aut"),email="scheben@cshl.edu", comment = c(ORCID = "0000-0002-2230-2013")),
             person("Stephen", "Staklinski", role=c("aut")),
             person("Rebecca", "Hassett", role=c("aut")),
+            person("Dylan", "Riffle", role=c("aut")),
             person("Dawid","Nowak",role=c("aut"),email="dgn2001@med.cornell.edu"))
 Depends:
     R (>= 4.4.0)
