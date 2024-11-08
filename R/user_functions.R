@@ -313,18 +313,18 @@ asv_analysis = function(EvoTraceR_object,
   seqtab_df = EvoTraceR_object$asv_prefilter
   EvoTraceR_object$reference = barcodes_info
   
-  # Store the original number of sequences
-  orgseq <- nrow(seqtab_df)
+  # Initialize list to store sequence tables at each step
+  seqtab_history = list("Starting ASVs" = seqtab_df)
   # Get organ list
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Merging sequences based on Hamming distance
   seqtab_df = merge_hamming(seqtab_df, sample_columns, cores)
-  hamming_filter = nrow(seqtab_df)
+  seqtab_history[["Hamming Merging"]] = seqtab_df
 
   # Filtering sequences based on flanking regions
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
-  flanking_filtering = nrow(seqtab_df)
+  seqtab_history[["Flanking Seq. Filter"]] = seqtab_df
 
   # Calculate total counts per row for multiple columns
   if (length(sample_columns) > 1) {
@@ -350,7 +350,7 @@ asv_analysis = function(EvoTraceR_object,
   tidy_alignment = collapse_result$tidy_alignment
   cleaned_coordinate_matrix = collapse_result$mutations_coordinates
   binary_mutation_matrix = collapse_result$binary_matrix
-  endseq_filter <- nrow(seqtab_df)
+  seqtab_history[["Substitutions Merging"]] = seqtab_df
 
   EvoTraceR_object$seqtab_dataframe_nonnorm = seqtab_df
 
@@ -371,7 +371,7 @@ asv_analysis = function(EvoTraceR_object,
 
   # Apply the same filtering to seqtab_df for consistency
   seqtab_df = seqtab_df %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  counts_filtering = nrow(seqtab_df)
+  seqtab_history[["Frequency Filter"]] = seqtab_df
 
   # Ensure all related data frames align with filtered sequences
   tidy_alignment = tidy_alignment %>% filter(seq_names %in% norm_seqtab_df$seq_names)
@@ -426,7 +426,7 @@ asv_analysis = function(EvoTraceR_object,
   binary_mutation_matrix = dplyr::bind_rows(data.frame(bc_mut, row.names = barcodes_info$ref_name), binary_mutation_matrix)
 
   norm_seqtab_df_clean_asv = norm_seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
-  clean_asv <- nrow(norm_seqtab_df_clean_asv)
+  seqtab_history[["Final ASVs"]] = seqtab_df
 
   # Store final data in EvoTraceR_object and save outputs
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
@@ -457,10 +457,16 @@ asv_analysis = function(EvoTraceR_object,
                                     asv_count_cutoff,
                                     nmbc = barcodes_info$ref_name)
   
-  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging",  "Frequency Filter", "Final ASVs")), 
-                                                  num=c(orgseq, hamming_filter, flanking_filtering, endseq_filter, counts_filtering, clean_asv))
+  seq_filter_counts <- data.frame(
+    name = as.factor(names(seqtab_history)),
+    num = sapply(seqtab_history, nrow)
+  )
+  # Add the filtering step counts to EvoTraceR_object for future reference
+  EvoTraceR_object$preprocessing$seq_filters = seq_filter_counts
   
-  seq_filtering_plot(EvoTraceR_object)
+  # Store the history in EvoTraceR_object for future analysis or debugging
+  EvoTraceR_object$seqtab_history = seqtab_history
+  generate_all_asv_plots(EvoTraceR_object, figure_dir)
 
   return(EvoTraceR_object)
 }
@@ -634,4 +640,35 @@ create_df_summary = function(EvoTraceR_object) {
   EvoTraceR_object$plot_summary$df_to_plot_final = df_to_plot_final
 
   return(EvoTraceR_object)
+}
+
+
+#' This function generates contamination analysis plots for ASV counts by analyzing known contaminant sequences.
+#' 
+#' @title known_contamination_analysis
+#' 
+#' @examples
+#' \dontrun{
+#' contaminant_seqs = c("contamination_seq1", "contamination_seq2", "contamination_seq3")
+#' EvoTraceR_object = known_contamination_analysis(EvoTraceR_object, contaminant_seqs)
+#' }
+#' 
+#' @param EvoTraceR_object (Required) The EvoTraceR object that contains ASV data and seqtab history.
+#' @param contaminant_seqs (Required) A character vector of known contaminant sequences to check within ASV sequences.
+#' @param figure_dir (Optional) The directory to save the plots. Defaults to EvoTraceR_object$output_directory.
+#' 
+#' @return EvoTraceR_object with contamination analysis plots saved in the specified directory. If seqtab_history is missing, an error is thrown.
+#' 
+#' @export known_contamination_analysis
+#' @import ggplot2
+#' @import dplyr
+known_contamination_analysis <- function(EvoTraceR_object, contaminant_seqs, figure_dir = EvoTraceR_object$output_directory) {
+  
+  # Check if seqtab_history exists
+  if (is.null(EvoTraceR_object$seqtab_history)) {
+    stop("Error: seqtab_history not found in EvoTraceR_object. Please run asv_analysis first.")
+  }
+
+  # Generate all ASV plots with contamination analysis
+  generate_all_asv_plots_with_contamination(EvoTraceR_object, figure_dir, contaminant_seqs)
 }
