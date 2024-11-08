@@ -4,7 +4,6 @@
 # and is working to filter it out.
 # =============================================================================
 
-
 # Ensure directory exists
 prepare_directory <- function(figure_dir) {
   figure_dir = paste0(figure_dir, '/asv_analysis/')
@@ -38,7 +37,7 @@ plot_unique_asv_per_animal_contamination <- function(EvoTraceR_object, figure_di
     contamination_percentage = sapply(seqtab_history, function(df) calculate_contamination(df, contaminant_seqs)$percentage)
   )
   
-  max_value <- max(unique_asv_animal$num) * 1.1
+  max_value <- max(unique_asv_animal$num) * 1.3
   
   plot <- ggplot(unique_asv_animal, aes(x=name, y=num, fill=name)) +
     geom_bar(stat="identity", width=0.8) +
@@ -67,7 +66,7 @@ plot_total_asv_per_animal_contamination <- function(EvoTraceR_object, figure_dir
     contamination_percentage = sapply(seqtab_history, function(df) calculate_contamination(df, contaminant_seqs)$percentage)
   )
   
-  max_value <- max(total_asv_animal$num) * 1.1  # Add 10% buffer to max value
+  max_value <- max(total_asv_animal$num) * 1.3  # Add 10% buffer to max value
   
   plot <- ggplot(total_asv_animal, aes(x=name, y=num, fill=name)) +
     geom_bar(stat="identity", width=0.8) +
@@ -102,7 +101,7 @@ plot_unique_asv_per_organ_contamination <- function(EvoTraceR_object, figure_dir
   }))
   
   unique_asv_organ$name <- factor(unique_asv_organ$name, levels = c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging", "Frequency Filter", "Final ASVs"))
-  max_value <- max(unique_asv_organ$unique_count) * 1.1  # Add 10% buffer to max value
+  max_value <- max(unique_asv_organ$unique_count) * 1.3  # Add 10% buffer to max value
   
   plot <- ggplot(unique_asv_organ, aes(x=name, y=unique_count, fill=name)) +
     geom_bar(stat="identity", width=0.8) +
@@ -139,7 +138,7 @@ plot_total_asv_per_organ_contamination <- function(EvoTraceR_object, figure_dir,
   }))
   
   total_asv_organ$name <- factor(total_asv_organ$name, levels = c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging", "Frequency Filter", "Final ASVs"))
-  max_value <- max(total_asv_organ$total_count) * 1.1  # Add 10% buffer to max value
+  max_value <- max(total_asv_organ$total_count) * 1.3  # Add 10% buffer to max value
   
   plot <- ggplot(total_asv_organ, aes(x=name, y=total_count, fill=name)) +
     geom_bar(stat="identity", width=0.8) +
