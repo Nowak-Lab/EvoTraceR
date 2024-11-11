@@ -4,13 +4,6 @@
 # and is working to filter it out.
 # =============================================================================
 
-# Ensure directory exists
-prepare_directory <- function(figure_dir) {
-  figure_dir = paste0(figure_dir, '/asv_analysis/')
-  if (!dir.exists(figure_dir)) {dir.create(figure_dir)}
-  return(figure_dir)
-}
-
 # Helper function to calculate contamination percentage based on substring matching
 calculate_contamination <- function(df, contaminant_seqs) {
   # Check if any contaminant sequence is present as a substring within each ASV sequence

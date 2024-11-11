@@ -215,7 +215,8 @@ initialize_EvoTraceR = function(output_dir,
 #' @param cleaning_window (Optional). Default is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).
 #' @param batch_size (Optional). Default is 100. Number of batches to split reads into for parallel execution of \code{pairwiseAlignment}. This parameter can be tuned together with the cores parameter to optimize the speed of alignment.
 #' @param cores (Optional). Default is parallel::detectCores(). Number of cores to use for pairwise alignment.
-#'
+#' @param known_contaminations (Optional). Default is NULL. Vector of strings containing the sequences that are known to be contaminants and that should be removed from the analysis.
+#' 
 #' @return  The EvoTraceR object passed as a parameter with the following new fields:
 #' \itemize{
 #' \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
@@ -298,7 +299,8 @@ asv_analysis = function(EvoTraceR_object,
                         pwa_type = 'global',
                         cleaning_window = c(3,3),
                         batch_size = 100,
-                        cores = parallel::detectCores()
+                        cores = parallel::detectCores(),
+                        known_contaminations = NULL
 ) {
   
   barcodes_info = list(
@@ -430,8 +432,6 @@ asv_analysis = function(EvoTraceR_object,
 
   # Store final data in EvoTraceR_object and save outputs
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
-  figure_dir = paste0(EvoTraceR_object$output_directory, '/asv_analysis/')
-  write.csv(binary_mutation_matrix, file = file.path(figure_dir, "binary_mutation_matrix.csv"))
   figure_dir = EvoTraceR_object$output_directory
   figure_dir <- paste0(figure_dir, '/asv_analysis/')
   write.csv(binary_mutation_matrix, file=file.path(figure_dir, "binary_mutation_matrix.csv"))
@@ -463,11 +463,10 @@ asv_analysis = function(EvoTraceR_object,
   )
   # Add the filtering step counts to EvoTraceR_object for future reference
   EvoTraceR_object$preprocessing$seq_filters = seq_filter_counts
-  
+  print(figure_dir)
   # Store the history in EvoTraceR_object for future analysis or debugging
   EvoTraceR_object$seqtab_history = seqtab_history
-  generate_all_asv_plots(EvoTraceR_object, figure_dir)
-
+  generate_all_asv_plots(EvoTraceR_object, figure_dir, right_flank = ref_flank_right, known_contaminations=known_contaminations)
   return(EvoTraceR_object)
 }
 
