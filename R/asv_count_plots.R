@@ -49,6 +49,8 @@ create_donut_plot <- function(seqtab, step_name, right_flank, known_contaminatio
 # Helper function to create combined bar and donut plots
 create_combined_plot <- function(bar_plot, donut_starting, donut_hamming) {
   library(grid)
+  library(ggplot2)
+  library(gridExtra)  
   # Arrange the plots without drawing them
   combined_grob <- arrangeGrob(
     bar_plot,
