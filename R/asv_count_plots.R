@@ -41,9 +41,9 @@ create_unique_count_donut <- function(seqtab, step_name, right_flank = NULL, lef
   )
   
   # Define consistent colors
-  color_mapping <- c("Identified ASVs" = "#78a5a3", 
-                     "Known Contaminations" = "#444c5c", 
-                     "Unknown Contaminations" = "#aaaaaa")
+  color_mapping <- c("Identified ASVs" = "#4C9F70", 
+                     "Known Contaminations" = "#FF6F61", 
+                     "Unknown Contaminations" = "#A0C4FF")
   
   # Create the donut plot
   plot <- ggplot(classification_df, aes(x = 2, y = count, fill = category)) +
@@ -91,9 +91,9 @@ create_total_count_donut_plot <- function(seqtab, step_name, right_flank = NULL,
   colnames(total_counts) <- c("category", "count")
   
   # Define consistent colors
-  color_mapping <- c("Identified ASVs" = "#78a5a3", 
-                     "Known Contaminations" = "#444c5c", 
-                     "Unknown Contaminations" = "#aaaaaa")
+  color_mapping <- c("Identified ASVs" = "#4C9F70", 
+                     "Known Contaminations" = "#FF6F61", 
+                     "Unknown Contaminations" = "#A0C4FF")
   
   # Create the donut plot for total ASV counts
   plot <- ggplot(total_counts, aes(x = 2, y = count, fill = category)) +
