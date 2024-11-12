@@ -466,7 +466,16 @@ asv_analysis = function(EvoTraceR_object,
   print(figure_dir)
   # Store the history in EvoTraceR_object for future analysis or debugging
   EvoTraceR_object$seqtab_history = seqtab_history
-  generate_all_asv_plots(EvoTraceR_object, figure_dir, right_flank = ref_flank_right, known_contaminations=known_contaminations)
+  # Generate the asv figure plots
+  generate_all_asv_plots(
+    EvoTraceR_object, 
+    figure_dir, 
+    right_flank = ref_flank_right, 
+    left_flank=ref_flank_left, 
+    known_contaminations=known_contaminations, 
+    flanking_filtering=flanking_filtering
+  )
+
   return(EvoTraceR_object)
 }
 
