@@ -10,9 +10,6 @@ prepare_directory <- function(figure_dir) {
 # Enhanced function to create donut plot for ASV sequence classification
 create_unique_count_donut <- function(seqtab, step_name, right_flank = NULL, left_flank = NULL, known_contaminations = NULL, flanking_filtering = "right") {
   # Classify each ASV sequence based on flanking and contamination criteria
-  print("left flank")
-  print(left_flank)
-  print("left flank")
   classification = sapply(seqtab$seq, function(asv_seq) {
     is_right_match <- !is.null(right_flank) && grepl(right_flank, asv_seq)
     is_left_match <- !is.null(left_flank) && grepl(left_flank, asv_seq)
