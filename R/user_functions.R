@@ -299,8 +299,7 @@ asv_analysis = function(EvoTraceR_object,
                         pwa_type = 'global',
                         cleaning_window = c(3,3),
                         batch_size = 100,
-                        cores = parallel::detectCores(),
-                        known_contaminations = NULL
+                        cores = parallel::detectCores()
 ) {
   
   barcodes_info = list(
@@ -316,7 +315,7 @@ asv_analysis = function(EvoTraceR_object,
   EvoTraceR_object$reference = barcodes_info
   
   # Initialize list to store sequence tables at each step
-  seqtab_history = list("Starting ASVs" = seqtab_df)
+  seqtab_history = list("Starting Seqs" = seqtab_df)
   # Get organ list
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
@@ -469,11 +468,7 @@ asv_analysis = function(EvoTraceR_object,
   # Generate the asv figure plots
   generate_all_asv_plots(
     EvoTraceR_object, 
-    figure_dir, 
-    right_flank = ref_flank_right, 
-    left_flank=ref_flank_left, 
-    known_contaminations=known_contaminations, 
-    flanking_filtering=flanking_filtering
+    figure_dir
   )
 
   return(EvoTraceR_object)
@@ -648,35 +643,4 @@ create_df_summary = function(EvoTraceR_object) {
   EvoTraceR_object$plot_summary$df_to_plot_final = df_to_plot_final
 
   return(EvoTraceR_object)
-}
-
-
-#' This function generates contamination analysis plots for ASV counts by analyzing known contaminant sequences.
-#' 
-#' @title known_contamination_analysis
-#' 
-#' @examples
-#' \dontrun{
-#' contaminant_seqs = c("contamination_seq1", "contamination_seq2", "contamination_seq3")
-#' EvoTraceR_object = known_contamination_analysis(EvoTraceR_object, contaminant_seqs)
-#' }
-#' 
-#' @param EvoTraceR_object (Required) The EvoTraceR object that contains ASV data and seqtab history.
-#' @param contaminant_seqs (Required) A character vector of known contaminant sequences to check within ASV sequences.
-#' @param figure_dir (Optional) The directory to save the plots. Defaults to EvoTraceR_object$output_directory.
-#' 
-#' @return EvoTraceR_object with contamination analysis plots saved in the specified directory. If seqtab_history is missing, an error is thrown.
-#' 
-#' @export known_contamination_analysis
-#' @import ggplot2
-#' @import dplyr
-known_contamination_analysis <- function(EvoTraceR_object, contaminant_seqs, figure_dir = EvoTraceR_object$output_directory) {
-  
-  # Check if seqtab_history exists
-  if (is.null(EvoTraceR_object$seqtab_history)) {
-    stop("Error: seqtab_history not found in EvoTraceR_object. Please run asv_analysis first.")
-  }
-
-  # Generate all ASV plots with contamination analysis
-  generate_all_asv_plots_with_contamination(EvoTraceR_object, figure_dir, contaminant_seqs)
 }

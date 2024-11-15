@@ -42,7 +42,9 @@ Imports:
     purrr,
     reticulate,
     parallel,
-    doParallel
+    doParallel,
+    ggrepel,
+    gridExtra,
 Suggests:
     BiocGenerics,
     BiocStyle,

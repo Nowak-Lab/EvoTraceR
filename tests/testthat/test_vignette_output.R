@@ -1,6 +1,6 @@
 data("EvoTraceR_object")
 
-test_that("EvoTraceR vignette produces expected starting ASVs", {
+test_that("EvoTraceR vignette produces expected starting Seqs", {
     expect_equal(EvoTraceR_object$preprocessing$seq_filters$num[1], 9434)
 })
 
