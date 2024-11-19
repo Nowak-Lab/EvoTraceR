@@ -215,7 +215,6 @@ initialize_EvoTraceR = function(output_dir,
 #' @param cleaning_window (Optional). Default is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).
 #' @param batch_size (Optional). Default is 100. Number of batches to split reads into for parallel execution of \code{pairwiseAlignment}. This parameter can be tuned together with the cores parameter to optimize the speed of alignment.
 #' @param cores (Optional). Default is parallel::detectCores(). Number of cores to use for pairwise alignment.
-#' @param known_contaminations (Optional). Default is NULL. Vector of strings containing the sequences that are known to be contaminants and that should be removed from the analysis.
 #' 
 #' @return  The EvoTraceR object passed as a parameter with the following new fields:
 #' \itemize{
