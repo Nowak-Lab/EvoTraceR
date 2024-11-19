@@ -215,7 +215,7 @@ initialize_EvoTraceR = function(output_dir,
 #' @param cleaning_window (Optional). Default is c(3,3). Vector containing the number of nucleotides that we use for extending respectively the start and end position of each indel to determine the ones that don't span any cut sites and thus get removed. (See description for more information).
 #' @param batch_size (Optional). Default is 100. Number of batches to split reads into for parallel execution of \code{pairwiseAlignment}. This parameter can be tuned together with the cores parameter to optimize the speed of alignment.
 #' @param cores (Optional). Default is parallel::detectCores(). Number of cores to use for pairwise alignment.
-#'
+#' 
 #' @return  The EvoTraceR object passed as a parameter with the following new fields:
 #' \itemize{
 #' \item \code{clean_asv_dataframe}: ASV sequences identified post-filtering (contamination removed,
@@ -313,18 +313,18 @@ asv_analysis = function(EvoTraceR_object,
   seqtab_df = EvoTraceR_object$asv_prefilter
   EvoTraceR_object$reference = barcodes_info
   
-  # Store the original number of sequences
-  orgseq <- nrow(seqtab_df)
+  # Initialize list to store sequence tables at each step
+  seqtab_history = list("Starting Seqs" = seqtab_df)
   # Get organ list
   sample_columns = setdiff(colnames(seqtab_df), c("seq_names", "seq"))
   
   # Merging sequences based on Hamming distance
   seqtab_df = merge_hamming(seqtab_df, sample_columns, cores)
-  hamming_filter = nrow(seqtab_df)
+  seqtab_history[["Hamming Merging"]] = seqtab_df
 
   # Filtering sequences based on flanking regions
   seqtab_df = perform_flanking_filtering(barcodes_info = barcodes_info, seqtab_df = seqtab_df, flanking_filtering = flanking_filtering)
-  flanking_filtering = nrow(seqtab_df)
+  seqtab_history[["Flanking Seq. Filter"]] = seqtab_df
 
   # Calculate total counts per row for multiple columns
   if (length(sample_columns) > 1) {
@@ -350,7 +350,7 @@ asv_analysis = function(EvoTraceR_object,
   tidy_alignment = collapse_result$tidy_alignment
   cleaned_coordinate_matrix = collapse_result$mutations_coordinates
   binary_mutation_matrix = collapse_result$binary_matrix
-  endseq_filter <- nrow(seqtab_df)
+  seqtab_history[["Substitutions Merging"]] = seqtab_df
 
   EvoTraceR_object$seqtab_dataframe_nonnorm = seqtab_df
 
@@ -371,7 +371,7 @@ asv_analysis = function(EvoTraceR_object,
 
   # Apply the same filtering to seqtab_df for consistency
   seqtab_df = seqtab_df %>% filter(seq_names %in% norm_seqtab_df$seq_names)
-  counts_filtering = nrow(seqtab_df)
+  seqtab_history[["Frequency Filter"]] = seqtab_df
 
   # Ensure all related data frames align with filtered sequences
   tidy_alignment = tidy_alignment %>% filter(seq_names %in% norm_seqtab_df$seq_names)
@@ -426,12 +426,10 @@ asv_analysis = function(EvoTraceR_object,
   binary_mutation_matrix = dplyr::bind_rows(data.frame(bc_mut, row.names = barcodes_info$ref_name), binary_mutation_matrix)
 
   norm_seqtab_df_clean_asv = norm_seqtab_df_clean_asv %>% dplyr::select(-c("seq_names", "asv_total_freq")) %>% relocate(asv_names)
-  clean_asv <- nrow(norm_seqtab_df_clean_asv)
+  seqtab_history[["Final ASVs"]] = seqtab_df
 
   # Store final data in EvoTraceR_object and save outputs
   EvoTraceR_object$alignment$binary_mutation_matrix = binary_mutation_matrix
-  figure_dir = paste0(EvoTraceR_object$output_directory, '/asv_analysis/')
-  write.csv(binary_mutation_matrix, file = file.path(figure_dir, "binary_mutation_matrix.csv"))
   figure_dir = EvoTraceR_object$output_directory
   figure_dir <- paste0(figure_dir, '/asv_analysis/')
   write.csv(binary_mutation_matrix, file=file.path(figure_dir, "binary_mutation_matrix.csv"))
@@ -457,10 +455,20 @@ asv_analysis = function(EvoTraceR_object,
                                     asv_count_cutoff,
                                     nmbc = barcodes_info$ref_name)
   
-  EvoTraceR_object$preprocessing$seq_filters = data.frame(name=as.factor(c("Starting ASVs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging",  "Frequency Filter", "Final ASVs")), 
-                                                  num=c(orgseq, hamming_filter, flanking_filtering, endseq_filter, counts_filtering, clean_asv))
-  
-  seq_filtering_plot(EvoTraceR_object)
+  seq_filter_counts <- data.frame(
+    name = as.factor(names(seqtab_history)),
+    num = sapply(seqtab_history, nrow)
+  )
+  # Add the filtering step counts to EvoTraceR_object for future reference
+  EvoTraceR_object$preprocessing$seq_filters = seq_filter_counts
+  print(figure_dir)
+  # Store the history in EvoTraceR_object for future analysis or debugging
+  EvoTraceR_object$seqtab_history = seqtab_history
+  # Generate the asv figure plots
+  generate_all_asv_plots(
+    EvoTraceR_object, 
+    figure_dir
+  )
 
   return(EvoTraceR_object)
 }

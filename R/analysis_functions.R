@@ -223,7 +223,6 @@ asv_collapsing = function(seqtab,
 asv_statistics <- function(EvoTraceR_object, sample_columns, asv_count_cutoff, nmbc) {
   
   seqtab_df_clean_asv = EvoTraceR_object$clean_asv_dataframe
-  
   seqtab_df_clean_asv_long <-
     tibble(seqtab_df_clean_asv) %>%
     dplyr::select(-seq) %>% 
