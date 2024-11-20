@@ -570,7 +570,7 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   if (mutations_use == 'del_ins') { 
     
     asv_bin_var = asv_bin_var %>%
-      dplyr::select(starts_with('i_') | starts_with('d_')) %>% 
+      dplyr::select(starts_with('i_') | starts_with('d_') | starts_with('s_')) %>% 
       filter(rowSums(dplyr::across(dplyr::everything())) > 0)
     
   } else {
