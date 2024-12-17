@@ -116,4 +116,4 @@ The two key files for most follow-up analyses are as follows.
 Contact
 --------------
 
-Please feel free to contact us with feedback: Dawid Nowak, dgn2001 at med.cornell.edu or Armin Scheben, ascheben at cshl.edu.
+Please feel free to contact us with feedback: Dawid Nowak, dgn2001 at med.cornell.edu or Rebecca Hassett, hassett at cshl.edu.
