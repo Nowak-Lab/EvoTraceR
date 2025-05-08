@@ -14,7 +14,7 @@ Depends:
 Config/reticulate:
   list(
     packages = list(
-      list(package = 'numpy', version = '1.21.5', pip = TRUE),
+      list(package = 'numpy', version = '1.23.5', pip = TRUE),
       list(package = 'numba', pip = TRUE)
       )
   )
