@@ -1,14 +1,3 @@
-#' This function loads reticulate and needs to be run after the installation of the package
-#' 
-#' @title setup_reticulate
-#' 
-#' @export setup_reticulate
-#' @import reticulate
-setup_reticulate = function() {
-  reticulate::py_install("git+https://github.com/YosefLab/Cassiopeia@master#egg=cassiopeia-lineage", pip = TRUE) 
-  reticulate::py_install('umi_tools', pip = TRUE) 
-}
-
 #' This function initializes the EvoTraceR object, by computing the set of Amplicon Sequence Variants.
 #' It calls \href{http://www.usadellab.org/cms/?page=trimmomatic}{trimmomatic} and \href{https://ccb.jhu.edu/software/FLASH/}{flash} to perform adapters trimming, discard low quality bases and merge
 #' forward and reverse reads.
@@ -465,10 +454,10 @@ asv_analysis = function(EvoTraceR_object,
   # Store the history in EvoTraceR_object for future analysis or debugging
   EvoTraceR_object$seqtab_history = seqtab_history
   # Generate the asv figure plots
-  generate_all_asv_plots(
-    EvoTraceR_object, 
-    figure_dir
-  )
+  #generate_all_asv_plots(
+  #  EvoTraceR_object, 
+  #  figure_dir
+  #)
 
   return(EvoTraceR_object)
 }
