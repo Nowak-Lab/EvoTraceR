@@ -53,7 +53,7 @@ plot_total_asv <- function(
 
   total_asv_animal <- data.frame(
     name = factor(names(seqtab_history), levels = c("Starting Seqs", "Hamming Merging", "Flanking Seq. Filter", "Substitutions Merging", "Frequency Filter", "Final ASVs")),
-    num = sapply(seqtab_history, function(df) sum(rowSums(df[, sample_columns])))
+    num = sapply(seqtab_history, function(df) sum(rowSums(df[, sample_columns, drop=FALSE])))
   )
   
   # Calculate percentage change
@@ -89,7 +89,7 @@ plot_unique_asv_per_organ <- function(
     data.frame(
       name = step_name,
       organ = sample_columns,
-      unique_count = colSums(df[, sample_columns] > 0)
+      unique_count = colSums(df[, sample_columns, drop=FALSE] > 0)
     )
   }))
   
@@ -125,7 +125,7 @@ plot_total_asv_per_organ <- function(
 
   total_asv_organ <- do.call(rbind, lapply(names(seqtab_history), function(step_name) {
     df <- seqtab_history[[step_name]]
-    organ_totals <- colSums(df[, sample_columns])
+    organ_totals <- colSums(df[, sample_columns, drop=FALSE])
     data.frame(
       name = step_name,
       organ = names(organ_totals),
