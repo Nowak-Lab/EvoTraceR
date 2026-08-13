@@ -40,6 +40,7 @@ if (!require('foreach')) install.packages('foreach')
 if (!require('doParallel')) install.packages('doParallel')
 if (!require('parallel')) install.packages('parallel')
 if (!require('reticulate')) install.packages('reticulate')
+if (!require('igraph')) install.packages('igraph')
 ```
 Users should also have a virtual enviroment (created for example thorugh anaconda), where the python dependencies are installed.
 In case users want this to be taken care of automatically, they can unload reticulate (in case it was already loaded) prior to installing EvoTraceR. Otherwise, they can setup an anaconda enviroment where all dependencies ahve been manually installed.

@@ -1,47 +1,73 @@
+#' Cluster same-length sequences by count-directed Hamming-distance adjacency.
+#'
+#' Replicates umi_tools' \code{UMIClusterer(cluster_method = "directional")}: builds a
+#' directed graph where an edge i -> j exists when \code{hamming(i, j) <= threshold} and
+#' \code{count(i) >= 2 * count(j) - 1} (i.e. i is plausibly the true barcode that j arose
+#' from via sequencing error), then greedily claims each connected set of sequences
+#' starting from the highest-count unclaimed node via forward graph traversal.
+#'
+#' @param seqs character vector of equal-length sequences
+#' @param counts numeric vector of counts, same order/length as \code{seqs}
+#' @param threshold maximum Hamming distance to connect two sequences
+#' @return data.frame with columns \code{seq} (cluster representative) and \code{count}
+#'   (summed count of all sequences claimed by that representative)
+#' @importFrom igraph graph_from_data_frame induced_subgraph subcomponent as_ids
+#' @importFrom pwalign stringDist
+cluster_umis_directional = function(seqs, counts, threshold = 2) {
+  n = length(seqs)
+  if (n == 0) return(data.frame(seq = character(0), count = numeric(0)))
+  if (n == 1) return(data.frame(seq = seqs, count = counts))
+
+  dist_mat = as.matrix(pwalign::stringDist(Biostrings::DNAStringSet(seqs), method = "hamming"))
+  directed = outer(counts, counts, function(ci, cj) ci >= (2 * cj - 1))
+  adj = which(dist_mat <= threshold & directed, arr.ind = TRUE)
+  adj = adj[adj[, 1] != adj[, 2], , drop = FALSE]
+
+  ids = as.character(seq_len(n))
+  g = igraph::graph_from_data_frame(
+    d = data.frame(from = ids[adj[, 1]], to = ids[adj[, 2]]),
+    directed = TRUE,
+    vertices = data.frame(name = ids)
+  )
+
+  order_by_count = order(counts, decreasing = TRUE)
+  visited = rep(FALSE, n)
+  cluster_id = rep(NA_integer_, n)
+  remaining = ids
+
+  for (seed in order_by_count) {
+    if (visited[seed]) next
+    sub_g = igraph::induced_subgraph(g, vids = remaining)
+    reached = as.integer(igraph::as_ids(igraph::subcomponent(sub_g, v = ids[seed], mode = "out")))
+    visited[reached] = TRUE
+    cluster_id[reached] = seed
+    remaining = ids[!visited]
+  }
+
+  data.frame(seq = seqs, count = counts, cluster = cluster_id) %>%
+    dplyr::group_by(cluster) %>%
+    dplyr::summarise(seq = seqs[cluster[1]], count = sum(count), .groups = "drop") %>%
+    dplyr::select(seq, count)
+}
+
 merge_hamming = function(counts, sample_columns, cores) {
-  pd = reticulate::import('pandas')
-  network = reticulate::import('umi_tools.network')
-  builtins <- import_builtins()
-  
   counts = counts %>% mutate(length = nchar(seq)) #%>% mutate(length = as.integer(length))
-  
+
   df = data.frame()
- 
+
   #organ = 'PRL'
   df_organs <- mclapply(sample_columns, function(organ) {
     counts_organ = counts %>% dplyr::select(all_of(c('seq', organ, 'seq_names', 'length'))) %>%
       filter(get(organ) > 0)
-    
-    #counts_organ = reticulate::r_to_py(counts_organ)
-    
+
     df_organ = data.frame(matrix(ncol = 1, nrow=0))
     colnames(df_organ)= organ
     for (seq_len in counts_organ %>% pull('length') %>% unique) {
-      
-      cb = counts_organ %>% filter(length == seq_len) %>% pull(seq)
-      cb = unlist(purrr::map(cb, function(x) builtins$bytes(x, 'ascii')))
 
-      #cbc = builtins$dict(builtins$zip(cb, counts_organ %>% filter(length == seq_len) %>% pull(get(organ))))
-      
-      cbc = reticulate::py_dict(keys = cb, 
-                                values = counts_organ %>% filter(length == seq_len) %>% pull(get(organ)) %>% as.integer, 
-                                convert = F)
-      
-      uc = network$UMIClusterer()
-      CBclusters = uc(cbc, as.integer(2))
-      cbFinal = list()
-      for (l in CBclusters) {  # This is a list with the first element the dominant barcode
-        decoded = l[[1]]$decode('ascii')
-        cbFinal[[decoded]] = 0
-        for (x in l) {  # Iterate over all barcodes in a cluster
-          cbFinal[[decoded]] = cbFinal[[decoded]] + reticulate::py_to_r(cbc[[x]])
-        }
-      }
-      #print(cbFinal)
-      tmp = as.data.frame(do.call(rbind, cbFinal)) %>%
-        tibble::rownames_to_column('seq') %>%
-        dplyr::rename(!!organ:= V1)
-      
+      sub = counts_organ %>% filter(length == seq_len)
+      clustered = cluster_umis_directional(sub$seq, sub[[organ]], threshold = 2)
+      tmp = clustered %>% dplyr::rename(!!organ := count)
+
       df_organ = bind_rows(df_organ, tmp)
     }
 

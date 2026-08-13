@@ -5,7 +5,6 @@ export(asv_analysis)
 export(create_df_summary)
 export(infer_phylogeny)
 export(initialize_EvoTraceR)
-export(setup_reticulate)
 import(data.table, except = c(last, first, between))
 import(dplyr, except = count)
 import(foreach)
@@ -14,42 +13,63 @@ import(ggtree)
 import(parallel)
 import(reticulate)
 import(tibble)
-importFrom(Biostrings,DNAMultipleAlignment)
-importFrom(Biostrings,DNAStringSet)
-importFrom(Biostrings,writeXStringSet)
-importFrom(benthos,hill1)
-importFrom(benthos,hill2)
-importFrom(benthos,hpie)
-importFrom(benthos,margalef)
-importFrom(benthos,rygg)
-importFrom(benthos,shannon)
-importFrom(benthos,simpson)
-importFrom(benthos,species_richness)
-importFrom(benthos,total_abundance)
+importFrom(Biostrings,
+  DNAMultipleAlignment,
+  DNAStringSet,
+  writeXStringSet
+)
+importFrom(benthos,
+  hill1,
+  hill2,
+  hpie,
+  margalef,
+  rygg,
+  shannon,
+  simpson,
+  species_richness,
+  total_abundance
+)
 importFrom(cli,cli_alert_info)
 importFrom(data.table,nafill)
 importFrom(doParallel,registerDoParallel)
 importFrom(forcats,fct_relevel)
 importFrom(ggtree,fortify)
+importFrom(igraph,
+  as_ids,
+  graph_from_data_frame,
+  induced_subgraph,
+  subcomponent
+)
 importFrom(methods,as)
 importFrom(pheatmap,pheatmap)
 importFrom(plyr,count)
-importFrom(purrr,map)
-importFrom(purrr,reduce)
-importFrom(pwalign,alignedPattern)
-importFrom(pwalign,alignedSubject)
-importFrom(pwalign,nedit)
-importFrom(pwalign,nucleotideSubstitutionMatrix)
-importFrom(pwalign,pairwiseAlignment)
-importFrom(pwalign,pid)
-importFrom(pwalign,score)
+importFrom(purrr,
+  map,
+  reduce
+)
+importFrom(pwalign,
+  alignedPattern,
+  alignedSubject,
+  nedit,
+  nucleotideSubstitutionMatrix,
+  pairwiseAlignment,
+  pid,
+  score,
+  stringDist
+)
 importFrom(scales,comma)
-importFrom(stringr,str_detect)
-importFrom(stringr,str_remove_all)
-importFrom(stringr,str_replace)
-importFrom(tidyr,gather)
-importFrom(tidyr,pivot_wider)
-importFrom(utils,read.csv)
-importFrom(utils,untar)
-importFrom(utils,unzip)
-importFrom(utils,write.csv)
+importFrom(stringr,
+  str_detect,
+  str_remove_all,
+  str_replace
+)
+importFrom(tidyr,
+  gather,
+  pivot_wider
+)
+importFrom(utils,
+  read.csv,
+  untar,
+  unzip,
+  write.csv
+)

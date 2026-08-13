@@ -45,6 +45,7 @@ Imports:
     doParallel,
     ggrepel,
     gridExtra,
+    igraph,
 Suggests:
     BiocGenerics,
     BiocStyle,
@@ -63,6 +64,6 @@ biocViews:
     BiomedicalInformatics,
     SingleCell,
     SomaticMutation
-RoxygenNote: 7.3.1
 VignetteBuilder: knitr
 Additional_repositories: https://bioconductor.org/packages/release/bioc
+Config/roxygen2/version: 8.1.0
