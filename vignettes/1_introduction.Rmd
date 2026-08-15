@@ -39,26 +39,14 @@ if (!require("ggtree")) BiocManager::install("ggtree")
 if (!require('foreach')) install.packages('foreach')
 if (!require('doParallel')) install.packages('doParallel')
 if (!require('parallel')) install.packages('parallel')
-if (!require('reticulate')) install.packages('reticulate')
 if (!require('igraph')) install.packages('igraph')
 ```
-Users should also have a virtual enviroment (created for example thorugh anaconda), where the python dependencies are installed.
-In case users want this to be taken care of automatically, they can unload reticulate (in case it was already loaded) prior to installing EvoTraceR. Otherwise, they can setup an anaconda enviroment where all dependencies ahve been manually installed.
-The dependencies are the following:
-Numpy version 1.21.5
-Numba
-Cassiopeia-lineage
-umi_tools
+
 ```{r eval=FALSE}
-# Run only if reticulate has been manually setup:
-# library(reticulate)
-# reticulate::use_condaenv('EvoTraceR_enviroment')
 # Install EvoTraceR
 #devtools::install_github("Nowak-Lab/EvoTraceR", ref = "master") #, auth_token="<github-generated-auth-token>")
 devtools::load_all(".")
 ```
-
-
 
 In order to handle fastq files with forward and reverse reads, EvoTraceR uses trimmomatic and flash tools to perform adapters trimming, discard low quality bases and merge
 forward and reverse reads. In order to use such packages, users should install [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) and [flash]{https://ccb.jhu.edu/software/FLASH/}.
@@ -67,8 +55,20 @@ forward and reverse reads. In order to use such packages, users should install [
 library("EvoTraceR")
 ```
 
-Finally, in case reticulate is setup automatically through the install process, users need to call the following function to finish setup and then restart R. 
+### Optional: phylogeny reconstruction with Cassiopeia
+
+Tree reconstruction with `infer_phylogeny_cassiopeia()` is optional and not required to install or use the rest of *EvoTraceR*. It calls the Python package
+[Cassiopeia](https://github.com/YosefLab/Cassiopeia) via `reticulate`, so it's only needed if you plan to use that specific function. If you do, install `reticulate`
+and point it at a Python environment with Cassiopeia installed (`numpy`/`numba` are provisioned automatically by `reticulate` when needed):
+
 ```{r eval=FALSE}
-setup_reticulate()
+if (!require('reticulate')) install.packages('reticulate')
+
+# Run only if you have manually set up a conda environment with Cassiopeia already installed:
+# library(reticulate)
+# reticulate::use_condaenv('EvoTraceR_enviroment')
+
+# Otherwise, install Cassiopeia into reticulate's active Python environment:
+reticulate::py_install("git+https://github.com/YosefLab/Cassiopeia@master#egg=cassiopeia-lineage", pip = TRUE)
 ```
 

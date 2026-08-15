@@ -503,23 +503,26 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
   
 }
 
-#' This function reconstructs the phylogenetic tree using the \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia} suite. 
+#' This function reconstructs the phylogenetic tree using the \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia} suite.
 #' It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
-#' based on the most common mutation at each iteration. Note that this requires installing cassiopeia in the anaconda/virtual enviroment used by reticulate.
-#' 
-#' @title infer_phylogeny
-#' 
-#' @examples 
+#' based on the most common mutation at each iteration. Cassiopeia is an optional dependency of EvoTraceR:
+#' this function requires the \code{reticulate} package and a Python environment with \code{cassiopeia} installed
+#' (see \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia} for installation instructions); neither is required
+#' to install EvoTraceR itself, only to run this function.
+#'
+#' @title infer_phylogeny_cassiopeia
+#'
+#' @examples
 #' \dontrun{
-#' EvoTraceR_object = infer_phylogeny(EvoTraceR_object)
+#' EvoTraceR_object = infer_phylogeny_cassiopeia(EvoTraceR_object)
 #' }
-#' 
+#'
 #' @param EvoTraceR_object (Required)
 #' @param mutations_use (optional). Default = 'del_ins' A string indicating what type of mutations to use for phylogeny reconstruction.
 #' Can be one of c('del', 'del_ins'). The first
 #' corresponds to using only cleaned deletions. The second refers to the case where cleaned deletions
 #' and insertions are considered.
-#' 
+#'
 #' @return EvoTraceR object with a new field called phylogeny, that stores:
 #'  \itemize{
 #'  \item \code{mutations_in_phylogeny}: string indicating which mutations were used for phylogeny reconstruction.
@@ -528,9 +531,8 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 #'  \item \code{tree_phylo}: \code{phylo} object containing the tree returned by Cassiopeia.
 #'  \item \code{tree_uncollapsed}: \code{phylo} object containing the tree returned by Cassiopeia prior to the collapsing of mutationless edges.
 #'  }
-#' 
-#' @export infer_phylogeny
-#' @import reticulate
+#'
+#' @export infer_phylogeny_cassiopeia
 #' @importFrom scales comma
 #' @importFrom ggtree fortify
 # @importFrom dynamicTreeCut cutreeDynamic
@@ -538,12 +540,22 @@ analyse_mutations = function(EvoTraceR_object) {#, cleaning_window = c(3,3)) {
 #' @rawNamespace import(dplyr, except = count)
 #' @rawNamespace import(ggplot2, except = c(element_render, CoordCartesian))
 # @import lemon
-infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
-  
+infer_phylogeny_cassiopeia = function(EvoTraceR_object, mutations_use = 'del_ins') {
+
   if (! (mutations_use %in% c('del', 'del_ins'))) {
     cli::cli_alert_danger("Error, muations use must be one of 'del_ins', 'del'")
     stop('Exiting')
   }
+
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    cli::cli_alert_danger("The 'reticulate' package is required to run infer_phylogeny_cassiopeia(). Install it with install.packages('reticulate').")
+    stop('Exiting')
+  }
+  if (!reticulate::py_module_available("cassiopeia")) {
+    cli::cli_alert_danger("The Python 'cassiopeia' module was not found in the active reticulate environment. Install it (e.g. 'pip install cassiopeia') before running infer_phylogeny_cassiopeia().")
+    stop('Exiting')
+  }
+
   EvoTraceR_object$phylogeny$mutations_in_phylogeny = mutations_use
   output_dir = file.path(EvoTraceR_object$output_directory, paste0("phylogeny_analysis/phylogeny_", mutations_use))
   
@@ -580,7 +592,222 @@ infer_phylogeny = function(EvoTraceR_object, mutations_use = 'del_ins') {
   write.csv(EvoTraceR_object$phylogeny$tree, file.path(output_dir, "tree_all_clones.csv"))
   
   return(EvoTraceR_object)
-  
+
+}
+
+#' This function assigns each ASV to a clonal population based on shared, mutually exclusive founder
+#' ("truncal") mutations in its mutation matrix, without building or requiring a phylogenetic tree from
+#' any specific tool.
+#'
+#' It reproduces the grouping that \code{infer_phylogeny_cassiopeia()} derives from the direct children
+#' of the root in its collapsed Cassiopeia tree, following the same greedy logic: under an irreversible
+#' mutation model (mutations are never lost), a root-child clade in that tree is defined by whichever
+#' mutation(s) are shared by every ASV under it, which is exactly the (character, state) pair
+#' \href{https://github.com/YosefLab/Cassiopeia}{Cassiopeia}'s \code{VanillaGreedySolver} splits on at
+#' each step. This function repeatedly finds the mutation shared by the most ASVs that have not yet been assigned
+#' to a group, assign its carriers to a new clonal population, and recurse on the remainder.
+#'
+#' An ASV that shares no mutation with any other ASV (including one with no mutations at all, e.g. the
+#' unmutated reference/ancestral barcode) isn't part of any real clade -- in the collapsed Cassiopeia tree
+#' these are the tip-only direct children of the root. This function is implemented so singleton ASVs are left out
+#' of the returned data frame rather than being assigned their own singleton group or a shared placeholder
+#' one. The remaining (2+ member) clonal populations are numbered "CP01", "CP02", ... in the order
+#' they're claimed (largest/most common founder mutation first).
+#'
+#' @title assign_clonal_populations
+#'
+#' @examples
+#' \dontrun{
+#' cp_assignments = assign_clonal_populations(EvoTraceR_object$alignment$binary_mutation_matrix)
+#' }
+#'
+#' @param mutation_matrix (Required) An ASV-by-mutation binary (0/1) matrix or data frame, such as
+#' \code{EvoTraceR_object$alignment$binary_mutation_matrix}. Row names must be ASV names.
+#'
+#' @return A data frame with columns \code{asv_names} and \code{group} (e.g. "CP01", "CP02", ...), with one
+#' row per ASV that belongs to a real (2+ member) clonal population. ASVs that don't belong to one are
+#' omitted entirely.
+#'
+#' @export assign_clonal_populations
+assign_clonal_populations = function(mutation_matrix) {
+
+  mutation_matrix = as.matrix(mutation_matrix)
+  asv_names = rownames(mutation_matrix)
+
+  # Exclude ASVs with no mutations
+  unassigned = asv_names[rowSums(mutation_matrix) > 0]
+
+  raw_groups = list()
+
+  while (length(unassigned) > 0) {
+    # recompute frequency among only the still-unassigned ASVs, each round
+    freq = colSums(mutation_matrix[unassigned, , drop = FALSE])
+    best_mut = names(freq)[which.max(freq)]
+
+    carriers = unassigned[mutation_matrix[unassigned, best_mut] == 1]
+    raw_groups[[length(raw_groups) + 1]] = carriers
+
+    unassigned = setdiff(unassigned, carriers)
+  }
+
+  # Exclude singleton clades
+  real_groups = raw_groups[lengths(raw_groups) > 1]
+
+  if (length(real_groups) == 0) {
+    return(data.frame(asv_names = character(0), group = character(0), stringsAsFactors = FALSE))
+  }
+
+  do.call(rbind, lapply(seq_along(real_groups), function(i) {
+    data.frame(asv_names = real_groups[[i]],
+               group = paste0("CP", formatC(i, width = nchar(trunc(length(real_groups))), format = "d", flag = "0")),
+               stringsAsFactors = FALSE)
+  }))
+}
+
+#' This function exports the inputs needed by external phylogeny/migration-inference tools that consume
+#' CRISPR-style lineage-tracing data, such as \href{https://github.com/CshlSiepelLab/vine}{vine} or LAML. It does not run
+#' any inference itself; the resulting files are meant to be passed to the external tool of choice as a separate,
+#' optional step (e.g. \code{vine mutation_matrix.tsv --format CRISPR --migration state_labels.csv ...}).
+#'
+#' Since EvoTraceR works from bulk, multi-organ amplicon counts rather than single-cell data, a single ASV
+#' can genuinely be observed in more than one organ. Rather than collapsing that to one dominant organ (which
+#' would discard the migration signal it represents), any ASV listed with more than one tissue is expanded,
+#' within its CP, into duplicate taxa -- one per tissue, named \code{<asv_name>_0}, \code{<asv_name>_1}, ...
+#' -- each an identical copy of that ASV's mutation-matrix row paired with a single tissue label. An ASV observed in no sample
+#' (e.g. the unmutated reference/ancestral barcode) is kept as a single row with an empty state, left for the
+#' user to fill in (e.g. as the state passed to vine's \code{--primary}).
+#'
+#' @title export_migration_input
+#'
+#' @examples
+#' \dontrun{
+#' export_migration_input(EvoTraceR_object)
+#' }
+#'
+#' @param EvoTraceR_object (Required)
+#' @param output_dir (optional) Directory to write the per-CP input files to. Default is
+#' \code{<output_directory>/migration_inference_input}.
+#' @param mutation_matrix_file (optional) File name for each CP's mutation matrix. Default = 'mutation_matrix.tsv'.
+#' @param state_labels_file (optional) File name for each CP's state-labels file. Default = 'state_labels.csv'.
+#' @param mutations_use (optional). Default = 'del_ins'. Which mutation types to filter
+#' \code{binary_mutation_matrix} down to before assigning clonal populations; see
+#' \code{infer_phylogeny_cassiopeia()}. Can be one of c('del', 'del_ins').
+#'
+#' @return No return value; called to write each CP's mutation matrix and state-labels files to disk.
+#'
+#' @export export_migration_input
+#' @rawNamespace import(dplyr, except = count)
+export_migration_input = function(EvoTraceR_object,
+                                   output_dir = NULL,
+                                   mutation_matrix_file = "mutation_matrix.tsv",
+                                   state_labels_file = "state_labels.csv",
+                                   mutations_use = 'del_ins') {
+
+  if (! (mutations_use %in% c('del', 'del_ins'))) {
+    cli::cli_alert_danger("Error, mutations_use must be one of 'del_ins', 'del'")
+    stop('Exiting')
+  }
+
+  character_matrix = EvoTraceR_object$alignment$character_matrix
+  if (is.null(character_matrix)) {
+    cli::cli_alert_danger("EvoTraceR_object$alignment$character_matrix not found; run asv_analysis() first.")
+    stop('Exiting')
+  }
+
+  # Filter binary_mutation_matrix down to the set of mutation columns and non-zero ASVs
+  binary_mutation_matrix = EvoTraceR_object$alignment$binary_mutation_matrix
+  if (is.null(binary_mutation_matrix)) {
+    cli::cli_alert_danger("EvoTraceR_object$alignment$binary_mutation_matrix not found; run asv_analysis() first.")
+    stop('Exiting')
+  }
+  ref_name = EvoTraceR_object$reference$ref_name
+  barcode_var = binary_mutation_matrix[ref_name, ]
+  if (class(barcode_var) == "numeric") {
+    first_name <- colnames(binary_mutation_matrix)[1]
+    barcode_var <- setNames(data.frame(barcode_var), first_name)
+    rownames(barcode_var) <- ref_name
+  }
+  if (mutations_use == 'del_ins') {
+    binary_mutation_matrix = binary_mutation_matrix %>%
+      dplyr::select(starts_with('i_') | starts_with('d_')) %>%
+      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
+  } else {
+    binary_mutation_matrix = binary_mutation_matrix %>%
+      dplyr::select(starts_with('del_')) %>%
+      filter(rowSums(dplyr::across(dplyr::everything())) > 0)
+  }
+  binary_mutation_matrix = dplyr::bind_rows(barcode_var, binary_mutation_matrix)
+
+  cp_assignments = assign_clonal_populations(binary_mutation_matrix)
+
+  clean_asv_df = EvoTraceR_object$clean_asv_dataframe
+  sample_columns = EvoTraceR_object$sample_order
+  counts = as.matrix(clean_asv_df[, sample_columns, drop = FALSE])
+  rownames(counts) = clean_asv_df$asv_names
+  state_labels = do.call(rbind, lapply(rownames(counts), function(asv) {
+    tissues = sample_columns[counts[asv, ] > 0]
+    if (length(tissues) == 0) {
+      data.frame(asv_names = asv, state = NA_character_, stringsAsFactors = FALSE)
+    } else {
+      data.frame(asv_names = asv, state = tissues, stringsAsFactors = FALSE)
+    }
+  }))
+
+  if (is.null(output_dir)) {
+    output_dir = file.path(EvoTraceR_object$output_directory, "migration_inference_input")
+  }
+  if (!dir.exists(output_dir)) {dir.create(output_dir, recursive = TRUE)}
+
+  for (cp in unique(cp_assignments$group)) {
+
+    cp_dir = file.path(output_dir, cp)
+    if (!dir.exists(cp_dir)) {dir.create(cp_dir, recursive = TRUE)}
+
+    cp_asvs = cp_assignments$asv_names[cp_assignments$group == cp]
+    cp_state_labels = state_labels[state_labels$asv_names %in% cp_asvs, , drop = FALSE]
+    tissue_counts = table(cp_state_labels$asv_names)
+    multi_tissue_asvs = names(tissue_counts)[tissue_counts > 1]
+
+    matrix_rows = list()
+    expanded_state_labels = list()
+
+    for (asv in cp_asvs) {
+      asv_tissues = cp_state_labels$state[cp_state_labels$asv_names == asv]
+      if (asv %in% multi_tissue_asvs) {
+        # duplicate this ASV's mutation-matrix row once per tissue, one taxon per tissue
+        for (i in seq_along(asv_tissues)) {
+          dup_name = paste0(asv, "_", i - 1)
+          matrix_rows[[dup_name]] = character_matrix[asv, , drop = FALSE]
+          expanded_state_labels[[length(expanded_state_labels) + 1]] =
+            data.frame(asv_names = dup_name, state = asv_tissues[i], stringsAsFactors = FALSE)
+        }
+      } else {
+        matrix_rows[[asv]] = character_matrix[asv, , drop = FALSE]
+        state = if (length(asv_tissues) == 0) NA_character_ else asv_tissues[1]
+        expanded_state_labels[[length(expanded_state_labels) + 1]] =
+          data.frame(asv_names = asv, state = state, stringsAsFactors = FALSE)
+      }
+    }
+
+    cp_character_matrix = do.call(rbind, matrix_rows)
+    rownames(cp_character_matrix) = names(matrix_rows)
+    cp_state_labels = do.call(rbind, expanded_state_labels)
+
+    # Tab-delimited CRISPR-format mutation matrix: blank corner cell + site names header,
+    # then one row per taxon with its name followed by the integer state at each site.
+    mutation_matrix_path = file.path(cp_dir, mutation_matrix_file)
+    header = paste(c("", colnames(cp_character_matrix)), collapse = "\t")
+    body = apply(cp_character_matrix, 1, function(row) paste(row, collapse = "\t"))
+    body = paste(rownames(cp_character_matrix), body, sep = "\t")
+    writeLines(c(header, body), con = mutation_matrix_path)
+
+    state_labels_path = file.path(cp_dir, state_labels_file)
+    write.table(cp_state_labels, file = state_labels_path, sep = ",", row.names = FALSE,
+               col.names = FALSE, na = "", quote = FALSE)
+
+    cli::cli_alert_info("Wrote {cp} mutation matrix to {mutation_matrix_path}")
+    cli::cli_alert_info("Wrote {cp} state labels to {state_labels_path}")
+  }
 }
 
 #' This function combines in one dataframe all the data that have been computed for the phylogenetic analysis.

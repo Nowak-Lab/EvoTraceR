@@ -80,7 +80,7 @@ EvoTraceR_object <-
   analyse_mutations(EvoTraceR_object = EvoTraceR_object)
 
 EvoTraceR_object <-
-  infer_phylogeny(EvoTraceR_object = EvoTraceR_object, mutations_use = "del_ins")
+  infer_phylogeny_cassiopeia(EvoTraceR_object = EvoTraceR_object, mutations_use = "del_ins")
 
 EvoTraceR_object <-
   create_df_summary(EvoTraceR_object)

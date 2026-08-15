@@ -1,0 +1,102 @@
+---
+title: Migration Inference with vine
+output: html_document
+---
+
+## Overview
+
+This vignette runs the same *EvoTraceR* preprocessing steps as the ["Running EvoTraceR"](2_running_REvoBC.html) vignette on the bundled toy dataset, then exports the resulting mutation data per clonal population and calls [vine](https://github.com/CshlSiepelLab/vine) to perform phylogeny and migration inference on each one.
+
+Unlike `infer_phylogeny_cassiopeia()`, this path does not require Python or Cassiopeia. vine is a standalone C/C++ program installed via conda; `reticulate` is used here only to locate the conda environment that has vine installed, not to run any Python code.
+
+## Preprocessing
+
+```{r eval=FALSE}
+library("EvoTraceR")
+```
+
+The initialization function computes the set of Amplicon Sequence Variants. It calls trimmomatic and flash to trim adapters, discard low quality bases, and merge forward and reverse reads. See the ["Running EvoTraceR"](2_running_REvoBC.html) vignette for a full explanation of the parameters.
+
+```{r eval=FALSE}
+input_dir = system.file("extdata", "input", package = "EvoTraceR")
+output_dir = system.file("extdata", "output", package = "EvoTraceR")
+
+EvoTraceR_object = initialize_EvoTraceR(input_dir = input_dir, 
+                                        output_dir = output_dir, 
+                                        trimmomatic_path = '~/Trimmomatic 0.xx/trimmomatic-0.xx.jar',
+                                        flash_path = '~/*/FLASH-x.x.x/flash')
+```
+
+`asv_analysis()` cleans and aligns the identified ASVs against the reference sequence, and builds `EvoTraceR_object$alignment$binary_mutation_matrix` and `EvoTraceR_object$alignment$character_matrix`, which are what get exported for vine below.
+
+```{r eval=FALSE}
+EvoTraceR_object = asv_analysis(EvoTraceR_object = EvoTraceR_object)
+```
+
+`analyse_mutations()` identifies, for each position in the reference, the number of alterations found across ASVs.
+
+```{r eval=FALSE}
+EvoTraceR_object = analyse_mutations(EvoTraceR_object)
+```
+
+## Assigning clonal populations and exporting vine's input files
+
+`export_migration_input()` groups ASVs into clonal populations with `assign_clonal_populations()` (based on shared founder mutations -- see `?assign_clonal_populations`), then writes a tab-delimited mutation matrix and a comma-delimited tissue state-labels file for each clonal population under `<output_dir>/migration_inference_input/<CP>/`. An ASV detected in more than one tissue is expanded into one duplicate taxon per tissue, so the migration signal from multi-tissue ASVs isn't discarded.
+
+```{r eval=FALSE}
+export_migration_input(EvoTraceR_object)
+```
+
+## Installing vine
+
+vine is available via Bioconda. Install it into its own conda environment from a terminal (this vignette assumes the environment is named `vine_env`, matching this system's existing installation -- adjust the name below if yours differs):
+
+```sh
+conda create -n vine_env -c conda-forge -c bioconda vine-phylo
+```
+
+## Locating the vine binary
+
+`reticulate` already knows how to enumerate conda environments, so it's a convenient way to locate the `vine` binary inside `vine_env` without hardcoding a path.
+
+```{r eval=FALSE}
+if (!require('reticulate')) install.packages('reticulate')
+
+envs = reticulate::conda_list()
+vine_env = envs[envs$name == "vine_env", ]
+if (nrow(vine_env) == 0) {
+  stop("Conda environment 'vine_env' not found; see the installation instructions above.")
+}
+# vine_env$python is <env prefix>/bin/python; the vine binary lives alongside it
+vine_bin = file.path(dirname(vine_env$python), "vine")
+```
+
+## Running vine on CP3
+
+This runs vine on a single clonal population, CP3, as an example. `--primary PRL` marks the primary tumor sample as the root state for the migration model; adjust this to whichever sample is the primary tissue in your own data.
+
+```{r eval=FALSE}
+cp_dir = file.path(output_dir, "migration_inference_input", "CP3")
+
+system2(vine_bin,
+        args = c("-M", "400", "-c", "100", "-v", "0",
+                 "-i", "CRISPR", file.path(cp_dir, "mutation_matrix.tsv"),
+                 "--logfile", file.path(cp_dir, "vine.log"),
+                 "--mean", file.path(cp_dir, "mean_tree.nwk"),
+                 "--migration", file.path(cp_dir, "state_labels.csv"),
+                 "--primary", "PRL",
+                 "--sample-graphs", file.path(cp_dir, "migration_graphs.dot"),
+                 "--labeled-trees", file.path(cp_dir, "trees_with_tissues.nex")),
+        stdout = file.path(cp_dir, "trees.nwk"))
+```
+
+
+## Output files
+
+For CP3's directory, this adds:
+
+* `trees.nwk`: posterior sample of trees (one Newick tree per line)
+* `mean_tree.nwk`: posterior mean tree
+* `trees_with_tissues.nex`: sampled trees with cell-state-labeled nodes, in nexus format
+* `migration_graphs.dot`: sampled migration graphs, one per line, in dot format. Each line is a complete, independent graph; render one with e.g. `dot -Tpng` (from Graphviz) after extracting it with `sed -n '<N>p' migration_graphs.dot > graphN.dot`
+* `vine.log`: run log with variational inference metrics

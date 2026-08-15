@@ -40,7 +40,6 @@ Imports:
     ape,
     foreach,
     purrr,
-    reticulate,
     parallel,
     doParallel,
     ggrepel,
@@ -51,6 +50,7 @@ Suggests:
     BiocStyle,
     testthat,
     knitr,
+    reticulate,
 Name:
     EvoTraceR
 Description:

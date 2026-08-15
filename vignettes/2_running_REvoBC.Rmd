@@ -12,7 +12,7 @@ The first step initializes the EvoTraceR object, which is a list that gets popul
 
 ```{r eval=FALSE}
 library("EvoTraceR")
-# Run in case reticulate was setup manually:
+# Run in case reticulate was setup manually and using Cassiopeia:
 # library(reticulate)
 # reticulate::use_condaenv('EvoTraceR_enviroment')
 ```
@@ -92,7 +92,7 @@ After alignment, EvoTraceR identifies, for each position in the original referen
 This computation stores the result in a new field mutations_df. 
 
 ```{r eval=FALSE}
-EvoTraceR_object = infer_phylogeny(EvoTraceR_object)
+EvoTraceR_object = infer_phylogeny_cassiopeia(EvoTraceR_object)
 ```
 This function reconstructs the phylogenetic tree using the Cassiopeia's suite. 
 It uses the greedy algorithm, that iteratively splits the set of ASVs in clusters
