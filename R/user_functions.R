@@ -454,10 +454,10 @@ asv_analysis = function(EvoTraceR_object,
   # Store the history in EvoTraceR_object for future analysis or debugging
   EvoTraceR_object$seqtab_history = seqtab_history
   # Generate the asv figure plots
-  #generate_all_asv_plots(
-  #  EvoTraceR_object, 
-  #  figure_dir
-  #)
+  generate_all_asv_plots(
+    EvoTraceR_object,
+    figure_dir
+  )
 
   return(EvoTraceR_object)
 }
